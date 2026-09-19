@@ -1,0 +1,278 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { Bell, Search, Loader2, AlertTriangle, User, Menu, LogOut } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { globalSearch, getReports } from '@/lib/api';
+import { useSocket } from '@/hooks/useSocket';
+import Link from 'next/link';
+import { useSidebar } from '@/providers/SidebarProvider';
+import { useLaporSar } from '@/providers/LaporSarProvider';
+import { decodeJwt, getTenantRedirectUrl } from '@/lib/utils';
+
+export function Header() {
+  const { isSidebarOpen, toggleSidebar } = useSidebar();
+  const { setSelectedGlobalReport, setIsGlobalReportDetailOpen } = useLaporSar();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [showSearchDrop, setShowSearchDrop] = useState(false);
+  const [showNotifDrop, setShowNotifDrop] = useState(false);
+  const { clickedReportIds, markReportAsRead } = useLaporSar();
+  
+  const [isMounted, setIsMounted] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [showProfileDrop, setShowProfileDrop] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  const searchRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const payload = decodeJwt(token);
+      if (payload) {
+        setUserRole(payload.role);
+      }
+    }
+  }, []);
+  
+  const { isConnected } = useSocket();
+  
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const { data: searchResults, isFetching: isSearching } = useQuery({
+    queryKey: ['search', debouncedQuery],
+    queryFn: () => globalSearch(debouncedQuery),
+    enabled: debouncedQuery.length >= 2,
+  });
+
+  const { data: reports } = useQuery({
+    queryKey: ['reports_header'],
+    queryFn: getReports,
+    refetchInterval: 30000, // Refresh every 30s as backup to WebSocket
+  });
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchDrop(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setShowNotifDrop(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setShowProfileDrop(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleNotificationClick = (report: any) => {
+    markReportAsRead(String(report.id));
+    setSelectedGlobalReport(report);
+    setIsGlobalReportDetailOpen(true);
+    setShowNotifDrop(false);
+  };
+
+  const latestReports = reports && isMounted
+    ? reports
+        .filter((r: any) => r.status?.toUpperCase() === 'PENDING' || r.status?.toUpperCase() === 'AKTIF')
+        .filter((r: any) => !clickedReportIds.includes(String(r.id)))
+        .slice(0, 5)
+    : [];
+
+  return (
+    <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8 relative z-50">
+      <div className="flex-1 max-w-xl flex items-center gap-4" ref={searchRef}>
+        <button
+          onClick={toggleSidebar}
+          className="p-2.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all border border-transparent hover:border-orange-100 shrink-0"
+          title={isSidebarOpen ? "Tutup Sidebar" : "Buka Sidebar"}
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSearchDrop(true);
+            }}
+            onFocus={() => setShowSearchDrop(true)}
+            placeholder="Cari Laporan atau Kontak..." 
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none text-gray-700"
+          />
+          {isSearching && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+          )}
+        </div>
+
+        {/* Search Dropdown */}
+        {showSearchDrop && searchQuery.length >= 2 && (
+          <div className="absolute top-full left-8 mt-2 w-full max-w-xl bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+            <div className="p-2 max-h-96 overflow-y-auto">
+              {!isSearching && (!searchResults?.reports?.length && !searchResults?.contacts?.length) && (
+                <div className="p-4 text-center text-sm text-gray-500">Tidak ada hasil ditemukan.</div>
+              )}
+              
+              {searchResults?.reports?.length > 0 && (
+                <div className="mb-2">
+                  <div className="px-3 py-1 text-xs font-bold text-gray-400 uppercase">Laporan</div>
+                  {searchResults.reports.map((item: any) => (
+                    <Link href={item.link} key={item.id} onClick={() => setShowSearchDrop(false)}>
+                      <div className="px-3 py-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                        <div className="text-sm font-semibold text-gray-900">{item.title}</div>
+                        <div className="text-xs text-gray-500">{item.subtitle}</div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {searchResults?.contacts?.length > 0 && (
+                <div>
+                  <div className="px-3 py-1 text-xs font-bold text-gray-400 uppercase">Kontak</div>
+                  {searchResults.contacts.map((item: any) => (
+                    <Link href={item.link} key={item.id} onClick={() => setShowSearchDrop(false)}>
+                      <div className="px-3 py-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                        <div className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                          <User className="w-3 h-3" /> {item.title}
+                        </div>
+                        <div className="text-xs text-gray-500">{item.subtitle}</div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div className="flex items-center gap-4">
+        {/* Connection Status indicator */}
+        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} title={isConnected ? 'WebSocket Terhubung' : 'WebSocket Terputus'} />
+
+        <div className="relative" ref={notifRef}>
+          <button 
+            onClick={() => setShowNotifDrop(!showNotifDrop)}
+            className="relative p-2.5 rounded-xl hover:bg-gray-50 text-gray-500 transition-colors"
+          >
+            <Bell className="w-5 h-5" />
+            {latestReports.length > 0 && (
+              <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            )}
+          </button>
+
+          {/* Notifications Dropdown */}
+          {showNotifDrop && (
+            <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+              <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 className="font-bold text-gray-900">Notifikasi Terbaru</h3>
+                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{latestReports.length} Baru</span>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {latestReports.length > 0 ? (
+                  latestReports.map((report: any) => (
+                    <div
+                      key={report.id}
+                      onClick={() => handleNotificationClick(report)}
+                      className="block p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
+                      <div className="flex gap-3">
+                        <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                          <AlertTriangle className="w-4 h-4 text-red-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 line-clamp-1">{report.no_laporan || report.jenis_kejadian}</p>
+                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{report.lokasi_teks}</p>
+                          <p className="text-xs text-gray-400 mt-1">{new Date(report.created_at).toLocaleString('id-ID')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-sm text-gray-500">Belum ada notifikasi</div>
+                )}
+              </div>
+              <div className="p-3 border-t border-gray-100 text-center">
+                <Link href="/reports" onClick={() => setShowNotifDrop(false)} className="text-sm text-orange-600 font-medium hover:text-orange-700">
+                  Lihat Semua Laporan
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* User Profile Dropdown */}
+        <div className="relative" ref={profileRef}>
+          <button
+            onClick={() => setShowProfileDrop(!showProfileDrop)}
+            className="flex items-center gap-2.5 p-1.5 hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-xl transition-all outline-none"
+            title="Profil Pengguna"
+          >
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-xs shadow-md shrink-0">
+              {userRole === 'User' ? 'US' : userRole === 'Operator' ? 'OP' : 'AD'}
+            </div>
+            <div className="hidden sm:flex flex-col text-left min-w-0 pr-1">
+              <span className="text-xs font-semibold text-slate-800 leading-none truncate max-w-[100px]">
+                {userRole === 'User' 
+                  ? 'Pengguna' 
+                  : userRole === 'Operator' 
+                  ? 'Operator SAR' 
+                  : 'Admin CC'}
+              </span>
+              <span className="text-[9px] text-green-600 font-medium flex items-center gap-1 mt-0.5 leading-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                Online
+              </span>
+            </div>
+          </button>
+
+          {showProfileDrop && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50">
+              <div className="px-4 py-2 border-b border-gray-50 flex flex-col sm:hidden">
+                <span className="text-xs font-bold text-slate-800">
+                  {userRole === 'User' 
+                    ? 'Pengguna' 
+                    : userRole === 'Operator' 
+                    ? 'Operator SAR' 
+                    : 'Admin CC'}
+                </span>
+                <span className="text-[9px] text-green-600 font-bold flex items-center gap-1 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                  Online
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  sessionStorage.setItem('logging_out', 'true');
+                  localStorage.removeItem('token');
+                  window.location.href = `${getTenantRedirectUrl(null)}/?logout=true`;
+                }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors text-left"
+              >
+                <LogOut className="w-4 h-4 shrink-0" />
+                <span>Keluar</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
