@@ -225,15 +225,17 @@ export function Header() {
             className="flex items-center gap-2.5 p-1.5 hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-xl transition-all outline-none"
             title="Profil Pengguna"
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-xs shadow-md shrink-0">
-              {userRole === 'User' ? 'US' : userRole === 'Operator' ? 'OP' : 'AD'}
+            <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0">
+              {userRole === 'User' ? 'US' : userRole === 'Operator' ? 'OP' : userRole === 'Super Admin' ? 'SA' : 'AD'}
             </div>
             <div className="hidden sm:flex flex-col text-left min-w-0 pr-1">
-              <span className="text-xs font-semibold text-slate-800 leading-none truncate max-w-[100px]">
+              <span className="text-xs font-semibold text-slate-800 leading-none truncate max-w-[120px]">
                 {userRole === 'User' 
                   ? 'Pengguna' 
                   : userRole === 'Operator' 
                   ? 'Operator SAR' 
+                  : userRole === 'Super Admin'
+                  ? 'Super Admin'
                   : 'Admin CC'}
               </span>
               <span className="text-[9px] text-green-600 font-medium flex items-center gap-1 mt-0.5 leading-none">
@@ -251,6 +253,8 @@ export function Header() {
                     ? 'Pengguna' 
                     : userRole === 'Operator' 
                     ? 'Operator SAR' 
+                    : userRole === 'Super Admin'
+                    ? 'Super Admin'
                     : 'Admin CC'}
                 </span>
                 <span className="text-[9px] text-green-600 font-bold flex items-center gap-1 mt-0.5">

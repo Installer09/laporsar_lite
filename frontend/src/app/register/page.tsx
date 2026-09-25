@@ -63,39 +63,29 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-screen relative overflow-hidden bg-[#f8fafc] flex items-center justify-center font-sans antialiased py-12">
-      {/* Background Glowing Blobs */}
-      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-orange-500/5 to-red-650/5 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-blue-600/3 to-orange-500/4 blur-[150px] pointer-events-none" />
-
+    <div className="min-h-screen w-screen relative overflow-hidden bg-slate-50 flex items-center justify-center font-sans antialiased py-12">
       {/* Main Container */}
       <div className="w-full max-w-md p-6 relative z-10">
         {/* Brand Header */}
-        <div className="flex flex-col items-center mb-6">
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="inline-flex items-center justify-center p-3 bg-gradient-to-tr from-orange-500 to-red-650 rounded-2xl shadow-xl shadow-orange-500/10 mb-4"
-          >
-            <Activity className="w-8 h-8 text-white" />
-          </motion.div>
-          <span className="text-[10px] uppercase font-black tracking-[0.25em] text-orange-550 mb-1 leading-none text-center">
+        <div className="flex flex-col items-center mb-6 text-center">
+          <div className="w-12 h-12 mb-3 flex items-center justify-center">
+            <img src="/logo.png" alt="Logo BASARNAS" className="w-12 h-12 object-contain" />
+          </div>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1 leading-none">
             Badan Nasional Pencarian dan Pertolongan
           </span>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight text-center">
-            Lapor <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">SAR</span> Command Center
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+            Registrasi Akun <span className="text-orange-600">Lapor SAR</span>
           </h1>
         </div>
 
         {/* Card */}
         <motion.div
-          initial={{ y: 30, opacity: 0 }}
+          initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="bg-white border border-slate-200/80 p-8 rounded-3xl shadow-xl shadow-slate-100/50 flex flex-col relative overflow-hidden"
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="bg-white border border-slate-200 p-7 rounded-2xl shadow-xs flex flex-col relative"
         >
-          {/* Top Subtle Border Highlight */}
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
 
           {/* Close button */}
           {!success && (
@@ -245,15 +235,17 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-4 mt-2 bg-gradient-to-r from-orange-500 to-red-650 hover:from-orange-600 hover:to-red-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-orange-500/15 flex items-center justify-center gap-2 transition-all group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full py-3 mt-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Mendaftarkan...
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Mendaftarkan...</span>
                     </>
                   ) : (
                     <>
-                      Daftar Sekarang <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                      <span>Daftar Sekarang</span>
+                      <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>

@@ -49,11 +49,7 @@ export default function WidgetRegistrationPage() {
   };
 
   return (
-    <div className="min-h-screen w-screen relative overflow-x-hidden bg-gradient-to-br from-slate-50 via-white to-slate-50/50 font-sans flex flex-col justify-between">
-      {/* Background Glowing Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-orange-400/5 to-red-500/5 blur-[130px] pointer-events-none z-0" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[700px] h-[700px] rounded-full bg-gradient-to-tr from-blue-500/5 to-orange-400/5 blur-[150px] pointer-events-none z-0" />
-
+    <div className="min-h-screen w-screen relative overflow-x-hidden bg-slate-50/50 font-sans flex flex-col justify-between">
       {/* 1. Top Navigation Header */}
       <header className="w-full z-10 bg-white/80 backdrop-blur-md border-b border-slate-200/80 py-4 px-6 sm:px-8 flex items-center justify-between shadow-sm sticky top-0 shrink-0">
         <button 
@@ -180,7 +176,7 @@ export default function WidgetRegistrationPage() {
                     <button
                       type="submit"
                       disabled={submitMutation.isPending}
-                      className="w-full flex justify-center items-center gap-2 py-3.5 px-4 bg-gradient-to-r from-orange-500 to-red-650 hover:opacity-90 active:scale-98 text-white font-extrabold text-sm rounded-2xl shadow-md shadow-orange-500/10 transition-all disabled:opacity-50 cursor-pointer"
+                      className="w-full flex justify-center items-center gap-2 py-3 px-4 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
                     >
                       {submitMutation.isPending ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -201,7 +197,7 @@ export default function WidgetRegistrationPage() {
                   className="text-center py-6 space-y-4"
                 >
                   <div className="mx-auto w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 border border-emerald-100">
-                    <CheckCircle2 className="w-10 h-10 animate-bounce" />
+                    <CheckCircle2 className="w-10 h-10" />
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-xl font-bold text-gray-900">Permohonan Berhasil Dikirim</h3>

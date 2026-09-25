@@ -38,11 +38,12 @@ class ReplyDispatcher:
 
     @staticmethod
     async def send_telegram_reply(
-        chat_id: str, text: str, buttons: list = None, inline_keyboard: list = None, bot_token: str = None
+        chat_id: str, text: str, buttons: list = None, inline_keyboard: list = None, bot_token: str = None, reply_to_message_id: int = None
     ) -> bool:
         """
         Send a text reply to a Telegram chat using the Bot API.
         Supports markdown formatting, reply buttons, or inline keyboards.
+        Can optionally reply directly to a specific message ID in groups.
         """
         token = bot_token or settings.TELEGRAM_BOT_TOKEN
         if not token:
@@ -56,6 +57,8 @@ class ReplyDispatcher:
                 "text": safe_text,
                 "parse_mode": "Markdown",
             }
+            if reply_to_message_id:
+                payload["reply_to_message_id"] = reply_to_message_id
 
             if inline_keyboard:
                 payload["reply_markup"] = {
@@ -231,10 +234,14 @@ class ReplyDispatcher:
     # ----------------------------------------------------------------
 
     @staticmethod
-    async def forward_to_sar_group(report_text: str, bot_token: str = None, group_id: str = None) -> bool:
+    async def forward_to_sar_group(
+        report_text: str, bot_token: str = None, group_id: str = None, return_details: bool = False
+    ):
         """
         Forward a completed Info Awal report to the SAR command group
         on Telegram. Uses the group_id and bot_token.
+        If return_details is True, returns dict {"success": bool, "message_id": int | None}.
+        Otherwise returns bool.
         """
         token = bot_token or settings.TELEGRAM_BOT_TOKEN
         group = group_id or settings.TELEGRAM_SAR_GROUP_ID
@@ -243,7 +250,7 @@ class ReplyDispatcher:
             logger.warning(
                 "Cannot forward to Telegram SAR group: bot_token or group_id not configured"
             )
-            return False
+            return {"success": False, "message_id": None} if return_details else False
 
         try:
             safe_text = _sanitize_telegram_markdown(report_text)
@@ -258,7 +265,8 @@ class ReplyDispatcher:
                 )
                 if resp.status_code == 200:
                     logger.info(f"Report forwarded to Telegram SAR group {group}")
-                    return True
+                    msg_id = resp.json().get("result", {}).get("message_id")
+                    return {"success": True, "message_id": msg_id} if return_details else True
 
                 # Markdown parse error → retry as plain text
                 if resp.status_code == 400 and "parse entities" in resp.text:
@@ -276,19 +284,20 @@ class ReplyDispatcher:
                         logger.info(
                             f"Report forwarded (plain) to Telegram SAR group {group}"
                         )
-                        return True
+                        msg_id = resp2.json().get("result", {}).get("message_id")
+                        return {"success": True, "message_id": msg_id} if return_details else True
                     logger.error(
                         f"SAR group plain fallback failed [{resp2.status_code}]: {resp2.text}"
                     )
-                    return False
+                    return {"success": False, "message_id": None} if return_details else False
 
                 logger.error(
                     f"Forward to Telegram SAR group failed [{resp.status_code}]: {resp.text}"
                 )
-                return False
+                return {"success": False, "message_id": None} if return_details else False
         except Exception as e:
             logger.error(f"Failed to forward report to Telegram SAR group: {e}")
-            return False
+            return {"success": False, "message_id": None} if return_details else False
 
     # ----------------------------------------------------------------
     # Forward to SAR Command Group (WhatsApp)
@@ -463,7 +472,9 @@ class ReplyDispatcher:
         import asyncio
 
         tg_task = asyncio.create_task(
-            ReplyDispatcher.forward_to_sar_group(report_text, bot_token=bot_token, group_id=tg_group_id)
+            ReplyDispatcher.forward_to_sar_group(
+                report_text, bot_token=bot_token, group_id=tg_group_id, return_details=True
+            )
         )
         wa_task = asyncio.create_task(
             ReplyDispatcher.forward_to_whatsapp_sar_group(
@@ -474,12 +485,19 @@ class ReplyDispatcher:
             )
         )
 
-        tg_ok, wa_ok = await asyncio.gather(tg_task, wa_task, return_exceptions=True)
+        tg_res, wa_ok = await asyncio.gather(tg_task, wa_task, return_exceptions=True)
 
-        # Handle exceptions returned by gather
-        if isinstance(tg_ok, Exception):
-            logger.error(f"Telegram SAR group forward exception: {tg_ok}")
+        tg_ok = False
+        tg_message_id = None
+        if isinstance(tg_res, dict):
+            tg_ok = tg_res.get("success", False)
+            tg_message_id = tg_res.get("message_id")
+        elif isinstance(tg_res, bool):
+            tg_ok = tg_res
+        elif isinstance(tg_res, Exception):
+            logger.error(f"Telegram SAR group forward exception: {tg_res}")
             tg_ok = False
+
         if isinstance(wa_ok, Exception):
             logger.error(f"WhatsApp SAR group forward exception: {wa_ok}")
             wa_ok = False
@@ -489,7 +507,11 @@ class ReplyDispatcher:
             f"WhatsApp: {'OK' if wa_ok else 'FAIL'}"
         )
 
-        return {"telegram": bool(tg_ok), "whatsapp": bool(wa_ok)}
+        return {
+            "telegram": bool(tg_ok),
+            "whatsapp": bool(wa_ok),
+            "tg_message_id": tg_message_id
+        }
 
 
 # Singleton

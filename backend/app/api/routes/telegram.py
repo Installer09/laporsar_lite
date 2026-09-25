@@ -195,6 +195,14 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
             if "message" in data:
                 message = data["message"]
                 chat_id = str(message["chat"]["id"])
+
+                # Check if message originated from a Telegram Group / Supergroup
+                from app.services.group_listener_service import group_listener_service
+                if group_listener_service.is_group_chat(message):
+                    logger.info(f"Received message from Telegram Group {chat_id}, routing to GroupListenerService")
+                    await group_listener_service.process_telegram_group_message(message, token=token, db=db)
+                    return
+
                 text = message.get("text", "")
                 is_voice = False
                 

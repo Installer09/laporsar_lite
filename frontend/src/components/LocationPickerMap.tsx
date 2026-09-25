@@ -204,8 +204,8 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
       {/* Top Banner */}
       <div className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-base font-bold flex items-center gap-2 text-indigo-400">
-            <span className="animate-pulse h-2 w-2 rounded-full bg-red-500"></span>
+          <h1 className="text-base font-bold flex items-center gap-2 text-orange-400">
+            <span className="h-2 w-2 rounded-full bg-red-500"></span>
             PETA LOKASI LAPOR SAR
           </h1>
           <p className="text-[11px] text-slate-400">
@@ -215,10 +215,10 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
         <button 
           onClick={detectCurrentLocation}
           disabled={detecting}
-          className="p-2 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg border border-slate-700 transition-all text-indigo-400 text-xs flex items-center gap-1.5"
+          className="p-2 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg border border-slate-700 transition-all text-orange-400 text-xs flex items-center gap-1.5"
         >
           {detecting ? (
-            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent"></div>
+            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-orange-400 border-t-transparent"></div>
           ) : (
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -265,7 +265,7 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
         {/* Selected Coordinates Card */}
         <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
           <div className="flex items-start gap-2.5">
-            <svg className="h-5 w-5 text-indigo-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-5 w-5 text-orange-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -286,8 +286,11 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
         </div>
 
         {status === "error" && (
-          <div className="p-3 bg-red-950/50 border border-red-500/20 text-red-400 text-xs rounded-xl text-center">
-            ⚠️ Gagal mengirim lokasi. Silakan coba lagi.
+          <div className="p-3 bg-red-950/50 border border-red-500/20 text-red-400 text-xs rounded-xl flex items-center justify-center gap-2">
+            <svg className="w-4 h-4 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Gagal mengirim lokasi. Silakan coba lagi.</span>
           </div>
         )}
 
@@ -298,7 +301,7 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
           className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 ${
             saving 
               ? "bg-slate-800 text-slate-400 cursor-not-allowed" 
-              : "bg-indigo-600 hover:bg-indigo-500 text-white"
+              : "bg-orange-600 hover:bg-orange-700 text-white"
           }`}
         >
           {saving ? (

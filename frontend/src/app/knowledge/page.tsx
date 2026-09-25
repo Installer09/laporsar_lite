@@ -256,7 +256,7 @@ export default function KnowledgePage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-            <Database className="w-8 h-8 text-orange-600 animate-pulse" />
+            <Database className="w-8 h-8 text-orange-600 shrink-0" />
             Kamus Istilah Bot
           </h1>
           <p className="text-gray-500 mt-1">
@@ -287,7 +287,7 @@ export default function KnowledgePage() {
           </button>
           <button 
             onClick={handleOpenCreate}
-            className="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold text-xs rounded-xl transition-all shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer"
+            className="px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
           >
             <Plus className="w-5 h-5" /> Tambah Kosakata
           </button>
@@ -424,7 +424,7 @@ export default function KnowledgePage() {
                     <td className="py-4 px-6">
                       {item.status === 'APPROVED' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100 shadow-sm">
-                          <CheckCircle className="w-3.5 h-3.5 animate-pulse text-green-500" /> Approved
+                          <CheckCircle className="w-3.5 h-3.5 text-green-500" /> Approved
                         </span>
                       ) : item.status === 'PENDING' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-bold border border-orange-100 shadow-sm">

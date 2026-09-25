@@ -375,6 +375,12 @@ async def send_broadcast(report_id: int, payload: BroadcastPayload, background_t
         wa_phone_id=tenant_settings.WHATSAPP_PHONE_NUMBER_ID,
         wa_group_id=tenant_settings.WHATSAPP_SAR_GROUP_ID
     )
+
+    if isinstance(dispatch_result, dict) and dispatch_result.get("tg_message_id"):
+        meta = report.metadata_kejadian if isinstance(report.metadata_kejadian, dict) else {}
+        meta["telegram_group_msg_id"] = dispatch_result["tg_message_id"]
+        report.metadata_kejadian = meta
+        await db.commit()
     
     # 2. Add KML and Evidence dispatch to background task
     db_url = db.bind.url.render_as_string(hide_password=False)

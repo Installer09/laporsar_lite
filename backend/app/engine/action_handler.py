@@ -525,7 +525,7 @@ class ActionHandler:
         info_awal_text = message_formatter.render(None, template_data)
         
         # 4. Dispatch to WhatsApp & Telegram SAR command groups
-        await reply_dispatcher.forward_report_to_all_groups(
+        dispatch_res = await reply_dispatcher.forward_report_to_all_groups(
             info_awal_text,
             bot_token=tenant_settings.TELEGRAM_BOT_TOKEN,
             tg_group_id=tenant_settings.TELEGRAM_SAR_GROUP_ID,
@@ -533,6 +533,14 @@ class ActionHandler:
             wa_phone_id=tenant_settings.WHATSAPP_PHONE_NUMBER_ID,
             wa_group_id=tenant_settings.WHATSAPP_SAR_GROUP_ID
         )
+        if isinstance(dispatch_res, dict) and dispatch_res.get("tg_message_id") and saved_report:
+            try:
+                meta = saved_report.metadata_kejadian if isinstance(saved_report.metadata_kejadian, dict) else {}
+                meta["telegram_group_msg_id"] = dispatch_res["tg_message_id"]
+                saved_report.metadata_kejadian = meta
+                await db.commit()
+            except Exception as meta_err:
+                logger.warning(f"Could not update telegram_group_msg_id on saved_report: {meta_err}")
         
         return info_awal_text, saved_report
 

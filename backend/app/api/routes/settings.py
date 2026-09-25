@@ -182,6 +182,7 @@ async def get_live_status(db: AsyncSession = Depends(get_db)):
     
     status_result = {
         "ollama": {"connected": False, "models": [], "url": "", "error": ""},
+        "ai_engine": {"connected": False, "provider": "", "model": "", "error": ""},
         "telegram": {"connected": False, "bot_name": "", "error": ""},
         "whatsapp": {"connected": False, "error": ""},
         "whisper": {"connected": False, "provider": "", "model": "", "error": ""},
@@ -189,20 +190,37 @@ async def get_live_status(db: AsyncSession = Depends(get_db)):
 
     from app.services.ai_providers import _resolve_internal_url
 
-    # --- Ollama ---
-    ollama_url = tenant_settings.AI_LLM_BASE_URL or tenant_settings.OLLAMA_HOST or "http://localhost:11434"
-    status_result["ollama"]["url"] = ollama_url
-    resolved_ollama_url = _resolve_internal_url(ollama_url)
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{resolved_ollama_url.rstrip('/')}/api/tags")
-            resp.raise_for_status()
-            data = resp.json()
-            models = [m["name"] for m in data.get("models", [])]
+    # --- AI Engine (LLM & RAG) ---
+    llm_provider = tenant_settings.AI_LLM_PROVIDER or "gemini"
+    llm_model = tenant_settings.AI_LLM_MODEL or "gemini-1.5-flash"
+    status_result["ai_engine"]["provider"] = llm_provider
+    status_result["ai_engine"]["model"] = llm_model
+
+    if llm_provider in ("gemini", "groq", "openai", "claude"):
+        api_key = tenant_settings.AI_LLM_API_KEY
+        if api_key:
+            status_result["ai_engine"]["connected"] = True
+            # Backward compatibility with existing frontend ollama status key
             status_result["ollama"]["connected"] = True
-            status_result["ollama"]["models"] = models
-    except Exception as e:
-        status_result["ollama"]["error"] = str(e)
+            status_result["ollama"]["models"] = [llm_model]
+        else:
+            status_result["ai_engine"]["error"] = "API Key belum dikonfigurasi"
+    elif llm_provider == "ollama":
+        ollama_url = tenant_settings.AI_LLM_BASE_URL or tenant_settings.OLLAMA_HOST or "http://localhost:11434"
+        status_result["ollama"]["url"] = ollama_url
+        resolved_ollama_url = _resolve_internal_url(ollama_url)
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.get(f"{resolved_ollama_url.rstrip('/')}/api/tags")
+                resp.raise_for_status()
+                data = resp.json()
+                models = [m["name"] for m in data.get("models", [])]
+                status_result["ollama"]["connected"] = True
+                status_result["ollama"]["models"] = models
+                status_result["ai_engine"]["connected"] = True
+        except Exception as e:
+            status_result["ollama"]["error"] = str(e)
+            status_result["ai_engine"]["error"] = str(e)
 
     # --- Telegram ---
     tg_token = tenant_settings.TELEGRAM_BOT_TOKEN

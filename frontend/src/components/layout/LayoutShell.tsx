@@ -74,27 +74,32 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
             let authorized = true;
             
             if (!isPublicPageLocal) {
-              if (role === 'User') {
+              const isSuperAdmin = role === 'Super Admin' || role === 'super_admin' || role === 'SuperAdmin';
+              const isOperator = role === 'Operator' || role === 'operator';
+              const isUser = role === 'User' || role === 'user';
+              const tokenTenant = payload.tenant_slug ? payload.tenant_slug.toLowerCase().trim() : null;
+              const isPusatOrGlobal = !tokenTenant || tokenTenant === 'pusat';
+
+              if (pathname.startsWith('/admin')) {
+                // Admin page is strictly for Global / Pusat Super Admin
+                if (!isSuperAdmin || !isPusatOrGlobal) {
+                  authorized = false;
+                }
+              } else if (isUser) {
                 // User can only access dashboard '/'
                 if (pathname !== '/') {
                   authorized = false;
                 }
-              } else if (role === 'Operator') {
-                // Operator cannot access settings or admin pages
-                if (pathname.startsWith('/settings') || pathname.startsWith('/admin')) {
-                  authorized = false;
-                }
-              } else if (role === 'Super Admin') {
-                // Super Admin (tenant admin) cannot access admin pages
-                if (pathname.startsWith('/admin')) {
+              } else if (isOperator) {
+                // Operator cannot access settings
+                if (pathname.startsWith('/settings')) {
                   authorized = false;
                 }
               }
 
               // Prevent non-pusat regional tenants from accessing national-dashboard path
               if (pathname.startsWith('/national-dashboard')) {
-                const tokenTenant = payload.tenant_slug;
-                if (tokenTenant && tokenTenant !== 'pusat') {
+                if (!isPusatOrGlobal) {
                   authorized = false;
                 }
               }

@@ -45,7 +45,25 @@ async def login(
             detail="Terlalu banyak percobaan login dari alamat IP ini. Silakan tunggu beberapa saat."
         )
 
-    # 1. Dev Admin check first (always allowed to bypass)
+    # 1. Global Super Admin check (access all systems, non-tenant)
+    superadmin_user = getattr(settings, "DEV_SUPERADMIN_USERNAME", "superadmin")
+    superadmin_pwd = getattr(settings, "DEV_SUPERADMIN_PASSWORD", "superadmin")
+    if (
+        getattr(settings, "DEV_SUPERADMIN_ENABLED", True)
+        and request.username == superadmin_user
+        and request.password == superadmin_pwd
+    ):
+        payload = {
+            "sub": superadmin_user,
+            "exp": datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+            "role": "Super Admin",
+            "name": "Super Admin Sistem",
+            "tenant_slug": None,
+        }
+        token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        return {"access_token": token, "token_type": "bearer"}
+
+    # 2. Admin Command Center check (scoped to Basarnas Pusat Command Center)
     if (
         settings.DEV_ADMIN_ENABLED
         and request.username == settings.DEV_ADMIN_USERNAME
@@ -54,12 +72,14 @@ async def login(
         payload = {
             "sub": settings.DEV_ADMIN_USERNAME,
             "exp": datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-            "role": "admin",
+            "role": "Admin",
+            "name": "Admin Command Center",
+            "tenant_slug": "pusat",
         }
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         return {"access_token": token, "token_type": "bearer"}
 
-    # 2. Centralized Login resolution if tenant DB is not pre-resolved
+    # 3. Centralized Login resolution if tenant DB is not pre-resolved
     resolved_db = db
     resolved_tenant_slug = tenant.slug if tenant else None
 
@@ -222,12 +242,20 @@ async def get_me(payload: dict = Depends(verify_jwt), db: AsyncSession = Depends
     if not email:
         raise HTTPException(status_code=401, detail="Invalid token payload")
         
+    superadmin_user = getattr(settings, "DEV_SUPERADMIN_USERNAME", "superadmin")
+    if email == superadmin_user:
+        return UserResponse(
+            id=0, name="Super Admin Sistem", email=email, role="Super Admin",
+            is_active=True, is_verified=True, photo_url=None
+        )
+
+    if email == settings.DEV_ADMIN_USERNAME:
+        return UserResponse(
+            id=1, name="Admin Command Center", email=email, role="Admin",
+            is_active=True, is_verified=True, photo_url=None
+        )
+
     if not db:
-        if email == settings.DEV_ADMIN_USERNAME:
-            return UserResponse(
-                id=0, name="Admin Dev", email=email, role="admin", 
-                is_active=True, is_verified=True, photo_url=None
-            )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Header X-Tenant-Slug, parameter path tenant_slug, atau subdomain tidak terdeteksi."
@@ -237,12 +265,6 @@ async def get_me(payload: dict = Depends(verify_jwt), db: AsyncSession = Depends
     user = result.scalar_one_or_none()
     
     if not user:
-        if email == settings.DEV_ADMIN_USERNAME:
-            # Mock admin user for dev
-            return UserResponse(
-                id=0, name="Admin Dev", email=email, role="admin", 
-                is_active=True, is_verified=True, photo_url=None
-            )
         raise HTTPException(status_code=404, detail="User not found")
         
     return user
@@ -250,8 +272,9 @@ async def get_me(payload: dict = Depends(verify_jwt), db: AsyncSession = Depends
 @router.put("/me", response_model=UserResponse)
 async def update_me(user_update: UserUpdate, payload: dict = Depends(verify_jwt), db: AsyncSession = Depends(get_db)):
     email = payload.get("sub")
-    if not email or email == settings.DEV_ADMIN_USERNAME:
-        raise HTTPException(status_code=403, detail="Cannot modify dev admin profile")
+    superadmin_user = getattr(settings, "DEV_SUPERADMIN_USERNAME", "superadmin")
+    if not email or email in (settings.DEV_ADMIN_USERNAME, superadmin_user):
+        raise HTTPException(status_code=403, detail="Cannot modify system admin profile")
         
     result = await db.execute(select(User).where(User.email == email))
     db_user = result.scalar_one_or_none()

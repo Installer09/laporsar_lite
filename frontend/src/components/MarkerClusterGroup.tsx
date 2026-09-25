@@ -37,24 +37,31 @@ const createIncidentMarkerIcon = (jenisKejadian: string, status: string, zoom: n
     borderClass = "border-2";
   }
 
-  let emoji = "🚨";
-  const lowerJenis = (jenisKejadian || '').toLowerCase();
-  if (lowerJenis.includes("kapal") || lowerJenis.includes("laut") || lowerJenis.includes("tenggelam")) {
-    emoji = "🚢";
-  } else if (lowerJenis.includes("manusia") || lowerJenis.includes("hilang") || lowerJenis.includes("kmm")) {
-    emoji = "👤";
-  } else if (lowerJenis.includes("pesawat") || lowerJenis.includes("udara")) {
-    emoji = "✈️";
-  } else if (lowerJenis.includes("bencana") || lowerJenis.includes("alam") || lowerJenis.includes("banjir")) {
-    emoji = "🌊";
-  }
+  const getCategorySvg = (jenis: string) => {
+    const lower = (jenis || '').toLowerCase();
+    if (lower.includes("kapal") || lower.includes("laut") || lower.includes("tenggelam")) {
+      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>`;
+    }
+    if (lower.includes("manusia") || lower.includes("hilang") || lower.includes("kmm")) {
+      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+    }
+    if (lower.includes("pesawat") || lower.includes("udara")) {
+      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m2 12 5-3 3 3 8-8 4 4-8 8 3 3-3 5-4-8-5-1Z"/></svg>`;
+    }
+    if (lower.includes("bencana") || lower.includes("alam") || lower.includes("banjir")) {
+      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    }
+    return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+  };
+
+  const iconSvg = getCategorySvg(jenisKejadian);
 
   let pulseColor = "bg-red-400";
-  let gradientColors = "from-red-500 to-rose-700";
+  let gradientColors = "from-red-600 to-rose-700";
 
   if (status === 'PENDING') {
     pulseColor = "bg-orange-400";
-    gradientColors = "from-orange-500 to-amber-700";
+    gradientColors = "from-orange-600 to-amber-700";
   }
 
   return L.divIcon({
@@ -62,8 +69,8 @@ const createIncidentMarkerIcon = (jenisKejadian: string, status: string, zoom: n
     html: `
       <div class="relative flex items-center justify-center">
         <span class="animate-ping absolute inline-flex rounded-full ${pulseColor} opacity-75 ${pingClass}"></span>
-        <div class="relative ${containerClass} bg-gradient-to-br ${gradientColors} ${borderClass} border-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110">
-          <span class="${textClass}">${emoji}</span>
+        <div class="relative ${containerClass} bg-gradient-to-br ${gradientColors} ${borderClass} border-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 p-0.5">
+          ${iconSvg}
         </div>
       </div>
     `,
@@ -133,7 +140,7 @@ const createReportPopupHtml = (report: any) => {
     <div style="padding: 8px; min-width: 240px; font-family: sans-serif; color: #334155;">
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 8px;">
         <span style="font-weight: 800; font-size: 10px; color: #dc2626; background: #fef2f2; border: 1px solid #fee2e2; padding: 2px 6px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.05em;">
-          🚨 EMERGENCY
+          DARURAT
         </span>
         <span style="font-size: 10px; font-weight: 700; color: #64748b; font-family: monospace;">
           ${report.no_laporan || ''}
@@ -142,8 +149,8 @@ const createReportPopupHtml = (report: any) => {
 
       <div style="margin-bottom: 8px;">
         <h4 style="font-weight: 700; color: #0f172a; font-size: 13px; margin: 0; line-height: 1.3;">${report.jenis_kejadian || 'Insiden SAR'}</h4>
-        ${report.tenant_name ? `<div style="font-size: 10px; font-weight: 800; color: #2563eb; margin-top: 4px; text-transform: uppercase;">🏢 ${report.tenant_name}</div>` : ''}
-        <p style="font-size: 10px; color: #64748b; margin: 4px 0 0 0; line-height: 1.4;">📍 ${report.lokasi_teks || ''}</p>
+        ${report.tenant_name ? `<div style="font-size: 10px; font-weight: 800; color: #2563eb; margin-top: 4px; text-transform: uppercase;">${report.tenant_name}</div>` : ''}
+        <p style="font-size: 10px; color: #64748b; margin: 4px 0 0 0; line-height: 1.4;">${report.lokasi_teks || ''}</p>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #f1f5f9;">

@@ -179,8 +179,8 @@ export default function StorageManagerPage() {
               <span className="text-2xl font-bold text-slate-900">{stats?.categories?.audios?.count ?? 0}</span>
               <span className="text-xs text-slate-500">rekaman suara</span>
             </div>
-            <div className="mt-3 text-xs text-blue-600 font-medium">
-              Transkripsi Groq / AI Cloud
+            <div className="mt-3 text-xs text-slate-500">
+              Transkripsi Suara Otomatis
             </div>
           </div>
 

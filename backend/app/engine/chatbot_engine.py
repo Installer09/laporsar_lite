@@ -73,61 +73,63 @@ FIELD_QUESTIONS = {
     },
     "data_kapal": {
         "text": (
-            "🚢 *Apa nama dan jenis kapal yang digunakan?*\n"
-            "Sebutkan nama kapal, jenis (misal: pompong/speedboat), dan rutenya jika Anda tahu."
+            "*Apa nama dan jenis kapal yang digunakan?*\n"
+            "Sebutkan nama kapal, jenis (misal: pompong/speedboat/kapal nelayan), dan rutenya jika diketahui."
         ),
         "buttons": ["Tidak Tahu"]
     },
     "pakai_kapal": {
         "text": (
-            "⛵ *Apakah korban menggunakan kapal atau perahu?*\n"
+            "*Apakah korban menggunakan kapal atau perahu?*\n"
         ),
         "buttons": ["Ya", "Tidak", "Belum Tahu"]
     },
     "data_pesawat": {
         "text": (
-            "✈️ *Apa nama dan rute pesawat tersebut?*\n"
-            "Sebutkan maskapai/nama pesawat dan rutenya jika Anda tahu."
+            "*Apa nama maskapai dan rute pesawat tersebut?*\n"
+            "Sebutkan nama pesawat/maskapai dan rute penerbangan jika diketahui."
         ),
         "buttons": ["Tidak Tahu"]
     },
     "data_alat": {
         "text": (
-            "🚗 *Apa jenis kendaraan yang terlibat?*\n"
-            "Sebutkan jenis kendaraan, warna, atau nomor pelat jika Anda tahu."
+            "*Apa jenis kendaraan atau alat yang terlibat?*\n"
+            "Sebutkan jenis kendaraan, warna, atau nomor polisi jika diketahui."
         ),
         "buttons": ["Tidak Tahu"]
     },
     "eviden": {
         "text": (
-            "📸 *Apakah Anda punya foto atau video kejadian?*\n"
-            "Kirimkan foto/video lokasi kejadian atau korban jika ada untuk membantu tim SAR melihat kondisi di lapangan."
+            "*Lampiran Dokumentasi Kejadian*\n"
+            "Kirimkan foto atau video kondisi lokasi atau korban jika tersedia untuk membantu tim SAR menganalisis medan operasi."
         ),
         "buttons": ["Tidak Ada"]
     },
     "pelapor_nama": {
         "text": (
-            "👤 *Siapa nama lengkap Anda?*\n"
+            "*Nama Lengkap Pelapor*\n"
+            "Sebutkan nama lengkap Anda sebagai pelapor resmi."
         ),
         "buttons": []
     },
     "pelapor_hp": {
         "text": (
-            "📞 *Berapa nomor telepon/WhatsApp Anda yang aktif?*\n"
+            "*Nomor Kontak Pelapor*\n"
+            "Sebutkan nomor telepon atau WhatsApp aktif yang dapat segera dihubungi oleh tim SAR."
         ),
         "buttons": []
     },
     "pelapor_hubungan": {
         "text": (
-            "👤 *Apa hubungan Anda dengan korban atau musibah ini?*\n"
-            "Anda dapat memilih pilihan di bawah atau ketik hubungan Anda.\n"
-            "Contoh: Keluarga Korban, Warga Sekitar, Nelayan, atau Anda sendiri korbannya."
+            "*Hubungan dengan Korban atau Musibah*\n"
+            "Pilih opsi di bawah atau ketik hubungan Anda (contoh: Keluarga Korban, Rekan, Saksi Mata, atau Korban Langsung)."
         ),
         "buttons": ["Keluarga Korban", "Saksi Mata", "Korban"]
     },
     "reporter_location": {
         "text": (
-            "📍 *Bagikan Lokasi GPS Anda (Wajib)*\n"
+            "*Verifikasi Lokasi Pelapor*\n"
+            "Silakan bagikan titik lokasi GPS perangkat Anda saat ini."
         ),
         "buttons": [{"text": "Bagikan Lokasi", "request_location": True}]
     }
@@ -163,14 +165,14 @@ SKIP_WORDS = {
 }
 
 GREETING_MSG = (
-    "🚨 *SISTEM DARURAT SAR*\n\n"
-    "Ada keadaan darurat apa? Tolong ceritakan musibah yang sedang terjadi dan di mana lokasinya sekarang secara singkat.\n"
-    "*(Anda bisa mengetik pesan atau mengirimkan rekaman suara)*"
+    "*LAYANAN DARURAT BASARNAS*\n\n"
+    "Mohon jelaskan secara singkat musibah yang terjadi, lokasi kejadian, dan kondisi yang membutuhkan pertolongan SAR saat ini.\n"
+    "_(Anda dapat mengetik pesan atau mengirimkan rekaman suara)_"
 )
 
 SHORT_REPORT_WARNING = (
-    "⚠️ *Informasi kejadian masih kurang jelas*\n\n"
-    "Mohon ceritakan sedikit lagi: Apa yang terjadi dan siapa/berapa orang yang membutuhkan pertolongan?"
+    "*Informasi Perlu Dilengkapi*\n\n"
+    "Mohon berikan rincian tambahan: apa musibah yang dialami, perkiraan lokasi, dan berapa korban yang membutuhkan pertolongan."
 )
 
 
@@ -660,16 +662,16 @@ class ChatbotEngine:
             return {"text": reply, "buttons": ["Lengkapi", "Batalkan"]}
 
         # Prepare summary block with indicator icons
-        summary_lines = ["*DRAFT EKSTRAKSI LAPORAN SAR*\n"]
+        summary_lines = ["*RINGKASAN DATA LAPORAN SAR*\n"]
         field_labels = {
-            "jenis_kejadian": "Klasifikasi",
-            "waktu": "Waktu",
-            "lokasi_teks": "Lokasi",
-            "korban": "Korban",
+            "jenis_kejadian": "Klasifikasi Musibah",
+            "waktu": "Waktu Kejadian (PDTW)",
+            "lokasi_teks": "Lokasi Kejadian",
+            "korban": "Estimasi Korban",
             "korban_kondisi": "Kondisi Korban",
             "data_kapal": "Data Kapal",
             "data_pesawat": "Data Pesawat",
-            "data_alat": "Data Alat",
+            "data_alat": "Data Kendaraan/Alat",
             "kronologi": "Kronologi"
         }
 
@@ -679,25 +681,27 @@ class ChatbotEngine:
                 val = val[:100] + "..." if len(val) > 100 else val
             
             if val and not self._is_field_missing(val):
-                summary_lines.append(f"✅ *{label}:* _{val}_")
+                summary_lines.append(f"• *{label}:* {val}")
             elif key in ["data_kapal", "data_pesawat", "data_alat"]:
                 continue
             else:
-                summary_lines.append(f"❌ *{label}:* _Belum terisi_")
+                summary_lines.append(f"• *{label}:* _(Belum terisi)_")
 
         summary_lines.append("\n━━━━━━━━━━━━━━━━━━━━━")
-        summary_lines.append("👤 *DATA IDENTITAS PELAPOR*")
+        summary_lines.append("*IDENTITAS PELAPOR*")
         summary_lines.append(f"• Nama: {extracted_data.get('pelapor_nama') or session.contact_name or 'Tidak tersedia'}")
-        summary_lines.append(f"• No. HP: {extracted_data.get('pelapor_hp') or session.contact_phone or 'Tidak tersedia'}")
-        summary_lines.append(f"• Hubungan: {extracted_data.get('pelapor_hubungan') or 'Tidak tersedia'}")
-        summary_lines.append(f"• Keamanan Lokasi: {'Terverifikasi GPS' if extracted_data.get('is_current_location_shared') else '❌ Belum terverifikasi'}")
+        summary_lines.append(f"• No. Kontak: {extracted_data.get('pelapor_hp') or session.contact_phone or 'Tidak tersedia'}")
+        summary_lines.append(f"• Hubungan: {extracted_data.get('pelapor_hubungan') or 'Masyarakat/Saksi'}")
+        summary_lines.append(f"• Lokasi Pelapor: {'Terverifikasi GPS' if extracted_data.get('is_current_location_shared') else 'Belum terverifikasi GPS'}")
 
         summary = "\n".join(summary_lines)
 
         reply = (
-            "📢 *Konfirmasi Pengiriman Laporan*\n\n"
+            f"{summary}\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "*KONFIRMASI PENGIRIMAN LAPORAN*\n\n"
             "Apakah seluruh data laporan di atas sudah benar?\n\n"
-            "Ketuk **YA** untuk mengirimkan laporan ke Kantor SAR sekarang, ketuk **LENGKAPI** untuk memperbaikinya, atau ketuk **BATALKAN** untuk menghapus draf."
+            "Pilih *Ya* untuk meneruskan laporan ke Command Center BASARNAS sekarang, pilih *Lengkapi* untuk memperbaiki rincian, atau pilih *Batalkan* untuk menghapus draf."
         )
         
         self._update_history(session, "assistant", reply, buttons=["Ya", "Lengkapi", "Batalkan"])

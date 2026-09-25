@@ -124,9 +124,9 @@ class TestAPIIntegration:
         # Override get_master_db
         app.dependency_overrides[get_master_db] = lambda: mock_db
         
-        # Generate token with admin role
+        # Generate token with super admin role
         admin_token = jwt.encode(
-            {"sub": settings.DEV_ADMIN_USERNAME, "role": "admin"},
+            {"sub": "superadmin", "role": "Super Admin", "tenant_slug": None},
             settings.SECRET_KEY,
             algorithm=settings.ALGORITHM
         )
@@ -176,9 +176,9 @@ class TestAPIIntegration:
         # Override get_master_db
         app.dependency_overrides[get_master_db] = lambda: mock_db
         
-        # Generate token with admin role
+        # Generate token with super admin role
         admin_token = jwt.encode(
-            {"sub": settings.DEV_ADMIN_USERNAME, "role": "admin"},
+            {"sub": "superadmin", "role": "Super Admin", "tenant_slug": None},
             settings.SECRET_KEY,
             algorithm=settings.ALGORITHM
         )
@@ -224,9 +224,9 @@ class TestAPIIntegration:
         # Override get_master_db
         app.dependency_overrides[get_master_db] = lambda: mock_db
         
-        # Generate token with admin role
+        # Generate token with super admin role
         admin_token = jwt.encode(
-            {"sub": settings.DEV_ADMIN_USERNAME, "role": "admin"},
+            {"sub": "superadmin", "role": "Super Admin", "tenant_slug": None},
             settings.SECRET_KEY,
             algorithm=settings.ALGORITHM
         )

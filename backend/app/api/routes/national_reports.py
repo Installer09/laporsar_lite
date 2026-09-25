@@ -20,14 +20,16 @@ def verify_national_admin(payload: dict = Depends(verify_jwt)):
     sub = payload.get("sub")
     
     from app.core.config import settings
-    # 1. Global/Master Super Admin (username matches DEV_ADMIN_USERNAME and role 'admin')
-    if role == "admin" and sub == settings.DEV_ADMIN_USERNAME:
+    superadmin_user = getattr(settings, "DEV_SUPERADMIN_USERNAME", "superadmin")
+    
+    # 1. Global Super Admin
+    if role == "Super Admin" or sub == superadmin_user:
         return payload
         
-    # 2. Basarnas Pusat admin/operator or regional tenant admin (whose role in tenant db is "Super Admin")
-    if role == "Super Admin" and (not tenant_slug or tenant_slug == "pusat"):
+    # 2. Basarnas Pusat Command Center admin or operator
+    if tenant_slug in (None, "pusat") and role in ("Admin", "admin", "Operator", "Super Admin"):
         return payload
-    if role in ("admin", "Operator") and tenant_slug == "pusat":
+    if sub == settings.DEV_ADMIN_USERNAME:
         return payload
         
     raise HTTPException(

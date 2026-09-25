@@ -10,7 +10,12 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
-    # Development Admin Fallback (disable in production by setting DEV_ADMIN_ENABLED=false)
+    # Global Super Admin Fallback (platform-wide access, non-tenant)
+    DEV_SUPERADMIN_ENABLED: bool = True
+    DEV_SUPERADMIN_USERNAME: str = "superadmin"
+    DEV_SUPERADMIN_PASSWORD: str = "superadmin"
+
+    # Tenant Admin Fallback (scoped to Basarnas Pusat Command Center)
     DEV_ADMIN_ENABLED: bool = True
     DEV_ADMIN_USERNAME: str = "admin"
     DEV_ADMIN_PASSWORD: str = "admin"

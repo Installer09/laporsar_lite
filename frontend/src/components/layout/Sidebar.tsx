@@ -44,6 +44,7 @@ export function Sidebar() {
     queryFn: getIdentity,
   });
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -55,6 +56,7 @@ export function Sidebar() {
     }
     setIsLoaded(true);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const dynamicMenuItems = isLoaded
     ? menuItems.filter((item) => {
@@ -70,7 +72,10 @@ export function Sidebar() {
 
 
 
-  if ((userRole === 'admin' || userRole === 'Super Admin') && (!tenantSlug || tenantSlug === 'pusat')) {
+  const isSuperAdmin = userRole === 'Super Admin' || userRole === 'super_admin' || userRole === 'SuperAdmin';
+  const isPusatOrGlobal = !tenantSlug || tenantSlug === 'pusat';
+
+  if (isSuperAdmin && isPusatOrGlobal) {
     dynamicMenuItems.push({ icon: Shield, label: 'Administrator', href: '/admin', section: 'Sistem' });
   }
 

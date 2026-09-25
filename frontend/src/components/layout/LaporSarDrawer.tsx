@@ -14,7 +14,6 @@ import {
   getTenantSlug
 } from '@/lib/api';
 import { 
-  Sparkles, 
   ExternalLink, 
   Info, 
   Bot, 
@@ -22,7 +21,6 @@ import {
   Loader2,
   MessageCircle,
   X,
-  Settings,
   MapPin,
   User,
   Phone,
@@ -36,7 +34,8 @@ import {
   Building,
   ArrowRight,
   ArrowLeft,
-  ShieldAlert
+  ShieldAlert,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLaporSar } from '@/providers/LaporSarProvider';
@@ -306,7 +305,6 @@ export function LaporSarDrawer() {
 
   const [laporSarText, setLaporSarText] = useState('');
   const [isSendingWidgetMessage, setIsSendingWidgetMessage] = useState(false);
-  const [showConfig, setShowConfig] = useState(false);
   const [isChatActive, setIsChatActive] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -522,7 +520,7 @@ export function LaporSarDrawer() {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
-          const msg = `🚨 LAPORAN DARURAT (SOS)\nLokasi GPS: ${latitude}, ${longitude}\n(Mohon bantuan darurat di koordinat ini)`;
+          const msg = `LAPORAN DARURAT (SOS)\nLokasi GPS: ${latitude}, ${longitude}\n(Mohon bantuan darurat di koordinat ini)`;
           await startSessionAndSend(msg);
           setIsLocating(false);
         },
@@ -537,14 +535,14 @@ export function LaporSarDrawer() {
             errText = "Pencarian lokasi GPS habis waktu.";
           }
           setGeoError(errText);
-          await startSessionAndSend("🚨 LAPORAN DARURAT (SOS) - Gagal mendapatkan lokasi GPS.");
+          await startSessionAndSend("LAPORAN DARURAT (SOS) - Gagal mendapatkan lokasi GPS.");
           setIsLocating(false);
         },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
     } else {
       setGeoError("Browser tidak mendukung GPS.");
-      await startSessionAndSend("🚨 LAPORAN DARURAT (SOS) - Browser tidak mendukung GPS.");
+      await startSessionAndSend("LAPORAN DARURAT (SOS) - Browser tidak mendukung GPS.");
       setIsLocating(false);
     }
   };
@@ -677,139 +675,58 @@ export function LaporSarDrawer() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.85, y: 50 }}
             transition={{ type: 'spring', damping: 22, stiffness: 220 }}
-            className="fixed bottom-6 right-6 w-[380px] max-w-[calc(100vw-32px)] h-[580px] max-h-[calc(100vh-48px)] bg-white shadow-[0_12px_40px_rgba(0,0,0,0.12)] z-50 flex flex-col border border-slate-100 rounded-3xl overflow-hidden"
+            className="fixed bottom-6 right-6 w-[390px] max-w-[calc(100vw-32px)] h-[600px] max-h-[calc(100vh-48px)] bg-white shadow-2xl shadow-slate-900/15 z-50 flex flex-col border border-slate-200 rounded-3xl overflow-hidden"
           >
-            {/* Header */}
-            <div className="px-4.5 py-3.5 bg-gradient-to-r from-orange-500 via-orange-500 to-red-600 text-white flex items-center justify-between shadow-[0_2px_10px_rgba(249,115,22,0.1)] shrink-0">
+            {/* Professional Header */}
+            <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-white/20 overflow-hidden shrink-0">
-                    <img src="/logo.png" alt="Lapor SAR Logo" className="w-8 h-8 object-contain" />
+                  <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                    <img src="/logo.png" alt="Logo BASARNAS" className="w-7 h-7 object-contain" />
                   </div>
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-orange-500" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-slate-900" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-sm leading-tight flex items-center gap-1.5">
-                    Lapor SAR <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
+                  <h3 className="font-bold text-sm leading-tight text-white flex items-center gap-2">
+                    Lapor SAR
+                    <span className="text-[10px] font-semibold text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20">Siaga</span>
                   </h3>
-                  <p className="text-[9px] text-orange-100 font-bold uppercase tracking-wider">Online • Hubungi Command Center</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Layanan Darurat Pencarian & Pertolongan</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 text-slate-400">
                 <button 
                   onClick={() => {
                     setIsLaporSarRegistered(false);
                     setWidgetStartMode('selection');
                   }}
-                  className="p-1.5 text-orange-100 hover:bg-white/10 hover:text-white rounded-lg transition-colors"
-                  title="Menu Utama Portal"
+                  className="p-1.5 hover:bg-slate-800 hover:text-white rounded-lg transition-colors cursor-pointer"
+                  title="Menu Awal"
                 >
-                  <Home className="w-4 h-4 text-white" />
-                </button>
-                <button 
-                  onClick={() => setShowConfig(!showConfig)}
-                  className={`p-1.5 rounded-lg transition-colors ${showConfig ? 'bg-white/20 text-white' : 'text-orange-100 hover:bg-white/10 hover:text-white'}`}
-                  title="Konfigurasi Lapor SAR"
-                >
-                  <Settings className="w-4 h-4" />
+                  <Home className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={() => setIsLaporSarOpen(false)}
-                  className="p-1.5 text-orange-100 hover:bg-white/10 hover:text-white rounded-full transition-all active:scale-90"
-                  title="Tutup Obrolan"
+                  className="p-1.5 hover:bg-slate-800 hover:text-white rounded-lg transition-colors cursor-pointer"
+                  title="Tutup"
                 >
-                  <X className="w-4.5 h-4.5 text-white" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Collapsible Simulation Config Panel */}
-            <AnimatePresence>
-              {showConfig && (
-                <motion.div 
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="bg-gray-50 border-b border-gray-100 overflow-hidden shrink-0"
-                >
-                  <div className="p-3.5 space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-gray-500 uppercase pl-0.5">Nama Pengirim</label>
-                        <input
-                          type="text"
-                          value={laporSarName}
-                          onChange={(e) => setLaporSarName(e.target.value)}
-                          className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-gray-500 uppercase pl-0.5">No Telepon</label>
-                        <input
-                          type="text"
-                          value={laporSarPhone}
-                          onChange={(e) => setLaporSarPhone(e.target.value)}
-                          className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-200/50">
-                      <div className="min-w-0">
-                        <p className="text-[9px] text-gray-400">ID Sesi Pelapor:</p>
-                        <p className="text-[10px] font-mono font-bold text-gray-500 truncate max-w-[150px]">{laporSarUserId}</p>
-                      </div>
-                      
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => {
-                            setLaporSarUserId('web_user_' + Math.floor(10000 + Math.random() * 90000));
-                            setIsChatActive(false);
-                          }}
-                          className="py-1 px-2 border border-gray-200 hover:border-orange-500 hover:text-orange-600 text-gray-500 font-semibold text-[9px] rounded bg-white transition-colors"
-                          title="Reset sesi chat baru"
-                        >
-                          Reset Sesi
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsLaporSarRegistered(false);
-                            setLaporSarName('');
-                            setLaporSarPhone('');
-                            setRegName('');
-                            setRegPhone('');
-                            setLaporSarUserId('web_user_' + Math.floor(10000 + Math.random() * 90000));
-                            setIsChatActive(false);
-                            if (typeof window !== 'undefined') {
-                              localStorage.removeItem('sarbot_lapor_sar_registered');
-                              localStorage.removeItem('sarbot_lapor_sar_name');
-                              localStorage.removeItem('sarbot_lapor_sar_phone');
-                            }
-                          }}
-                          className="py-1 px-2 border border-rose-200 hover:border-rose-500 hover:text-rose-600 text-rose-500 font-semibold text-[9px] rounded bg-white transition-colors"
-                          title="Hapus data registrasi dan daftar ulang"
-                        >
-                          Reset Daftar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {!isLaporSarRegistered ? (
               widgetStartMode === 'selection' ? (
-                /* Layar Pemilihan Awal (Lapor Cepat vs Saksi) */
-                <div className="flex-1 overflow-y-auto p-5 bg-slate-50/50 flex flex-col justify-start pt-8 min-h-0 font-sans">
-                  <div className="text-center space-y-2 shrink-0 mb-3">
-                    <div className="mx-auto h-14 w-14 bg-white rounded-2xl flex items-center justify-center shadow-md shadow-orange-500/5 border border-slate-100 overflow-hidden">
-                      <img src="/logo.png" alt="Lapor SAR Logo" className="w-10 h-10 object-contain" />
+                /* Layar Pemilihan Awal (Lapor Cepat vs Chat Terpandu) */
+                <div className="flex-1 overflow-y-auto p-5 bg-slate-50 flex flex-col justify-start pt-6 min-h-0 font-sans">
+                  <div className="text-center space-y-2 shrink-0 mb-5">
+                    <div className="mx-auto h-12 w-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-200 overflow-hidden">
+                      <img src="/logo.png" alt="Logo BASARNAS" className="w-8 h-8 object-contain" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-slate-800 tracking-wide">Portal Darurat Lapor SAR</h3>
-                      <p className="text-[10.5px] text-slate-500 font-medium max-w-[250px] mx-auto leading-relaxed">
-                        Pilih jenis laporan Anda untuk respon penyelamatan tercepat.
+                      <h3 className="text-sm font-bold text-slate-900">Portal Darurat Lapor SAR</h3>
+                      <p className="text-xs text-slate-500 font-normal max-w-[280px] mx-auto leading-relaxed mt-0.5">
+                        Pilih metode pelaporan yang sesuai untuk penanganan cepat petugas SAR.
                       </p>
                     </div>
                   </div>
@@ -819,50 +736,54 @@ export function LaporSarDrawer() {
                     <button
                       onClick={handleSosReport}
                       disabled={isLocating}
-                      className="w-full p-3.5 bg-gradient-to-r from-red-650 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-2xl shadow-md hover:shadow-lg hover:shadow-red-500/10 hover:scale-[1.01] active:scale-98 transition-all cursor-pointer text-left flex items-start gap-3.5 border border-red-500/20 group relative overflow-hidden"
+                      className="w-full p-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl shadow-sm transition-all cursor-pointer text-left flex items-start gap-3.5 border border-red-700"
                     >
-                      <div className="absolute right-0 bottom-0 translate-x-2 translate-y-2 opacity-5 scale-150 group-hover:scale-[1.7] transition-transform duration-300">
-                        <ShieldAlert className="w-20 h-20 text-white" />
-                      </div>
-                      <div className="p-2.5 bg-white/15 rounded-xl shrink-0 mt-0.5">
+                      <div className="p-2.5 bg-red-800/60 rounded-xl shrink-0 mt-0.5 text-white">
                         {isLocating ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-white" />
+                          <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
-                          <MapPin className="w-5 h-5 text-white animate-bounce" />
+                          <MapPin className="w-5 h-5" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-black text-xs uppercase tracking-wide flex items-center gap-1">
-                          🚨 Lapor Cepat <span className="text-[9px] font-semibold text-red-100 font-normal lowercase">(SOS Instan)</span>
-                        </h4>
-                        <p className="text-[9.5px] text-red-100 pt-0.5 font-medium leading-relaxed">
-                          Saya korban / di lokasi. Kirim koordinat GPS saya sekarang tanpa chat.
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="font-bold text-xs uppercase tracking-wider text-white">
+                            Lapor Cepat (SOS GPS)
+                          </h4>
+                          <span className="text-[10px] font-semibold bg-red-700 text-red-100 px-2 py-0.5 rounded-full">
+                            Instan
+                          </span>
+                        </div>
+                        <p className="text-xs text-red-100 pt-1 font-normal leading-relaxed">
+                          Saya berada di lokasi musibah. Kirim titik koordinat GPS saya sekarang ke petugas terdekat.
                         </p>
                       </div>
                     </button>
 
-                    {/* Tombol 2: Laporkan Kejadian (Chat AI) */}
+                    {/* Tombol 2: Laporkan Kejadian (Chat Terpandu) */}
                     <button
                       onClick={() => setWidgetStartMode('auth')}
-                      className="w-full p-3.5 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl shadow-sm hover:shadow-md border border-slate-200/80 hover:scale-[1.01] active:scale-98 transition-all cursor-pointer text-left flex items-start gap-3.5 group relative overflow-hidden"
+                      className="w-full p-4 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl shadow-sm border border-slate-200 transition-all cursor-pointer text-left flex items-start gap-3.5"
                     >
-                      <div className="absolute right-0 bottom-0 translate-x-2 translate-y-2 opacity-5 scale-150 group-hover:scale-[1.7] transition-transform duration-300">
-                        <MessageCircle className="w-20 h-20 text-slate-800" />
-                      </div>
-                      <div className="p-2.5 bg-orange-100 rounded-xl shrink-0 mt-0.5">
-                        <MessageCircle className="w-5 h-5 text-orange-600" />
+                      <div className="p-2.5 bg-orange-50 border border-orange-100 rounded-xl shrink-0 mt-0.5 text-orange-600">
+                        <MessageCircle className="w-5 h-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-black text-xs text-slate-850 uppercase tracking-wide">
-                          📝 Laporkan Kejadian
-                        </h4>
-                        <p className="text-[9.5px] text-slate-500 pt-0.5 font-medium leading-relaxed">
-                          Saya saksi / ingin melapor detail musibah via Obrolan AI Chatbot.
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900">
+                            Laporkan Musibah
+                          </h4>
+                          <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                            Teks & Suara
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 pt-1 font-normal leading-relaxed">
+                          Saya ingin melapor kronologi kejadian, jumlah korban, atau sarana melalui percakapan terpadu.
                         </p>
                       </div>
                     </button>
 
-                    {/* Tombol 3: Bantuan SAR Lainnya (RAG Knowledge QA) */}
+                    {/* Tombol 3: Bantuan SAR Lainnya */}
                     <button
                       onClick={async () => {
                         setIsLaporSarRegistered(true);
@@ -880,20 +801,17 @@ export function LaporSarDrawer() {
                           setIsSendingWidgetMessage(false);
                         }
                       }}
-                      className="w-full p-3.5 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl shadow-sm hover:shadow-md border border-slate-200/80 hover:scale-[1.01] active:scale-98 transition-all cursor-pointer text-left flex items-start gap-3.5 group relative overflow-hidden"
+                      className="w-full p-3.5 bg-white hover:bg-slate-50 text-slate-700 rounded-2xl shadow-sm border border-slate-200 transition-all cursor-pointer text-left flex items-start gap-3.5"
                     >
-                      <div className="absolute right-0 bottom-0 translate-x-2 translate-y-2 opacity-5 scale-150 group-hover:scale-[1.7] transition-transform duration-300">
-                        <Info className="w-20 h-20 text-slate-800" />
-                      </div>
-                      <div className="p-2.5 bg-blue-100 rounded-xl shrink-0 mt-0.5">
-                        <Info className="w-5 h-5 text-blue-600" />
+                      <div className="p-2 bg-slate-100 rounded-xl shrink-0 mt-0.5 text-slate-600">
+                        <Info className="w-4 h-4" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-black text-xs text-slate-850 uppercase tracking-wide">
-                          ℹ️ Bantuan SAR Lainnya
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800">
+                          Informasi & Prosedur SAR
                         </h4>
-                        <p className="text-[9.5px] text-slate-500 pt-0.5 font-medium leading-relaxed">
-                          Tanya Jawab SOP, informasi penyelamatan, istilah SAR & kontak via AI.
+                        <p className="text-[11px] text-slate-500 pt-0.5 font-normal leading-relaxed">
+                          Panduan penyelamatan darurat, istilah SAR, dan kontak posko wilayah.
                         </p>
                       </div>
                     </button>
@@ -913,7 +831,7 @@ export function LaporSarDrawer() {
 
                   {/* Brand Header */}
                   <div className="text-center space-y-2 shrink-0 py-2">
-                    <div className="mx-auto h-12 w-12 bg-gradient-to-tr from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/10">
+                    <div className="mx-auto h-12 w-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-sm">
                       <MessageCircle className="w-6 h-6 text-white" />
                     </div>
                     <div>
@@ -1006,7 +924,7 @@ export function LaporSarDrawer() {
                           <button
                             type="submit"
                             disabled={isLoggingIn}
-                            className="w-full flex justify-center items-center gap-1.5 py-2.5 px-4 mt-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold text-[11px] rounded-xl shadow-md shadow-orange-500/10 transition-all active:scale-95 disabled:opacity-55 cursor-pointer"
+                            className="w-full flex justify-center items-center gap-1.5 py-2.5 px-4 mt-2 bg-orange-600 hover:bg-orange-700 text-white font-bold text-[11px] rounded-xl shadow-sm transition-colors disabled:opacity-55 cursor-pointer"
                           >
                             {isLoggingIn ? (
                               <>
@@ -1135,7 +1053,7 @@ export function LaporSarDrawer() {
                           <button
                             type="submit"
                             disabled={isRegistering}
-                            className="w-full flex justify-center items-center gap-1.5 py-2.5 px-4 mt-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold text-[11px] rounded-xl shadow-md shadow-orange-500/10 transition-all active:scale-95 disabled:opacity-55 cursor-pointer"
+                            className="w-full flex justify-center items-center gap-1.5 py-2.5 px-4 mt-2 bg-orange-600 hover:bg-orange-700 text-white font-bold text-[11px] rounded-xl shadow-sm transition-colors disabled:opacity-55 cursor-pointer"
                           >
                             {isRegistering ? (
                               <>
@@ -1155,29 +1073,29 @@ export function LaporSarDrawer() {
               )) : (
               <>
                 {/* Chat History Container */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50 flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 flex flex-col min-h-0">
                   {/* Offline Warning Banner */}
                   {!isOnline && (
-                    <div className="p-3.5 bg-red-600 border border-red-500 rounded-2xl text-xs text-white flex flex-col gap-2 shrink-0 shadow-lg shadow-red-500/10 font-sans animate-pulse">
+                    <div className="p-3.5 bg-red-600 border border-red-700 rounded-2xl text-xs text-white flex flex-col gap-2 shrink-0 shadow-sm font-sans">
                       <div className="flex gap-2">
-                        <ShieldAlert className="w-4.5 h-4.5 shrink-0 text-white mt-0.5" />
-                        <p className="leading-relaxed font-bold">
-                          Koneksi Internet Terputus! Hubungi nomor fallback darurat Kantor SAR setempat.
+                        <ShieldAlert className="w-4 h-4 shrink-0 text-white mt-0.5" />
+                        <p className="leading-relaxed font-semibold">
+                          Koneksi internet terputus. Hubungi nomor darurat Kantor SAR setempat.
                         </p>
                       </div>
                       <a
                         href={`tel:${widgetTenants.find((t: any) => t.slug === (getTenantSlug() || 'pusat'))?.fallback_phone || '115'}`}
-                        className="w-full py-2 bg-white text-red-600 hover:bg-slate-50 font-black rounded-xl text-center shadow-md active:scale-95 transition-all text-xs"
+                        className="w-full py-2 bg-white text-red-700 hover:bg-slate-100 font-bold rounded-xl text-center transition-all text-xs"
                       >
-                        📞 Telepon Sekarang: {widgetTenants.find((t: any) => t.slug === (getTenantSlug() || 'pusat'))?.fallback_phone || '115'}
+                        Panggilan Darurat: {widgetTenants.find((t: any) => t.slug === (getTenantSlug() || 'pusat'))?.fallback_phone || '115'}
                       </a>
                     </div>
                   )}
 
-                  <div className="p-3.5 bg-orange-50/60 border border-orange-100 rounded-2xl text-xs text-orange-800 flex gap-2 shrink-0 shadow-sm font-sans">
-                    <Info className="w-4.5 h-4.5 shrink-0 text-orange-500 mt-0.5" />
-                    <p className="leading-relaxed font-semibold">
-                      Silakan laporkan kejadian darurat di bawah. Obrolan ini terhubung langsung dengan Asisten Penyelamatan AI Kantor SAR.
+                  <div className="p-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-600 flex gap-2.5 shrink-0 shadow-sm font-sans">
+                    <Info className="w-4 h-4 shrink-0 text-orange-600 mt-0.5" />
+                    <p className="leading-relaxed font-medium">
+                      Saluran siaga darurat BASARNAS. Asisten SAR siap memandu dan meneruskan data Anda ke regu penyelamat.
                     </p>
                   </div>
 
@@ -1191,15 +1109,15 @@ export function LaporSarDrawer() {
                             className={`flex ${isUser ? 'justify-end' : 'justify-start'} items-end gap-2`}
                           >
                             {!isUser && (
-                              <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-orange-550 to-red-500 text-white flex items-center justify-center shadow shrink-0 text-[10px] mb-1">
-                                <Bot className="w-4 h-4 text-white" />
+                              <div className="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-sm text-[10px] mb-1">
+                                <Bot className="w-4 h-4 text-orange-400" />
                               </div>
                             )}
-                            <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[80%] space-y-1.5`}>
-                              <div className={`rounded-2xl px-3.5 py-2 text-xs shadow-sm ${
+                            <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[82%] space-y-1.5`}>
+                              <div className={`rounded-2xl px-4 py-2.5 text-xs ${
                                 isUser 
-                                  ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-br-none' 
-                                  : 'bg-white text-slate-800 border border-slate-100 rounded-bl-none font-medium'
+                                  ? 'bg-orange-600 text-white font-normal rounded-br-sm shadow-sm' 
+                                  : 'bg-white text-slate-800 border border-slate-200 rounded-bl-sm font-normal shadow-sm'
                               }`}>
                                 <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                               </div>
@@ -1217,9 +1135,9 @@ export function LaporSarDrawer() {
                                           href="/widget-registration"
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="px-3.5 py-2 bg-orange-50 hover:bg-orange-100/80 text-orange-700 font-extrabold border border-orange-200/60 rounded-full transition-all shadow-sm active:scale-95 cursor-pointer text-[10px] inline-flex items-center gap-1"
+                                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-300 rounded-xl transition-all cursor-pointer text-xs inline-flex items-center gap-1"
                                         >
-                                          {btnText} <ExternalLink className="w-3 h-3" />
+                                          {btnText} <ExternalLink className="w-3 h-3 text-slate-500" />
                                         </a>
                                       );
                                     }
@@ -1229,7 +1147,7 @@ export function LaporSarDrawer() {
                                         type="button"
                                         onClick={() => handleSendWidgetOption(btnText)}
                                         disabled={isSendingWidgetMessage}
-                                        className="px-3.5 py-2 bg-orange-55/10 hover:bg-orange-100/60 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 text-orange-700 font-extrabold border border-orange-200/50 rounded-full transition-all shadow-sm active:scale-95 cursor-pointer text-[10px]"
+                                        className="px-3 py-1.5 bg-white hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 text-slate-700 font-semibold border border-slate-200 rounded-xl transition-all cursor-pointer text-xs shadow-sm"
                                       >
                                         {btnText}
                                       </button>
@@ -1246,27 +1164,25 @@ export function LaporSarDrawer() {
                   ) : (
                     /* Empty / Loading State */
                     <div className="flex-1 flex flex-col items-center justify-center text-center p-4 text-slate-400 space-y-3 my-auto font-sans">
-                      <div className="relative flex items-center justify-center">
-                        <div className="absolute w-12 h-12 rounded-full bg-orange-500/10 animate-ping duration-1000" />
-                        <Loader2 className="w-8 h-8 animate-spin text-orange-500 relative z-10" />
-                      </div>
-                      <p className="text-xs font-bold text-slate-500">Memulai sesi obrolan...</p>
+                      <Loader2 className="w-7 h-7 animate-spin text-orange-500" />
+                      <p className="text-xs font-semibold text-slate-600">Menghubungkan ke Asisten SAR...</p>
                     </div>
                   )}
                 </div>
 
-                {/* Calendar / Date-Time Picker Helper for simulated users */}
+                {/* Calendar / Date-Time Picker Helper */}
                 {isChatActive && activeSession?.state === 'AWAITING_WAKTU' && (
-                  <div className="px-4 py-2.5 bg-orange-50/50 border-t border-gray-100 flex items-center justify-between gap-2 shrink-0 shadow-inner">
-                    <span className="text-[10px] font-bold text-orange-700 flex items-center gap-1">
-                      📅 Pilih Waktu Kejadian:
+                  <div className="px-4 py-2 bg-slate-100 border-t border-slate-200 flex items-center justify-between gap-2 shrink-0">
+                    <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-orange-600" />
+                      Waktu Kejadian:
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowDatePicker(true)}
-                      className="bg-white hover:bg-orange-50 border border-orange-200 rounded-full px-3.5 py-1 text-[10px] font-extrabold text-orange-700 transition-all active:scale-95 shadow-sm cursor-pointer"
+                      className="bg-white hover:bg-slate-50 border border-slate-300 rounded-lg px-3 py-1 text-xs font-bold text-slate-800 transition-all cursor-pointer shadow-sm"
                     >
-                      Pilih Tanggal & Pukul...
+                      Pilih Tanggal & Pukul
                     </button>
                   </div>
                 )}
@@ -1274,16 +1190,16 @@ export function LaporSarDrawer() {
                 {/* Message Send Form */}
                 <form 
                   onSubmit={handleSendWidget}
-                  className="p-3.5 border-t border-gray-100 bg-white shrink-0 font-sans"
+                  className="p-3 border-t border-slate-200 bg-white shrink-0 font-sans"
                 >
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      placeholder="Ketik pesan laporan darurat di sini..."
+                      placeholder="Ketik rincian musibah atau jawaban..."
                       value={laporSarText}
                       onChange={(e) => setLaporSarText(e.target.value)}
                       disabled={isSendingWidgetMessage}
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 disabled:bg-slate-100 transition-all"
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 disabled:bg-slate-100 transition-all font-medium"
                     />
                     
                     {/* Tombol GPS Obrolan */}
@@ -1291,7 +1207,7 @@ export function LaporSarDrawer() {
                       type="button"
                       onClick={handleSosReport}
                       disabled={isLocating || isSendingWidgetMessage}
-                      className="p-2.5 bg-slate-100 hover:bg-orange-50 text-slate-500 hover:text-orange-600 rounded-full transition-all flex items-center justify-center shrink-0 disabled:opacity-50 cursor-pointer"
+                      className="p-2.5 bg-slate-100 hover:bg-orange-50 text-slate-600 hover:text-orange-600 rounded-xl border border-slate-200 transition-all flex items-center justify-center shrink-0 disabled:opacity-50 cursor-pointer"
                       title="Kirim Lokasi GPS"
                     >
                       {isLocating ? (
@@ -1304,7 +1220,7 @@ export function LaporSarDrawer() {
                     <button
                       type="submit"
                       disabled={!laporSarText.trim() || isSendingWidgetMessage}
-                      className="p-2.5 bg-gradient-to-r from-orange-500 to-red-650 hover:from-orange-600 hover:to-red-750 text-white rounded-full shadow-md shadow-orange-500/10 transition-all flex items-center justify-center shrink-0 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed cursor-pointer"
+                      className="p-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-all flex items-center justify-center shrink-0 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer shadow-sm"
                     >
                       {isSendingWidgetMessage ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -1327,10 +1243,10 @@ export function LaporSarDrawer() {
                   className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 >
                   <motion.div
-                    initial={{ scale: 0.9, y: 15 }}
+                    initial={{ scale: 0.95, y: 10 }}
                     animate={{ scale: 1, y: 0 }}
-                    exit={{ scale: 0.9, y: 15 }}
-                    transition={{ type: 'spring', damping: 22, stiffness: 220 }}
+                    exit={{ scale: 0.95, y: 10 }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                   >
                     <LaporSarDateTimePicker
                       onSelect={(val) => {
@@ -1356,16 +1272,13 @@ export function LaporSarDrawer() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             onClick={() => setIsLaporSarOpen(true)}
-            className="fixed bottom-6 right-6 z-40 text-white shadow-2xl shadow-orange-500/30 flex items-center justify-center border border-orange-400/25 px-5 py-3.5 rounded-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer font-sans"
-            title="Buka Lapor SAR"
+            className="fixed bottom-6 right-6 z-40 bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-900/20 flex items-center justify-center border border-slate-700 px-4.5 py-3 rounded-full transition-all duration-200 cursor-pointer font-sans"
+            title="Buka Layanan Lapor SAR"
           >
-            <div className="flex items-center gap-2.5">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500 shadow-sm border border-white/20"></span>
-              </span>
-              <span className="font-extrabold text-xs uppercase tracking-widest leading-none">Lapor SAR</span>
-              <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse" />
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/30"></span>
+              <span className="font-bold text-xs tracking-wide">Lapor SAR</span>
+              <span className="text-[10px] font-semibold bg-orange-600 text-white px-2 py-0.5 rounded-full">Darurat</span>
             </div>
           </motion.button>
         )}

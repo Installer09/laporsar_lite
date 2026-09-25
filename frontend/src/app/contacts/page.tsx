@@ -16,6 +16,7 @@ export default function ContactsPage() {
   const { data: contacts = [], isLoading, isError, refetch } = useContactsQuery();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [platformFilter, setPlatformFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
   
@@ -135,13 +136,15 @@ export default function ContactsPage() {
 
   // Filter contacts locally
   const filteredContacts = (contacts || []).filter((contact: any) => {
+    const matchesPlatform = !platformFilter || (contact.source || '').toLowerCase() === platformFilter.toLowerCase();
     const searchLower = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = (
       (contact.name || '').toLowerCase().includes(searchLower) ||
       (contact.phone_number || '').toLowerCase().includes(searchLower) ||
       (contact.notes || '').toLowerCase().includes(searchLower) ||
       (contact.last_location || '').toLowerCase().includes(searchLower)
     );
+    return matchesPlatform && matchesSearch;
   });
 
   return (
@@ -176,8 +179,8 @@ export default function ContactsPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex items-center gap-4">
-          <div className="relative flex-1 max-w-md">
+        <div className="p-4 border-b border-gray-100 flex flex-wrap items-center gap-4">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input 
               type="text" 
@@ -187,10 +190,20 @@ export default function ContactsPage() {
               className="w-full pl-9 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none"
             />
           </div>
-          <button className="px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors border border-gray-200">
-            <Filter className="w-4 h-4" />
-            Filter
-          </button>
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400 shrink-0" />
+            <select
+              value={platformFilter}
+              onChange={(e) => setPlatformFilter(e.target.value)}
+              aria-label="Filter berdasarkan platform"
+              className="bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500/20 focus:bg-white cursor-pointer transition-all"
+            >
+              <option value="">Semua Platform</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="telegram">Telegram</option>
+              <option value="manual">Manual / Web</option>
+            </select>
+          </div>
         </div>
 
         <div className="overflow-x-auto">

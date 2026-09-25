@@ -55,8 +55,12 @@ async def verify_jwt(request: Request, credentials: Optional[HTTPAuthorizationCr
         # Cross-Tenant authorization enforcement
         token_tenant_slug = payload.get("tenant_slug")
         
-        # Dev admin or global admin bypass if they have no tenant scope
-        if payload.get("sub") == settings.DEV_ADMIN_USERNAME or (payload.get("role") == "admin" and not token_tenant_slug):
+        # Global Super Admin or global admin bypass if they have no tenant scope
+        if (
+            payload.get("sub") == settings.DEV_SUPERADMIN_USERNAME
+            or (payload.get("role") == "Super Admin" and not token_tenant_slug)
+            or (payload.get("role") == "admin" and not token_tenant_slug)
+        ):
             return payload
             
         # Extract requested workspace slug from request headers, subdomain, or path params
@@ -99,8 +103,9 @@ async def verify_jwt(request: Request, credentials: Optional[HTTPAuthorizationCr
         )
 
 def verify_admin(payload: dict = Depends(verify_jwt)):
-    """Enforce admin-only access check."""
-    if payload.get("role") not in ("admin", "Super Admin"):
+    """Enforce admin-only access check (Super Admin or Tenant Admin)."""
+    role = payload.get("role")
+    if role not in ("Super Admin", "Admin", "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Admin privileges required"
@@ -109,7 +114,8 @@ def verify_admin(payload: dict = Depends(verify_jwt)):
 
 def verify_operator_or_admin(payload: dict = Depends(verify_jwt)):
     """Enforce operator or admin access check. Excludes 'User' role."""
-    if payload.get("role") not in ("admin", "Super Admin", "Operator"):
+    role = payload.get("role")
+    if role not in ("Super Admin", "Admin", "admin", "Operator"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Operator or Admin privileges required"
@@ -117,8 +123,12 @@ def verify_operator_or_admin(payload: dict = Depends(verify_jwt)):
     return payload
 
 def verify_super_admin(payload: dict = Depends(verify_jwt)):
-    """Enforce super-admin-only access check."""
-    if payload.get("role") != "Super Admin" or payload.get("tenant_slug") not in (None, "pusat"):
+    """Enforce super-admin-only access check (Global Super Admin, non-tenant)."""
+    is_super_admin = (
+        payload.get("role") == "Super Admin"
+        or payload.get("sub") == getattr(settings, "DEV_SUPERADMIN_USERNAME", "superadmin")
+    )
+    if not is_super_admin or payload.get("tenant_slug") not in (None, "pusat"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Super Admin privileges required"

@@ -3,8 +3,7 @@
 import { useState, useEffect, Fragment } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { Shield, MapPin, AlertTriangle, Calendar, Users, Anchor, Navigation, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Shield, MapPin, AlertTriangle, Calendar, Users, Anchor, Navigation } from 'lucide-react';
 import { getBackendUrl } from '@/lib/api';
 import IncidentMarkerCluster from './MarkerClusterGroup';
 import HotspotMapLayer from './HotspotMapLayer';
@@ -60,25 +59,32 @@ const createIncidentMarker = (jenisKejadian: string, status: string, zoom: numbe
     borderClass = "border-2";
   }
   
-  let emoji = "🚨";
-  const lowerJenis = (jenisKejadian || '').toLowerCase();
-  if (lowerJenis.includes("kapal") || lowerJenis.includes("laut") || lowerJenis.includes("tenggelam")) {
-    emoji = "🚢";
-  } else if (lowerJenis.includes("manusia") || lowerJenis.includes("hilang") || lowerJenis.includes("kmm")) {
-    emoji = "👤";
-  } else if (lowerJenis.includes("pesawat") || lowerJenis.includes("udara")) {
-    emoji = "✈️";
-  } else if (lowerJenis.includes("bencana") || lowerJenis.includes("alam") || lowerJenis.includes("banjir")) {
-    emoji = "🌊";
-  }
+  const getCategorySvg = (jenis: string) => {
+    const lower = (jenis || '').toLowerCase();
+    if (lower.includes("kapal") || lower.includes("laut") || lower.includes("tenggelam")) {
+      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>`;
+    }
+    if (lower.includes("manusia") || lower.includes("hilang") || lower.includes("kmm")) {
+      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+    }
+    if (lower.includes("pesawat") || lower.includes("udara")) {
+      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m2 12 5-3 3 3 8-8 4 4-8 8 3 3-3 5-4-8-5-1Z"/></svg>`;
+    }
+    if (lower.includes("bencana") || lower.includes("alam") || lower.includes("banjir")) {
+      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    }
+    return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+  };
+
+  const iconSvg = getCategorySvg(jenisKejadian);
 
   // Determine colors based on status: PENDING is orange/amber, AKTIF is pulsing red
   let pulseColor = "bg-red-400";
-  let gradientColors = "from-red-500 to-rose-700";
+  let gradientColors = "from-red-600 to-rose-700";
   
   if (status === 'PENDING') {
     pulseColor = "bg-orange-400";
-    gradientColors = "from-orange-500 to-amber-700";
+    gradientColors = "from-orange-600 to-amber-700";
   }
 
   return L.divIcon({
@@ -86,8 +92,8 @@ const createIncidentMarker = (jenisKejadian: string, status: string, zoom: numbe
     html: `
       <div class="relative flex items-center justify-center">
         <span class="animate-ping absolute inline-flex rounded-full ${pulseColor} opacity-75 ${pingClass}"></span>
-        <div class="relative ${containerClass} bg-gradient-to-br ${gradientColors} ${borderClass} border-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110">
-          <span class="${textClass}">${emoji}</span>
+        <div class="relative ${containerClass} bg-gradient-to-br ${gradientColors} ${borderClass} border-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 p-0.5">
+          ${iconSvg}
         </div>
       </div>
     `,
@@ -149,17 +155,19 @@ const createPosMarker = (type: string, customIcon: string | undefined, zoom: num
       contentHtml = `<img src="${imgUrl}" class="${imgClass} rounded-full object-cover" />`;
     }
   } else {
-    let emoji = customIcon || "🏠";
     if (!customIcon) {
       if (type === "Kantor SAR") {
-        emoji = "🏢";
+        contentHtml = `<svg class="w-full h-full text-white p-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg>`;
       } else if (type === "Pos SAR") {
-        emoji = "🏠";
+        contentHtml = `<svg class="w-full h-full text-white p-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
       } else if (type === "Unit Siaga SAR") {
-        emoji = "🛡️";
+        contentHtml = `<svg class="w-full h-full text-white p-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+      } else {
+        contentHtml = `<svg class="w-full h-full text-white p-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
       }
+    } else {
+      contentHtml = `<span class="${textClass}">${customIcon}</span>`;
     }
-    contentHtml = `<span class="${textClass}">${emoji}</span>`;
   }
 
   return L.divIcon({
@@ -425,56 +433,20 @@ export default function DashboardMapInner({ reports = [], locations = [], kmlPat
           })}
       </MapContainer>
 
-      {/* Custom Unified Navigation Widget (D-pad Panning & Zoom Controls) */}
-      <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-1.5 pointer-events-auto">
-        {/* Pan Controls (D-pad) */}
-        <div className="bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-md border border-slate-200/60 flex flex-col items-center justify-center w-18 h-18 relative select-none">
-          <button 
-            onClick={() => map?.panBy([0, -80])}
-            className="absolute top-0.5 p-0.5 hover:bg-slate-100 rounded-md text-slate-600 transition-colors flex items-center justify-center"
-            title="Geser Atas"
-          >
-            <ChevronUp className="w-3.5 h-3.5" />
-          </button>
-          <div className="flex gap-2 items-center justify-center w-full h-full">
-            <button 
-              onClick={() => map?.panBy([-80, 0])}
-              className="p-0.5 hover:bg-slate-100 rounded-md text-slate-600 transition-colors flex items-center justify-center"
-              title="Geser Kiri"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-            <div className="w-2 h-2 rounded-full bg-slate-200/60 border border-slate-300/20" />
-            <button 
-              onClick={() => map?.panBy([80, 0])}
-              className="p-0.5 hover:bg-slate-100 rounded-md text-slate-600 transition-colors flex items-center justify-center"
-              title="Geser Kanan"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <button 
-            onClick={() => map?.panBy([0, 80])}
-            className="absolute bottom-0.5 p-0.5 hover:bg-slate-100 rounded-md text-slate-600 transition-colors flex items-center justify-center"
-            title="Geser Bawah"
-          >
-            <ChevronDown className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Zoom Controls */}
-        <div className="bg-white/95 backdrop-blur-md p-0.5 rounded-lg shadow-md border border-slate-200/60 flex flex-col divide-y divide-slate-100 select-none items-center">
+      {/* Clean Map Zoom Controls */}
+      <div className="absolute top-4 right-4 z-[1000] flex flex-col pointer-events-auto shadow-sm">
+        <div className="bg-white/95 backdrop-blur-md rounded-xl border border-slate-200/80 flex flex-col divide-y divide-slate-100 select-none overflow-hidden">
           <button 
             onClick={() => map?.zoomIn()}
-            className="h-6 w-6 hover:bg-slate-100 rounded-md text-slate-700 font-extrabold text-xs flex items-center justify-center transition-colors"
-            title="Perbesar"
+            className="h-8 w-8 hover:bg-slate-100 text-slate-700 font-bold text-sm flex items-center justify-center transition-colors cursor-pointer"
+            title="Perbesar Peta"
           >
             +
           </button>
           <button 
             onClick={() => map?.zoomOut()}
-            className="h-6 w-6 hover:bg-slate-100 rounded-md text-slate-700 font-extrabold text-sm flex items-center justify-center transition-colors"
-            title="Perkecil"
+            className="h-8 w-8 hover:bg-slate-100 text-slate-700 font-bold text-base flex items-center justify-center transition-colors cursor-pointer"
+            title="Perkecil Peta"
           >
             −
           </button>

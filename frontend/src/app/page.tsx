@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity, AlertTriangle, FileText, FileX, Navigation, MapPin, Loader2, Sparkles, Building, ChevronRight, ArrowRight, ShieldAlert, Globe, User, MessageSquare, LogIn, UserPlus, X, Smartphone } from 'lucide-react';
+import { Activity, AlertTriangle, FileText, FileX, Navigation, MapPin, Loader2, Building, ChevronRight, ArrowRight, ShieldAlert, Globe, User, MessageSquare, LogIn, UserPlus, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
@@ -12,7 +12,6 @@ import { getLocations, getIdentity, getPublicMapReports, getTenantSlug, getPubli
 import { decodeJwt } from '@/lib/utils';
 import DashboardMap from '@/components/DashboardMap';
 import { useLaporSar } from '@/providers/LaporSarProvider';
-import { MobileDownloadSection } from '@/components/ui/MobileDownloadSection';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -44,6 +43,7 @@ const getCookie = (name: string) => {
 // --- Portal Landing Page (Root Domain) ---
 function SaasPortalLandingPage() {
   const router = useRouter();
+  const { setIsLaporSarOpen } = useLaporSar();
   const [activeTab, setActiveTab] = useState<'reports' | 'tenants'>('reports');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -73,13 +73,9 @@ function SaasPortalLandingPage() {
     }));
 
   return (
-    <div className="min-h-screen w-screen relative overflow-x-hidden bg-gradient-to-br from-slate-50 via-white to-slate-50/50 font-sans flex flex-col justify-between">
-      {/* Dynamic Background Glowing Blobs for Premium Light Theme */}
-      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-orange-400/5 to-red-500/5 blur-[130px] pointer-events-none z-0" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[700px] h-[700px] rounded-full bg-gradient-to-tr from-blue-500/5 to-orange-400/5 blur-[150px] pointer-events-none z-0" />
-
+    <div className="min-h-screen w-screen relative overflow-x-hidden bg-slate-50/60 font-sans flex flex-col justify-between">
       {/* 1. Header Bar */}
-      <header className="w-full z-10 bg-white/80 backdrop-blur-md border-b border-slate-200/80 py-4 px-6 sm:px-8 flex items-center justify-between shadow-sm">
+      <header className="w-full z-10 bg-white/95 backdrop-blur-md border-b border-slate-200 py-3.5 px-6 sm:px-8 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
           <div className="inline-flex items-center justify-center shrink-0">
             <img 
@@ -89,96 +85,103 @@ function SaasPortalLandingPage() {
             />
           </div>
           <div>
-            <span className="text-[9px] uppercase font-black tracking-[0.2em] text-orange-550 block leading-none font-sans">Badan Nasional Pencarian dan Pertolongan</span>
-            <h1 className="text-sm font-black text-slate-800 tracking-tight mt-1 font-sans">
-              Portal <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">Lapor SAR</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block leading-tight">
+              Badan Nasional Pencarian dan Pertolongan
+            </span>
+            <h1 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5 mt-0.5">
+              <span>Portal Terpadu</span>
+              <span className="text-orange-600">Lapor SAR</span>
             </h1>
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          <span className="hidden md:flex items-center gap-1.5 px-3 py-1 bg-green-50 border border-green-150 rounded-full text-[10px] font-extrabold text-green-600">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-            Sistem Siaga Aktif
+        <div className="flex items-center gap-2.5">
+          <span className="hidden md:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-[11px] font-semibold text-emerald-700">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            Siaga 24/7
           </span>
 
           <button
-            onClick={() => {
-              const el = document.getElementById('mobile-download-section');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-xl text-[11px] font-extrabold text-orange-700 transition-all cursor-pointer"
-          >
-            <Smartphone className="w-3.5 h-3.5 text-orange-600" />
-            <span>App Mobile</span>
-          </button>
-
-          <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="px-5 py-1.5 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-extrabold text-[11px] sm:text-xs rounded-xl shadow-md shadow-orange-500/10 transition-all cursor-pointer flex items-center gap-1"
+            className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
           >
-            Masuk
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Masuk Petugas</span>
           </button>
         </div>
       </header>
 
       {/* 2. Main Content Area */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-6 sm:px-8 py-10 lg:py-16 flex flex-col justify-center gap-12 z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-stretch w-full">
-          {/* Left Column: Widget Promotion Copy & CTA */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-6 sm:px-8 py-8 lg:py-12 flex flex-col justify-center gap-10 z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch w-full">
+          {/* Left Column: Mission Statement, Emergency Action & Key Pillars */}
           <div className="lg:col-span-6 space-y-6 text-left flex flex-col justify-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-100 text-[10px] sm:text-xs font-bold text-orange-600">
-                <Globe className="w-3.5 h-3.5" /> Integrasi Widget Lapor SAR
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-xs font-semibold text-orange-700">
+                <ShieldAlert className="w-3.5 h-3.5 text-orange-600" /> Pusat Pengendalian & Komando Operasi SAR
               </div>
+              
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-tight">
+                Sistem Pelaporan Terpadu <br />
+                <span className="text-orange-600">
+                  Pencarian & Pertolongan
+                </span>
+              </h2>
+              
+              <p className="text-sm sm:text-base text-slate-600 font-normal leading-relaxed max-w-xl">
+                Kanal resmi Badan Nasional Pencarian dan Pertolongan (BASARNAS) untuk penerimaan laporan marabahaya dari masyarakat, koordinasi SAR terpadu, dan pemantauan situasi insiden di seluruh Indonesia.
+              </p>
             </div>
-            
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight font-sans">
-              Hadirkan Tombol Darurat <br />
-              <span className="bg-gradient-to-r from-orange-500 via-orange-600 to-red-600 bg-clip-text text-transparent">
-                Lapor SAR di Web Anda
-              </span>
-            </h2>
-            
-            <p className="text-sm sm:text-base text-slate-500 font-medium leading-relaxed max-w-xl">
-              Bantu tingkatkan keselamatan warga di lingkungan Anda. Instansi pemerintah, desa, pengelola wisata, media online, atau komunitas kini dapat mengintegrasikan widget resmi Lapor SAR secara gratis. Laporan darurat warga akan langsung terhubung ke Command Center BASARNAS setempat.
-            </p>
 
-            <div className="p-6 bg-white/80 backdrop-blur-sm border border-slate-200/80 rounded-2xl shadow-sm space-y-4 max-w-xl">
-              <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-orange-500" /> Benefit Integrasi Widget:
+            {/* Quick Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <button
+                onClick={() => setIsLaporSarOpen(true)}
+                className="px-6 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+              >
+                <AlertTriangle className="w-4 h-4 text-white" />
+                <span>Laporkan Musibah (SOS)</span>
+              </button>
+              <button
+                onClick={() => router.push('/widget-registration')}
+                className="px-5 py-3.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+              >
+                <Globe className="w-4 h-4 text-slate-500" />
+                <span>Integrasi Widget Web</span>
+              </button>
+            </div>
+
+            {/* Service Pillars Card */}
+            <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3 max-w-xl">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <Activity className="w-4 h-4 text-orange-600" /> Kapabilitas Sistem Lapor SAR
               </h3>
-              <ul className="text-xs text-slate-500 space-y-2.5 font-medium">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                  <span><strong>Respons Cepat 24/7</strong>: Laporan langsung terdistribusi ke unit SAR terdekat berdasarkan deteksi lokasi otomatis.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                  <span><strong>Tanpa Instalasi Rumit</strong>: Cukup salin dan tempel sebaris kode iframe ke dalam platform CMS/website Anda.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                  <span><strong>Dashboard Pelapor</strong>: Kelola status widget Anda, lihat statistik laporan masuk, dan unduh panduan operasional.</span>
-                </li>
-              </ul>
-
-              <div className="pt-3">
-                <button
-                  onClick={() => router.push('/widget-registration')}
-                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 shadow-md shadow-orange-500/10 transition-all cursor-pointer font-sans"
-                >
-                  Daftar & Dapatkan Widget Gratis <ArrowRight className="w-4 h-4" />
-                </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="font-semibold text-slate-800">Pelaporan Cepat</p>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Deteksi koordinat GPS otomatis tanpa hambatan registrasi yang rumit.</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="font-semibold text-slate-800">Ekstraksi Otomatis</p>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Penerjemahan teks insiden ke format PDTW standar Basarnas.</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="font-semibold text-slate-800">Multi-Channel Terpadu</p>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Tersedia melalui Web Drawer, WhatsApp Bot, dan Telegram Bot.</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="font-semibold text-slate-800">Disposisi Instan</p>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Distribusi langsung ke Kantor SAR dan Pos SAR penanggung jawab terdekat.</p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Right Column: Incident Map & UPT Tabs */}
-          <div className="lg:col-span-6 space-y-6 flex flex-col justify-between">
+          <div className="lg:col-span-6 space-y-5 flex flex-col justify-between">
             {/* Incident Map Box */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-3 shadow-md relative group flex-1 flex flex-col">
-              <div className="h-[300px] min-h-[300px] w-full rounded-2xl overflow-hidden relative z-0 flex-1">
+            <div className="bg-white rounded-2xl border border-slate-200 p-2.5 shadow-xs relative flex-1 flex flex-col">
+              <div className="h-[300px] min-h-[300px] w-full rounded-xl overflow-hidden relative z-0 flex-1">
                 <DashboardMap 
                   reports={publicReports} 
                   locations={mapLocations}
@@ -188,77 +191,77 @@ function SaasPortalLandingPage() {
             </div>
 
             {/* Tabbed Info Panel */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col h-[280px]">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden flex flex-col h-[280px]">
               {/* Tabs Selector */}
-              <div className="flex border-b border-slate-100 bg-slate-50/50 p-1">
+              <div className="flex border-b border-slate-200 bg-slate-50 p-1">
                 <button
                   onClick={() => setActiveTab('reports')}
-                  className={`flex-1 py-2 text-xs font-extrabold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
                     activeTab === 'reports'
-                      ? 'bg-white text-slate-800 shadow-sm border border-slate-200/40'
-                      : 'text-slate-400 hover:text-slate-600'
+                      ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
+                      : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  <Activity className="w-3.5 h-3.5" /> Laporan Aktif ({publicReports.length})
+                  <Activity className="w-3.5 h-3.5 text-orange-600" /> Laporan Aktif ({publicReports.length})
                 </button>
                 <button
                   onClick={() => setActiveTab('tenants')}
-                  className={`flex-1 py-2 text-xs font-extrabold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
                     activeTab === 'tenants'
-                      ? 'bg-white text-slate-800 shadow-sm border border-slate-200/40'
-                      : 'text-slate-400 hover:text-slate-600'
+                      ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
+                      : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  <Building className="w-3.5 h-3.5" /> Kantor UPT / SAR ({filteredTenants.length})
+                  <Building className="w-3.5 h-3.5 text-slate-600" /> Kantor UPT / SAR ({filteredTenants.length})
                 </button>
               </div>
 
               {/* Tab Contents */}
               <div className="p-4 flex-1 overflow-y-auto">
                 {activeTab === 'reports' ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     {isLoadingReports ? (
                       Array(3).fill(0).map((_, i) => (
                         <div key={i} className="w-full h-14 bg-slate-50 animate-pulse rounded-xl" />
                       ))
                     ) : isErrorReports ? (
-                      <div className="text-center py-8 text-xs font-bold text-red-500">
+                      <div className="text-center py-8 text-xs font-semibold text-rose-600">
                         Gagal memuat data laporan aktif.
                       </div>
                     ) : publicReports.length > 0 ? (
                       publicReports.map((report: any) => (
                         <div 
                           key={report.id} 
-                          className="p-3 border border-slate-100 rounded-xl bg-slate-50/20 flex items-center justify-between gap-3 text-left"
+                          className="p-3 border border-slate-100 rounded-xl bg-slate-50/50 flex items-center justify-between gap-3 text-left hover:border-slate-200 transition-colors"
                         >
-                          <div className="space-y-1">
-                            <h4 className="font-extrabold text-slate-800 text-xs">
+                          <div className="space-y-0.5">
+                            <h4 className="font-bold text-slate-800 text-xs">
                               {report.jenis_kejadian}
                             </h4>
-                            <p className="text-[10px] text-slate-550 font-mono">
+                            <p className="text-[10px] text-slate-500 font-mono">
                               No: {report.no_laporan}
                             </p>
-                            <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-450 mt-1">
+                            <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 mt-1">
                               <span className="flex items-center gap-1">
                                 <MapPin className="w-3 h-3 text-slate-400" /> {report.lokasi_teks || 'Lokasi tidak diketahui'}
                               </span>
                               <span>•</span>
-                              <span className="text-orange-600 font-bold">
+                              <span className="text-orange-600 font-semibold">
                                 {report.tenant_name}
                               </span>
                             </div>
                           </div>
-                          <span className={`inline-flex px-2 py-0.5 rounded-md text-[9px] font-extrabold tracking-wider uppercase ${
+                          <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${
                             report.status === 'PENDING'
-                              ? 'bg-orange-50 text-orange-700 border border-orange-100'
-                              : 'bg-red-50 text-red-750 border border-red-100'
+                              ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                              : 'bg-rose-50 text-rose-800 border border-rose-200'
                           }`}>
                             {report.status}
                           </span>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-12 text-xs font-bold text-slate-450">
+                      <div className="text-center py-12 text-xs font-medium text-slate-400">
                         Tidak ada laporan aktif saat ini.
                       </div>
                     )}
@@ -325,10 +328,6 @@ function SaasPortalLandingPage() {
           </div>
         </div>
 
-        {/* 2.5 Mobile App Download Hero Section */}
-        <div id="mobile-download-section">
-          <MobileDownloadSection />
-        </div>
       </main>
 
       {/* 3. Footer */}
@@ -349,41 +348,39 @@ function SaasPortalLandingPage() {
 
       {/* Auth Selector Modal */}
       {isAuthModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          {/* Animated Modal Container */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xl w-full max-w-sm overflow-hidden relative p-6 space-y-6">
-            
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-sm overflow-hidden relative p-6 space-y-5">
             {/* Header / Close button */}
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Akses Portal</h3>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Akses Portal</span>
               <button 
                 onClick={() => setIsAuthModalOpen(false)}
-                className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-650 transition-colors cursor-pointer"
+                className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Title & Desc */}
-            <div className="text-center space-y-1">
-              <h2 className="text-xl font-black text-slate-900">Selamat Datang</h2>
-              <p className="text-xs text-slate-500 font-medium">Pilih langkah yang ingin Anda lakukan untuk melanjutkan ke portal Lapor SAR.</p>
+            <div className="space-y-1 text-center">
+              <h3 className="text-lg font-bold text-slate-900">Portal Petugas & Mitra</h3>
+              <p className="text-xs text-slate-500 leading-normal">Pilih jenis akses untuk melanjutkan ke Command Center atau pendaftaran mitra.</p>
             </div>
 
             {/* Option Cards */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 pt-1">
               {/* Option 1: Masuk (Login) */}
               <button
                 onClick={() => {
                   setIsAuthModalOpen(false);
                   window.open('/login', '_blank');
                 }}
-                className="p-5 border border-slate-100 rounded-2xl bg-slate-50/40 hover:border-orange-200 hover:bg-orange-50/20 text-center flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.02] shadow-sm group cursor-pointer"
+                className="p-4 border border-slate-200 rounded-xl bg-slate-50 hover:border-orange-300 hover:bg-orange-50/40 text-center flex flex-col items-center justify-center gap-2.5 transition-colors group cursor-pointer shadow-xs"
               >
-                <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center group-hover:bg-orange-100 transition-colors">
-                  <LogIn className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 text-orange-600 flex items-center justify-center group-hover:border-orange-300 group-hover:bg-orange-50 transition-colors">
+                  <LogIn className="w-5 h-5" />
                 </div>
-                <span className="font-extrabold text-slate-800 text-sm">Masuk</span>
+                <span className="font-bold text-slate-800 text-xs">Masuk Akun</span>
               </button>
 
               {/* Option 2: Daftar (Register) */}
@@ -392,12 +389,12 @@ function SaasPortalLandingPage() {
                   setIsAuthModalOpen(false);
                   window.open('/register', '_blank');
                 }}
-                className="p-5 border border-slate-100 rounded-2xl bg-slate-50/40 hover:border-red-200 hover:bg-red-50/20 text-center flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.02] shadow-sm group cursor-pointer"
+                className="p-4 border border-slate-200 rounded-xl bg-slate-50 hover:border-slate-300 hover:bg-slate-100/60 text-center flex flex-col items-center justify-center gap-2.5 transition-colors group cursor-pointer shadow-xs"
               >
-                <div className="w-12 h-12 rounded-xl bg-red-50 text-red-655 flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                  <UserPlus className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center group-hover:border-slate-300 group-hover:bg-slate-50 transition-colors">
+                  <UserPlus className="w-5 h-5" />
                 </div>
-                <span className="font-extrabold text-slate-800 text-sm">Daftar</span>
+                <span className="font-bold text-slate-800 text-xs">Registrasi</span>
               </button>
             </div>
           </div>

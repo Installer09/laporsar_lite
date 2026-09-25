@@ -12,22 +12,11 @@ from pydantic import BaseModel, Field
 
 from app.db.session import get_master_db, get_tenant_sessionmaker
 from app.models.master_models import Tenant, UserTenantMapping
-from app.core.security import verify_jwt
+from app.core.security import verify_jwt, verify_super_admin
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(redirect_slashes=False)
-
-# Super Admin verification dependency
-def verify_super_admin(payload: dict = Depends(verify_jwt)):
-    from app.core.config import settings
-    # Super Admin must have username matching DEV_ADMIN_USERNAME and role 'admin'
-    if payload.get("role") != "admin" or payload.get("sub") != settings.DEV_ADMIN_USERNAME:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden: Akses hanya diperbolehkan untuk Super Admin."
-        )
-    return payload
 
 class TenantCreate(BaseModel):
     name: str = Field(..., description="Nama Instansi, e.g. Kantor SAR Jakarta")
@@ -221,7 +210,7 @@ async def create_tenant(tenant_in: TenantCreate, background_tasks: BackgroundTas
                 name=new_tenant.admin_name,
                 email=new_tenant.admin_email,
                 phone=new_tenant.admin_phone,
-                role="Super Admin",
+                role="Admin",
                 hashed_password=hashed_pwd,
                 is_active=True,
                 is_verified=True
@@ -297,7 +286,7 @@ async def update_tenant(tenant_id: int, payload: dict, db_master: AsyncSession =
                 local_user = res_user.scalar_one_or_none()
             
             if not local_user:
-                res_user = await tenant_db.execute(select(User).where(User.role == "Super Admin"))
+                res_user = await tenant_db.execute(select(User).where(User.role.in_(["Admin", "admin", "Super Admin"])))
                 local_user = res_user.scalar_one_or_none()
 
             if local_user:
@@ -321,7 +310,7 @@ async def update_tenant(tenant_id: int, payload: dict, db_master: AsyncSession =
                     name=admin_name_val,
                     email=admin_email_val,
                     phone=admin_phone_val,
-                    role="Super Admin",
+                    role="Admin",
                     hashed_password=hashed_pwd,
                     is_active=True,
                     is_verified=True

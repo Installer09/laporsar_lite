@@ -6,7 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getNationalReports, getNationalStats } from '@/lib/api';
 import { 
   Activity, AlertTriangle, FileText, CheckCircle2, Navigation, MapPin, 
-  Loader2, RefreshCw, Search, Filter, Globe, Calendar, Users, Heart
+  Loader2, RefreshCw, Search, Filter, Globe, Calendar, Users, Heart,
+  Anchor, Plane, User, ShieldAlert
 } from 'lucide-react';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -140,7 +141,7 @@ export default function NationalDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-            <Globe className="w-8 h-8 text-orange-600 animate-pulse" />
+            <Globe className="w-8 h-8 text-orange-600" />
             Dashboard Monitoring Nasional
           </h1>
           <p className="text-gray-500 mt-1">
@@ -314,12 +315,22 @@ export default function NationalDashboardPage() {
               Array(4).fill(0).map((_, i) => <SkeletonLoader key={i} className="w-full h-16" />)
             ) : mappedReports.length > 0 ? (
               mappedReports.map((report: any) => {
-                let emoji = "🚨";
+                let CategoryIcon = AlertTriangle;
+                let iconColor = "text-amber-600 bg-amber-50 border-amber-200";
                 const lowerJenis = (report.jenis_kejadian || '').toLowerCase();
-                if (lowerJenis.includes("kapal") || lowerJenis.includes("laut") || lowerJenis.includes("tenggelam")) emoji = "🚢";
-                else if (lowerJenis.includes("manusia") || lowerJenis.includes("hilang") || lowerJenis.includes("kmm")) emoji = "👤";
-                else if (lowerJenis.includes("pesawat") || lowerJenis.includes("udara")) emoji = "✈️";
-                else if (lowerJenis.includes("bencana") || lowerJenis.includes("alam") || lowerJenis.includes("banjir")) emoji = "🌊";
+                if (lowerJenis.includes("kapal") || lowerJenis.includes("laut") || lowerJenis.includes("tenggelam")) {
+                  CategoryIcon = Anchor;
+                  iconColor = "text-blue-600 bg-blue-50 border-blue-200";
+                } else if (lowerJenis.includes("manusia") || lowerJenis.includes("hilang") || lowerJenis.includes("kmm")) {
+                  CategoryIcon = User;
+                  iconColor = "text-orange-600 bg-orange-50 border-orange-200";
+                } else if (lowerJenis.includes("pesawat") || lowerJenis.includes("udara")) {
+                  CategoryIcon = Plane;
+                  iconColor = "text-sky-600 bg-sky-50 border-sky-200";
+                } else if (lowerJenis.includes("bencana") || lowerJenis.includes("alam") || lowerJenis.includes("banjir")) {
+                  CategoryIcon = ShieldAlert;
+                  iconColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
+                }
 
                 return (
                   <div 
@@ -327,8 +338,10 @@ export default function NationalDashboardPage() {
                     className="p-4 border border-gray-100 hover:border-gray-250 hover:bg-gray-50/10 rounded-2xl transition-all space-y-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                   >
                     <div className="space-y-1.5 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-lg">{emoji}</span>
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center border shrink-0 ${iconColor}`}>
+                          <CategoryIcon className="w-3.5 h-3.5" />
+                        </div>
                         <h4 className="font-bold text-gray-950 text-sm leading-snug truncate max-w-[200px]" title={report.jenis_kejadian}>
                           {report.jenis_kejadian}
                         </h4>
@@ -360,7 +373,7 @@ export default function NationalDashboardPage() {
 
                       <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border shadow-sm ${
                         report.status === 'PENDING' ? 'bg-orange-50 text-orange-700 border-orange-100' :
-                        report.status === 'AKTIF' ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' :
+                        report.status === 'AKTIF' ? 'bg-blue-50 text-blue-700 border-blue-100' :
                         report.status === 'TIDAK_AKTIF' ? 'bg-green-50 text-green-700 border-green-100' :
                         'bg-gray-50 text-gray-500 border-gray-150'
                       }`}>
@@ -374,7 +387,7 @@ export default function NationalDashboardPage() {
               })
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                <Globe className="w-12 h-12 text-gray-300 animate-pulse mb-3" />
+                <Globe className="w-12 h-12 text-gray-300 mb-3" />
                 <p className="text-sm font-bold text-gray-500">Tidak ada laporan yang cocok</p>
                 <p className="text-xs text-gray-400 mt-1">Coba sesuaikan kata pencarian atau pilihan filter Anda.</p>
               </div>
@@ -414,7 +427,7 @@ export default function NationalDashboardPage() {
               })
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center p-4 text-gray-400">
-                <Users className="w-10 h-10 text-gray-300 mb-2 animate-bounce" />
+                <Users className="w-10 h-10 text-gray-300 mb-2" />
                 <p className="text-xs font-semibold">Belum ada sebaran UPT SAR</p>
               </div>
             )}

@@ -6,7 +6,7 @@ import {
   CheckCircle2, MapPin, Plus, Trash2, Edit2, Shield, 
   Radio, RefreshCw, Server, AlertCircle, Building2, 
   UserPlus, Users, FileText, Check, X, Info, Upload, Globe, ExternalLink,
-  Eye, EyeOff, Calendar, Cpu, ArrowUpCircle, AlertTriangle, UploadCloud, Search, Sparkles,
+  Eye, EyeOff, Calendar, Cpu, ArrowUpCircle, AlertTriangle, UploadCloud, Search,
   Lock
 } from 'lucide-react';
 import { decodeJwt } from '@/lib/utils';
@@ -858,7 +858,7 @@ export default function SettingsPage() {
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
             className="fixed top-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-emerald-500"
           >
-            <CheckCircle2 className="w-5 h-5 animate-bounce" />
+            <CheckCircle2 className="w-5 h-5" />
             <span className="font-semibold text-sm">{successMessage}</span>
           </motion.div>
         )}
@@ -906,7 +906,7 @@ export default function SettingsPage() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Live Health Status</h3>
             <div className="space-y-2.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600 flex items-center gap-1.5 font-medium"><Server className="w-3.5 h-3.5 text-slate-400" /> Ollama RAG</span>
+                <span className="text-slate-600 flex items-center gap-1.5 font-medium"><Server className="w-3.5 h-3.5 text-slate-400" /> AI Engine (RAG)</span>
                 <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
                   liveStatus?.ollama?.connected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50' : 'bg-rose-50 text-rose-700 border border-rose-200/50'
                 }`}>
@@ -1437,7 +1437,7 @@ export default function SettingsPage() {
                                 />
                                 {sopFile ? (
                                   <>
-                                    <FileText className="w-8 h-8 text-green-600 mb-1.5 animate-bounce" />
+                                    <FileText className="w-8 h-8 text-green-600 mb-1.5" />
                                     <span className="text-[10px] font-bold text-gray-700 max-w-[150px] truncate block">
                                       {sopFile.name}
                                     </span>
@@ -1582,7 +1582,7 @@ export default function SettingsPage() {
                                           </span>
                                         ) : (
                                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 text-gray-500 border border-gray-150 rounded text-[8px] font-bold">
-                                            <Info className="w-2.5 h-2.5 text-gray-400 animate-pulse" /> Belum Vector
+                                            <Info className="w-2.5 h-2.5 text-gray-400" /> Belum Vector
                                           </span>
                                         )}
                                       </td>
@@ -1620,7 +1620,7 @@ export default function SettingsPage() {
                                                     <Loader2 className="w-2.5 h-2.5 animate-spin" />
                                                   ) : (
                                                     <>
-                                                      <Sparkles className="w-2.5 h-2.5" /> Re-Vector
+                                                      <Cpu className="w-2.5 h-2.5" /> Re-Vector
                                                     </>
                                                   )}
                                                 </button>
@@ -2292,11 +2292,11 @@ export default function SettingsPage() {
                   <div className="border border-rose-100 p-6 rounded-3xl bg-rose-50/15 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
                     <div className="space-y-2">
                       <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center text-rose-600">
-                        <AlertCircle className="w-6 h-6 animate-pulse" />
+                        <AlertCircle className="w-6 h-6" />
                       </div>
                       <h3 className="text-base font-bold text-gray-900">Pemulihan Data (Database Restore)</h3>
                       <p className="text-xs text-rose-700/80 leading-relaxed">
-                        ⚠️ **PERINGATAN BAHAYA**: Memulihkan database dari file cadangan akan **menghapus dan menimpa** seluruh data aktif yang ada saat ini secara permanen. Pastikan Anda mengunggah file ZIP backup resmi yang valid.
+                        **PERINGATAN BAHAYA**: Memulihkan database dari file cadangan akan **menghapus dan menimpa** seluruh data aktif yang ada saat ini secara permanen. Pastikan Anda mengunggah file ZIP backup resmi yang valid.
                       </p>
                     </div>
 
@@ -2377,7 +2377,7 @@ export default function SettingsPage() {
 
                   {widgetRequests.length === 0 ? (
                     <div className="p-12 text-center text-gray-400 space-y-3">
-                      <Key className="w-12 h-12 text-gray-300 mx-auto animate-pulse" />
+                      <Key className="w-12 h-12 text-gray-300 mx-auto" />
                       <div>
                         <p className="text-xs font-bold text-gray-700">Belum Ada Pengajuan Widget</p>
                         <p className="text-[10px] max-w-xs mx-auto leading-relaxed mt-1">Semua permohonan API Key dari instansi eksternal akan muncul di sini untuk verifikasi manual.</p>
@@ -2839,8 +2839,8 @@ export default function SettingsPage() {
                     onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
                   >
+                    <option value="Admin">Admin (Kantor / Unit)</option>
                     <option value="Operator">Operator</option>
-                    <option value="Super Admin">Super Admin</option>
                     <option value="User">User / Tamu</option>
                   </select>
                 </div>

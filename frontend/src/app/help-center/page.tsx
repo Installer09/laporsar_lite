@@ -65,11 +65,7 @@ export default function HelpCenter() {
   );
 
   return (
-    <div className="min-h-screen w-screen relative overflow-x-hidden bg-gradient-to-br from-slate-50 via-white to-slate-50/50 font-sans flex flex-col justify-between">
-      {/* Background Glowing Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-orange-400/5 to-red-500/5 blur-[130px] pointer-events-none z-0" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[700px] h-[700px] rounded-full bg-gradient-to-tr from-blue-500/5 to-orange-400/5 blur-[150px] pointer-events-none z-0" />
-
+    <div className="min-h-screen w-screen relative overflow-x-hidden bg-slate-50/50 font-sans flex flex-col justify-between">
       {/* 1. Top Navigation Header */}
       <header className="w-full z-10 bg-white/80 backdrop-blur-md border-b border-slate-200/80 py-4 px-6 sm:px-8 flex items-center justify-between shadow-sm sticky top-0">
         <button 
@@ -89,7 +85,7 @@ export default function HelpCenter() {
             />
           </div>
           <span className="text-xs font-black text-slate-800 tracking-tight font-sans">
-            Pusat Bantuan <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">Lapor SAR</span>
+            Pusat Bantuan <span className="text-orange-600">Lapor SAR</span>
           </span>
         </div>
       </header>
@@ -136,7 +132,7 @@ export default function HelpCenter() {
             </div>
             <div className="pt-2">
               <span className="text-[10px] font-extrabold text-red-650 flex items-center gap-1.5">
-                <Phone className="w-3 h-3 animate-bounce" /> Call Center BASARNAS: Siaga 115
+                <Phone className="w-3 h-3" /> Call Center BASARNAS: Siaga 115
               </span>
             </div>
           </div>
@@ -251,9 +247,6 @@ export default function HelpCenter() {
 
         {/* 5. Detailed Widget Integration Steps */}
         <section className="bg-slate-900 text-slate-100 p-6 sm:p-8 rounded-2xl shadow-xl space-y-6 text-left relative overflow-hidden">
-          {/* Subtle Glow Accent inside Dark box */}
-          <div className="absolute top-[-50%] right-[-20%] w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-orange-500/20 to-red-500/20 blur-[80px] pointer-events-none z-0" />
-          
           <div className="space-y-2 relative z-10">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-orange-500/10 border border-orange-500/20 text-[10px] font-bold text-orange-400">
               <Code className="w-3.5 h-3.5" /> Panduan Developer & Webmaster

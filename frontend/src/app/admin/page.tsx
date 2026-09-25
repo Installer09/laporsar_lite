@@ -162,7 +162,11 @@ export default function AdminDashboardPage() {
       }
 
         const payload = decodeJwt(token);
-        if (payload && payload.role === 'admin') {
+        const isSuperAdmin = payload && (payload.role === 'Super Admin' || payload.role === 'super_admin' || payload.role === 'SuperAdmin');
+        const tokenTenant = payload?.tenant_slug ? payload.tenant_slug.toLowerCase().trim() : null;
+        const isPusatOrGlobal = !tokenTenant || tokenTenant === 'pusat';
+
+        if (isSuperAdmin && isPusatOrGlobal) {
           setIsAdmin(true);
           fetchTenantsData();
         } else {
@@ -382,7 +386,7 @@ export default function AdminDashboardPage() {
     return (
       <div className="min-h-full w-full bg-[#090d1a] flex items-center justify-center font-sans antialiased text-white p-6 rounded-3xl">
         <div className="text-center space-y-4 max-w-md p-8 bg-red-950/20 border border-red-500/20 rounded-3xl backdrop-blur-xl">
-          <ShieldAlert className="w-16 h-16 text-red-500 mx-auto animate-bounce" />
+          <ShieldAlert className="w-16 h-16 text-red-500 mx-auto" />
           <h1 className="text-xl font-black">Akses Ditolak</h1>
           <p className="text-sm text-gray-400 font-medium leading-relaxed">
             Halaman ini hanya dapat diakses oleh akun Super Admin Pusat. Akun Anda tidak memiliki hak istimewa untuk melihat modul ini.
@@ -414,10 +418,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-full w-full relative bg-[#f8fafc] text-slate-800 font-sans antialiased pb-20 rounded-3xl border border-slate-200">
-      {/* Background Blobs */}
-      <div className="absolute top-0 left-0 w-[450px] h-[450px] rounded-full bg-orange-500/5 blur-[130px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full bg-blue-600/3 blur-[150px] pointer-events-none" />
-
       {/* Top Navigation */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 py-4 px-6 md:px-12">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -430,7 +430,7 @@ export default function AdminDashboardPage() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-3">
-              <span className="p-2.5 bg-gradient-to-tr from-orange-500 to-red-600 rounded-xl">
+              <span className="p-2.5 bg-slate-900 rounded-xl">
                 <Building className="w-5 h-5 text-white" />
               </span>
               <div>
@@ -443,7 +443,7 @@ export default function AdminDashboardPage() {
           </div>
           
           <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-2xl border border-slate-200">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span>Master Server Connect</span>
           </div>
         </div>
@@ -535,7 +535,7 @@ export default function AdminDashboardPage() {
                   setFormError('');
                   setFormSuccess('');
                 }}
-                className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-750 text-white font-bold text-sm rounded-2xl shadow-lg shadow-orange-500/15 transition-all hover:-translate-y-0.5 cursor-pointer"
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm rounded-xl transition-colors shadow-sm cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> Daftar Instansi Baru
               </button>
@@ -684,7 +684,7 @@ export default function AdminDashboardPage() {
                       {/* Success / Error Alerts */}
                       {formError && (
                         <div className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-650 font-semibold flex items-center gap-2">
-                          <ShieldAlert className="w-4 h-4 shrink-0 animate-pulse" />
+                          <ShieldAlert className="w-4 h-4 shrink-0" />
                           <span>{formError}</span>
                         </div>
                       )}
@@ -709,7 +709,7 @@ export default function AdminDashboardPage() {
                         <button
                           type="submit"
                           disabled={isRegistering}
-                          className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 rounded-xl text-sm font-bold transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer text-white"
+                          className="px-6 py-3 bg-orange-600 hover:bg-orange-700 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer text-white shadow-sm"
                         >
                           {isRegistering ? (
                             <>
@@ -863,7 +863,7 @@ export default function AdminDashboardPage() {
                       {/* Success / Error Alerts */}
                       {editError && (
                         <div className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-655 font-semibold flex items-center gap-2">
-                          <ShieldAlert className="w-4 h-4 shrink-0 animate-pulse" />
+                          <ShieldAlert className="w-4 h-4 shrink-0" />
                           <span>{editError}</span>
                         </div>
                       )}
@@ -1102,7 +1102,7 @@ export default function AdminDashboardPage() {
                                     Memeriksa...
                                   </>
                                 ) : (
-                                  'Cek Koneksi ⚡'
+                                  'Cek Koneksi'
                                 )}
                               </button>
                             </div>
@@ -1333,7 +1333,7 @@ export default function AdminDashboardPage() {
                                 report.status === 'PENDING'
                                   ? 'bg-orange-50 text-orange-655 border-orange-200'
                                   : report.status === 'AKTIF'
-                                  ? 'bg-blue-50 text-blue-600 border-blue-200 animate-pulse'
+                                  ? 'bg-blue-50 text-blue-600 border-blue-200'
                                   : 'bg-green-50 text-green-600 border-green-200'
                               }`}>
                                 {report.status}

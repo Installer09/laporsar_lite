@@ -115,7 +115,7 @@ function ReportsPageContent() {
           playSirenSound();
           setNewReportAlert({
             id: Date.now(),
-            message: '🚨 Laporan Darurat Baru Masuk! Silakan periksa daftar laporan.'
+            message: 'Laporan Darurat Baru Masuk. Silakan periksa daftar laporan.'
           });
           queryClient.invalidateQueries({ queryKey: ['reports'] });
         } else if (msgType === 'report_updated' || msgType === 'report_deleted') {
@@ -630,7 +630,7 @@ function ReportsPageContent() {
       queryClient.invalidateQueries({ queryKey: ['stats'] });
       setIsBroadcastModalOpen(false);
       setSelectedReport(null);
-      alert('Info Awal Laporan berhasil diperdalam dan disiarkan ke Grup WhatsApp & Telegram! 🚀');
+      alert('Info Awal Laporan berhasil diperdalam dan disiarkan ke Grup WhatsApp & Telegram.');
     } catch (err) {
       console.error("Gagal menyimpan & menyiarkan laporan:", err);
       alert('Terjadi kesalahan saat menyiarkan laporan. Silakan periksa koneksi atau input Anda.');
@@ -748,15 +748,15 @@ function ReportsPageContent() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="p-4 bg-gradient-to-r from-red-650 to-orange-600 border border-red-500/20 rounded-2xl text-white font-bold text-xs flex items-center justify-between shadow-lg shadow-red-500/10"
+          className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl text-white font-semibold text-xs flex items-center justify-between shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-white block animate-ping" />
+            <span className="w-2 h-2 rounded-full bg-orange-500 block animate-pulse" />
             <span>{newReportAlert.message}</span>
           </div>
           <button
             onClick={() => setNewReportAlert(null)}
-            className="p-1 hover:bg-white/20 rounded text-white transition-all bg-transparent border-none cursor-pointer"
+            className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -768,18 +768,20 @@ function ReportsPageContent() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Laporan Masuk</h1>
           <p className="text-gray-500 mt-1">Kelola, detailkan, dan validasi laporan kejadian darurat.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button 
             onClick={handleExportCSV}
-            className="px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+            className="px-3.5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
-            📥 Ekspor CSV (Filtered)
+            <FileText className="w-3.5 h-3.5 text-gray-500" />
+            <span>Ekspor CSV</span>
           </button>
           <button 
             onClick={handleOpenCreate}
-            className="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
-            <Plus className="w-5 h-5" /> Buat Laporan Manual
+            <Plus className="w-4 h-4" />
+            <span>Buat Laporan Manual</span>
           </button>
         </div>
       </div>
@@ -1264,7 +1266,7 @@ function ReportsPageContent() {
               <div className="p-5 border-b border-gray-100 bg-[#111827] text-white flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
-                    <Send className="w-5 h-5 animate-pulse" />
+                    <Send className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="font-bold text-base flex items-center gap-2">
@@ -1825,15 +1827,17 @@ function ReportsPageContent() {
                         type="button"
                         disabled={isBroadcasting || isPreviewLoading}
                         onClick={handleSaveAndBroadcast}
-                        className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center gap-2 disabled:from-slate-800 disabled:to-slate-900 disabled:text-slate-500 disabled:cursor-not-allowed"
+                        className="flex-1 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
                       >
                         {isBroadcasting ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin" /> Menyiarkan Laporan...
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Menyiarkan Laporan...</span>
                           </>
                         ) : (
                           <>
-                            <Send className="w-4 h-4" /> SIMPAN & SIARKAN INFO AWAL 🚀
+                            <Send className="w-4 h-4" />
+                            <span>Simpan & Siarkan Info Awal</span>
                           </>
                         )}
                       </button>
