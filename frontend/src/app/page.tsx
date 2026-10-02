@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity, AlertTriangle, FileText, FileX, Navigation, MapPin, Loader2, Building, ChevronRight, ArrowRight, ShieldAlert, Globe, User, MessageSquare, LogIn, UserPlus, X } from 'lucide-react';
+import { Activity, AlertTriangle, FileText, FileX, Navigation, MapPin, Loader2, Building, ChevronRight, ArrowRight, ShieldAlert, Globe, User, MessageSquare, LogIn, UserPlus, X, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
@@ -25,11 +25,6 @@ const NationalDashboardPage = dynamic(() => import('./national-dashboard/page'),
   ),
 });
 
-const LaporSarDrawer = dynamic(
-  () => import('@/components/layout/LaporSarDrawer').then((m) => m.LaporSarDrawer),
-  { ssr: false }
-);
-
 // --- Helper Cookie Reader ---
 const getCookie = (name: string) => {
   if (typeof document === 'undefined') return null;
@@ -43,7 +38,7 @@ const getCookie = (name: string) => {
 // --- Portal Landing Page (Root Domain) ---
 function SaasPortalLandingPage() {
   const router = useRouter();
-  const { setIsLaporSarOpen } = useLaporSar();
+  const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'reports' | 'tenants'>('reports');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -136,7 +131,7 @@ function SaasPortalLandingPage() {
             {/* Quick Action Buttons */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <button
-                onClick={() => setIsLaporSarOpen(true)}
+                onClick={() => setIsEmergencyModalOpen(true)}
                 className="px-6 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
               >
                 <AlertTriangle className="w-4 h-4 text-white" />
@@ -400,7 +395,74 @@ function SaasPortalLandingPage() {
           </div>
         </div>
       )}
-      <LaporSarDrawer />
+
+      {/* Emergency Hotline Modal (SOS) */}
+      {isEmergencyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div 
+            className="fixed inset-0" 
+            onClick={() => setIsEmergencyModalOpen(false)} 
+          />
+          <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl p-6 z-10 space-y-5 animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-600">
+                  <AlertTriangle className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">Saluran Siaga Darurat SAR</h3>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">Badan Nasional Pencarian & Pertolongan</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsEmergencyModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Untuk kondisi musibah marabahaya yang mengancam keselamatan jiwa manusia (kecelakaan laut, penerbangan, bencana, atau evakuasi darurat), segera hubungi pos siaga SAR melalui:
+            </p>
+
+            {/* Emergency Hotline 115 Card */}
+            <a
+              href="tel:115"
+              className="w-full p-4 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white flex items-center justify-between shadow-md hover:from-red-700 hover:to-orange-700 transition-all group cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <Phone className="w-6 h-6 text-white animate-bounce" />
+                </div>
+                <div className="text-left">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-red-100 block">Call Center Bebas Pulsa (24 Jam)</span>
+                  <span className="text-2xl font-extrabold tracking-tight">115</span>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-white/80 group-hover:translate-x-1 transition-transform" />
+            </a>
+
+            {/* Additional Info Box */}
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 text-[11px] text-slate-600 space-y-1">
+              <p className="font-semibold text-slate-800">Pelaporan Berbasis Digital / Web:</p>
+              <p className="text-slate-500">
+                Layanan pelaporan daring interaktif dapat diakses melalui website resmi mitra (Pemda/Instansi Terkait) yang telah terintegrasi dengan Widget Lapor SAR.
+              </p>
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setIsEmergencyModalOpen(false)}
+              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

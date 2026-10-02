@@ -52,7 +52,7 @@ class SARNLPExtractor:
         # 2. LLM Late Fusion Validation (Only run if use_llm is True)
         if use_llm:
             logger.info("Passing local extraction to LLM Validator for disambiguation.")
-            context = await self.llm_rag.get_dictionary_context(db)
+            context = await self.llm_rag.get_dictionary_context(db, query_text=cleaned_message)
             try:
                 validated_data = await self.llm_rag.validate_extraction_with_ai(
                     message=cleaned_message,

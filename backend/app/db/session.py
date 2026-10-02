@@ -261,14 +261,15 @@ async def get_tenant(request: Request, db_master: AsyncSession = Depends(get_mas
         tenant_slug = request.path_params.get("tenant_slug")
         
     if not tenant_slug:
-        host = request.headers.get("host", "")
+        host = request.headers.get("host", "").lower()
         # Resolve subdomain. E.g., jakarta.localhost:3000 -> jakarta
         # E.g., surabaya.laporsar.id -> surabaya
-        parts = host.split(".")
-        if len(parts) > 1:
-            first_part = parts[0].split(":")[0]  # Remove port if present
-            if first_part not in ("www", "admin", "localhost", "127", "localhost:3000", "localhost:8000"):
-                tenant_slug = first_part
+        if not any(ignored in host for ignored in ("trycloudflare.com", "pages.dev", "vercel.app", "ngrok")):
+            parts = host.split(".")
+            if len(parts) > 1:
+                first_part = parts[0].split(":")[0]  # Remove port if present
+                if first_part not in ("www", "admin", "localhost", "127", "localhost:3000", "localhost:8000"):
+                    tenant_slug = first_part
 
     if not tenant_slug:
         path = request.url.path

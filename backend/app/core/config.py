@@ -72,11 +72,28 @@ class Settings(BaseSettings):
 
     def reload(self):
         from dotenv import dotenv_values
-        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), '.env')
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        root_env = os.path.join(os.path.dirname(base_dir), '.env')
+        backend_env = os.path.join(base_dir, '.env')
+        env_path = root_env if os.path.exists(root_env) else backend_env
+
+        # Critical security and connection keys that must never be dynamically mutated at runtime
+        PROTECTED_KEYS = {
+            "SECRET_KEY", 
+            "ALGORITHM", 
+            "DATABASE_URL", 
+            "REDIS_URL", 
+            "DEV_ADMIN_USERNAME", 
+            "DEV_ADMIN_PASSWORD",
+            "DEV_SUPERADMIN_USERNAME",
+            "DEV_SUPERADMIN_PASSWORD",
+            "ACCESS_TOKEN_EXPIRE_MINUTES"
+        }
+
         if os.path.exists(env_path):
             env_vals = dotenv_values(env_path)
             for k, v in env_vals.items():
-                if hasattr(self, k):
+                if k not in PROTECTED_KEYS and hasattr(self, k):
                     setattr(self, k, v)
 
 settings = Settings()

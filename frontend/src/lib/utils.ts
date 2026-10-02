@@ -31,9 +31,19 @@ export function getTenantRedirectUrl(targetTenant: string | null): string {
   if (typeof window === 'undefined') return '/';
   
   const host = window.location.host;
-  const hostname = window.location.hostname;
+  const hostname = window.location.hostname.toLowerCase();
   const protocol = window.location.protocol;
   const port = window.location.port;
+
+  // For tunnels and preview platforms, do not modify hostname
+  if (
+    hostname.includes('trycloudflare.com') ||
+    hostname.includes('pages.dev') ||
+    hostname.includes('vercel.app') ||
+    hostname.includes('ngrok')
+  ) {
+    return `${protocol}//${host}`;
+  }
   
   const cleanTarget = (!targetTenant || targetTenant === 'pusat') ? null : targetTenant;
   

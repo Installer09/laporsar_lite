@@ -9,7 +9,10 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from geoalchemy2 import Geometry
+try:
+    from geoalchemy2 import Geometry
+except ImportError:
+    Geometry = lambda *args, **kwargs: sa.types.NullType()
 
 # revision identifiers, used by Alembic.
 revision: str = '9f99a8f27c3d'

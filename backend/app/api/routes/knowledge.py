@@ -13,6 +13,7 @@ import json
 import enum
 from app.services.rule_extractor import RuleExtractor
 from app.services.ai_providers import ai_provider_manager
+from app.services.llm_rag import llm_rag_service
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,7 @@ async def get_dictionary_stats(db: AsyncSession = Depends(get_db)):
 async def get_dictionary(
     status: Optional[str] = Query(None, description="Filter by status: PENDING, APPROVED, REJECTED"),
     search: Optional[str] = Query(None, description="Search by word"),
+    category: Optional[str] = Query(None, description="Filter by category: SARANA_ALUT, JENIS_INSIDEN, KONDISI_KORBAN, MEDAN_PERAIRAN, OPERASIONAL_SAR, SLANG_DIALEK"),
     word_type: Optional[str] = Query(None, description="Filter by type: ABBREVIATION, JARGON, GENERAL"),
     auto_only: Optional[bool] = Query(None, description="True = only auto-detected terms"),
     skip: int = Query(0, ge=0, description="Pagination offset"),
@@ -102,6 +104,8 @@ async def get_dictionary(
             query = query.where(DictionaryWord.status == status)
         if search and isinstance(search, str):
             query = query.where(DictionaryWord.word.ilike(f"%{search}%"))
+        if category and isinstance(category, str) and category != "ALL":
+            query = query.where(DictionaryWord.category == category)
         if word_type and isinstance(word_type, str):
             query = query.where(DictionaryWord.word_type == word_type.upper())
         if auto_only is not None and isinstance(auto_only, bool):
@@ -117,6 +121,7 @@ async def get_dictionary(
                 m_words = m_res.scalars().all()
                 for w in m_words:
                     w.is_global = True
+                    w.has_vector = bool(w.embedding is not None)
                     master_words.append(w)
         except Exception as e:
             logger.warning(f"Failed to fetch global dictionary from Master DB: {e}")
@@ -128,6 +133,7 @@ async def get_dictionary(
         t_words = t_res.scalars().all()
         for w in t_words:
             w.is_global = False
+            w.has_vector = bool(w.embedding is not None)
             tenant_words.append(w)
     except Exception as e:
         logger.warning(f"Failed to fetch tenant dictionary from Tenant DB: {e}")
@@ -147,6 +153,9 @@ async def get_dictionary(
         key=lambda x: x.created_at or datetime.min,
         reverse=True
     )
+
+    for item in sorted_list:
+        item.has_vector = bool(getattr(item, "embedding", None) is not None)
 
     # Apply pagination offset and limit
     return sorted_list[skip:skip+limit]
@@ -473,6 +482,9 @@ async def create_dictionary_word(
                 word=word_in.word.strip(),
                 definition=word_in.definition,
                 context_example=word_in.context_example,
+                category=word_in.category or "OPERASIONAL_SAR",
+                canonical_name=word_in.canonical_name,
+                semantic_description=word_in.semantic_description,
                 source_message="Manual entry",
                 source_user="admin",
                 word_type=(word_in.word_type or "GENERAL").upper(),
@@ -491,7 +503,10 @@ async def create_dictionary_word(
                 from app.services.autocorrect_service import AutoCorrectService
                 AutoCorrectService._cache_loaded = False
                 await master_db.refresh(new_word)
+                if new_word.status == DictionaryStatus.APPROVED and new_word.definition:
+                    await llm_rag_service.vectorize_dictionary_word(new_word, master_db)
                 new_word.is_global = True
+                new_word.has_vector = bool(getattr(new_word, "embedding", None) is not None)
                 return new_word
             except Exception as e:
                 await master_db.rollback()
@@ -517,6 +532,9 @@ async def create_dictionary_word(
         word=word_in.word.strip(),
         definition=word_in.definition,
         context_example=word_in.context_example,
+        category=word_in.category or "OPERASIONAL_SAR",
+        canonical_name=word_in.canonical_name,
+        semantic_description=word_in.semantic_description,
         source_message="Manual entry",
         source_user="admin",
         word_type=(word_in.word_type or "GENERAL").upper(),
@@ -535,7 +553,10 @@ async def create_dictionary_word(
         from app.services.autocorrect_service import AutoCorrectService
         AutoCorrectService._cache_loaded = False
         await db.refresh(new_word)
+        if new_word.status == DictionaryStatus.APPROVED and new_word.definition:
+            await llm_rag_service.vectorize_dictionary_word(new_word, db)
         new_word.is_global = False
+        new_word.has_vector = bool(getattr(new_word, "embedding", None) is not None)
         return new_word
     except Exception as e:
         await db.rollback()
@@ -572,6 +593,12 @@ async def update_dictionary_word(
                 db_word.definition = word_update.definition
             if word_update.context_example is not None:
                 db_word.context_example = word_update.context_example
+            if word_update.category is not None:
+                db_word.category = word_update.category
+            if word_update.canonical_name is not None:
+                db_word.canonical_name = word_update.canonical_name
+            if word_update.semantic_description is not None:
+                db_word.semantic_description = word_update.semantic_description
             if word_update.word_type is not None:
                 db_word.word_type = word_update.word_type
             if word_update.ner_type is not None:
@@ -598,7 +625,10 @@ async def update_dictionary_word(
                 from app.services.autocorrect_service import AutoCorrectService
                 AutoCorrectService._cache_loaded = False
                 await master_db.refresh(db_word)
+                if db_word.status == DictionaryStatus.APPROVED and db_word.definition:
+                    await llm_rag_service.vectorize_dictionary_word(db_word, master_db)
                 db_word.is_global = True
+                db_word.has_vector = bool(getattr(db_word, "embedding", None) is not None)
                 return db_word
             except Exception as e:
                 await master_db.rollback()
@@ -632,6 +662,12 @@ async def update_dictionary_word(
         db_word.definition = word_update.definition
     if word_update.context_example is not None:
         db_word.context_example = word_update.context_example
+    if word_update.category is not None:
+        db_word.category = word_update.category
+    if word_update.canonical_name is not None:
+        db_word.canonical_name = word_update.canonical_name
+    if word_update.semantic_description is not None:
+        db_word.semantic_description = word_update.semantic_description
     if word_update.word_type is not None:
         db_word.word_type = word_update.word_type
     if word_update.ner_type is not None:
@@ -658,12 +694,51 @@ async def update_dictionary_word(
         from app.services.autocorrect_service import AutoCorrectService
         AutoCorrectService._cache_loaded = False
         await db.refresh(db_word)
+        if db_word.status == DictionaryStatus.APPROVED and db_word.definition:
+            await llm_rag_service.vectorize_dictionary_word(db_word, db)
         db_word.is_global = False
+        db_word.has_vector = bool(getattr(db_word, "embedding", None) is not None)
         return db_word
     except Exception as e:
         await db.rollback()
         logger.error(f"Failed to update word: {e}")
         raise HTTPException(status_code=500, detail="Database transaction failed")
+
+
+@router.post("/dictionary/vectorize-all", dependencies=[Depends(verify_operator_or_admin)])
+async def vectorize_all_dictionary_words(
+    force_all: bool = Query(False, description="Re-generate vektor semua kata termasuk yang sudah ada"),
+    db: AsyncSession = Depends(get_db)
+):
+    """Generate vector embeddings for all approved dictionary words."""
+    if not db:
+        raise HTTPException(status_code=400, detail="No active database session")
+
+    query = select(DictionaryWord).where(
+        DictionaryWord.status == DictionaryStatus.APPROVED,
+        DictionaryWord.definition.isnot(None)
+    )
+    if not force_all:
+        query = query.where(DictionaryWord.embedding.is_(None))
+
+    res = await db.execute(query)
+    words = res.scalars().all()
+
+    success = 0
+    failed = 0
+    for w in words:
+        ok = await llm_rag_service.vectorize_dictionary_word(w, db)
+        if ok:
+            success += 1
+        else:
+            failed += 1
+
+    return {
+        "status": "success",
+        "total_queued": len(words),
+        "success_count": success,
+        "failed_count": failed
+    }
 
 
 @router.delete("/dictionary/{word_id}", dependencies=[Depends(verify_operator_or_admin)])

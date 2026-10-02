@@ -91,4 +91,4 @@ async def test_final_confirming_triggers_single_llm_refinement(engine, mock_db):
         ext_data = json.loads(session.extracted_data)
         assert ext_data["waktu"] == "040800 G"
         assert ext_data["korban_dp"] == 1
-        assert "YA" in result["text"]
+        assert "RINGKASAN DATA LAPORAN SAR" in result["text"]

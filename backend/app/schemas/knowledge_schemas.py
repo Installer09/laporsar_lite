@@ -17,6 +17,9 @@ class DictionaryWordCreate(BaseModel):
     word: str = Field(..., min_length=1, max_length=100, description="Kata/istilah yang tidak dikenal")
     definition: Optional[str] = Field(None, description="Definisi/arti kata")
     context_example: Optional[str] = Field(None, description="Contoh penggunaan dalam kalimat")
+    category: Optional[str] = Field("OPERASIONAL_SAR", description="Kategori SAR: SARANA_ALUT, JENIS_INSIDEN, KONDISI_KORBAN, MEDAN_PERAIRAN, OPERASIONAL_SAR, SLANG_DIALEK")
+    canonical_name: Optional[str] = Field(None, description="Bentuk baku/resmi kata")
+    semantic_description: Optional[str] = Field(None, description="Deskripsi semantik konteks")
     word_type: Optional[str] = Field("GENERAL", description="Tipe kata: ABBREVIATION / JARGON / GENERAL")
     ner_type: Optional[str] = Field(None, description="Peran NER: INCIDENT_KEYWORD / LOCATION / TIME_MARKER / VICTIM_STATUS")
     ner_target: Optional[str] = Field(None, description="Target kategori, e.g. 'KMM', 'LAKA KAPAL' (untuk INCIDENT_KEYWORD)")
@@ -33,6 +36,9 @@ class DictionaryWordCreate(BaseModel):
 class DictionaryWordUpdate(BaseModel):
     definition: Optional[str] = None
     context_example: Optional[str] = None
+    category: Optional[str] = None
+    canonical_name: Optional[str] = None
+    semantic_description: Optional[str] = None
     status: Optional[str] = None  # PENDING, APPROVED, REJECTED
     word_type: Optional[str] = None
     ner_type: Optional[str] = None
@@ -51,6 +57,10 @@ class DictionaryWordResponse(BaseModel):
     word: str
     definition: Optional[str] = None
     context_example: Optional[str] = None
+    category: Optional[str] = "OPERASIONAL_SAR"
+    canonical_name: Optional[str] = None
+    semantic_description: Optional[str] = None
+    has_vector: bool = False
     source_message: Optional[str] = None
     source_user: Optional[str] = None
     status: str

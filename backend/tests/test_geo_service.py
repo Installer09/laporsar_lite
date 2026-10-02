@@ -461,3 +461,45 @@ class TestDestructiveEdgeCases:
     def test_parse_coordinates_special_characters(self):
         """String with special characters but no valid coords returns None."""
         assert parse_coordinates("!@#$%^&*()") is None
+
+
+class TestParseCoordinatesDMMAndIndo:
+    """Tests for DMM (Degrees Decimal Minutes) and Indonesian format coordinates."""
+
+    def test_dmm_standard(self):
+        """DMM format: 03° 23.475' S / 106° 14.492' E."""
+        text = "03° 23.475' S / 106° 14.492' E"
+        result = parse_coordinates(text)
+        assert result is not None
+        expected_lat = -(3 + 23.475 / 60)
+        expected_lon = 106 + 14.492 / 60
+        assert result[0] == pytest.approx(expected_lat, abs=1e-6)
+        assert result[1] == pytest.approx(expected_lon, abs=1e-6)
+
+    def test_dmm_without_symbols(self):
+        """Maritime DMM without degree symbols: 03 23.475 S 106 14.492 T."""
+        text = "03 23.475 S 106 14.492 T"
+        result = parse_coordinates(text)
+        assert result is not None
+        expected_lat = -(3 + 23.475 / 60)
+        expected_lon = 106 + 14.492 / 60
+        assert result[0] == pytest.approx(expected_lat, abs=1e-6)
+        assert result[1] == pytest.approx(expected_lon, abs=1e-6)
+
+    def test_indonesian_comma_decimals(self):
+        """Decimal format with Indonesian comma: -6,123, 106,456."""
+        text = "Posisi di -6,123, 106,456 segera kirim bantuan"
+        result = parse_coordinates(text)
+        assert result is not None
+        assert result == pytest.approx((-6.123, 106.456), abs=1e-3)
+
+    def test_indonesian_words_direction(self):
+        """DMS with Indonesian direction words: 03° 23' 28" Selatan / 106° 14' 29" Timur."""
+        text = "03° 23' 28\" Selatan / 106° 14' 29\" Timur"
+        result = parse_coordinates(text)
+        assert result is not None
+        expected_lat = -(3 + 23 / 60 + 28 / 3600)
+        expected_lon = 106 + 14 / 60 + 29 / 3600
+        assert result[0] == pytest.approx(expected_lat, abs=1e-4)
+        assert result[1] == pytest.approx(expected_lon, abs=1e-4)
+

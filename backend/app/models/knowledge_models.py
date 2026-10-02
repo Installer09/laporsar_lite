@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Enum, Boolean, Float
 from sqlalchemy.sql import func
+from pgvector.sqlalchemy import Vector
 from app.db.session import Base
 import enum
 
@@ -28,7 +29,14 @@ class DictionaryWord(Base):
     status = Column(Enum(DictionaryStatus), default=DictionaryStatus.PENDING)
     frequency = Column(Integer, default=1)
 
-    # Categorization
+    # New Vector & Standardized SAR Categorization:
+    # SARANA_ALUT, JENIS_INSIDEN, KONDISI_KORBAN, MEDAN_PERAIRAN, OPERASIONAL_SAR, SLANG_DIALEK
+    category = Column(String(50), nullable=True, default="OPERASIONAL_SAR", index=True)
+    canonical_name = Column(String(100), nullable=True)
+    semantic_description = Column(Text, nullable=True)
+    embedding = Column(Vector(1024), nullable=True)
+
+    # Legacy categorization fields kept for compatibility
     word_type = Column(String(20), default="GENERAL")   # ABBREVIATION / JARGON / GENERAL
     is_auto_detected = Column(Boolean, default=False)
 

@@ -8,7 +8,8 @@ import {
   updateDictionaryWord, 
   deleteDictionaryWord,
   exportDictionary,
-  importDictionary
+  importDictionary,
+  vectorizeAllDictionary
 } from '@/lib/api';
 import { decodeJwt } from '@/lib/utils';
 import { 
@@ -26,7 +27,10 @@ import {
   Lock,
   Download,
   Upload,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles,
+  Cpu,
+  Layers
 } from 'lucide-react';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -114,9 +118,21 @@ export default function KnowledgePage() {
   // ============================================================
   // KAMUS & ISTILAH STATE & MUTATIONS
   // ============================================================
+  const SAR_CATEGORIES = [
+    { value: 'ALL', label: 'SEMUA KATEGORI SAR', badgeColor: 'bg-gray-100 text-gray-700 border-gray-200' },
+    { value: 'OPERASIONAL_SAR', label: 'OPERASIONAL & NAVIGASI', badgeColor: 'bg-blue-50 text-blue-700 border-blue-100' },
+    { value: 'SARANA_ALUT', label: 'SARANA & ALUT', badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-100' },
+    { value: 'JENIS_INSIDEN', label: 'JENIS MUSIBAH / INSIDEN', badgeColor: 'bg-rose-50 text-rose-700 border-rose-100' },
+    { value: 'KONDISI_KORBAN', label: 'KONDISI KORBAN', badgeColor: 'bg-amber-50 text-amber-700 border-amber-100' },
+    { value: 'MEDAN_PERAIRAN', label: 'MEDAN & PERAIRAN', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+    { value: 'SLANG_DIALEK', label: 'SLANG, DIALEK & TYPO', badgeColor: 'bg-purple-50 text-purple-700 border-purple-100' },
+  ];
+
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('ALL');
   const [filterType, setFilterType] = useState('ALL'); // ALL, ABBREVIATION, JARGON, GENERAL
   const [filterStatus, setFilterStatus] = useState('ALL'); // ALL, APPROVED, PENDING, REJECTED
+  const [isVectorizing, setIsVectorizing] = useState(false);
   
   // Modal & Form States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -128,6 +144,9 @@ export default function KnowledgePage() {
     word: '',
     definition: '',
     context_example: '',
+    category: 'OPERASIONAL_SAR',
+    canonical_name: '',
+    semantic_description: '',
     word_type: 'GENERAL',
     ner_type: '',
     ner_target: '',
@@ -142,6 +161,20 @@ export default function KnowledgePage() {
     queryKey: ['knowledge'],
     queryFn: getKnowledgeBase,
   });
+
+  const handleVectorizeAll = async (force: boolean = false) => {
+    try {
+      setIsVectorizing(true);
+      const res = await vectorizeAllDictionary(force);
+      queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+      alert(`Sinkronisasi Vektor AI Selesai!\nDiproses: ${res.total_queued}\nBerhasil: ${res.success_count}\nGagal: ${res.failed_count}`);
+    } catch (err: any) {
+      console.error("Gagal sinkronisasi vektor AI:", err);
+      alert(err.response?.data?.detail || "Gagal sinkronisasi vektor AI.");
+    } finally {
+      setIsVectorizing(false);
+    }
+  };
 
   // Mutations for Dictionary
   const createMutation = useMutation({
@@ -183,6 +216,9 @@ export default function KnowledgePage() {
       word: '',
       definition: '',
       context_example: '',
+      category: 'OPERASIONAL_SAR',
+      canonical_name: '',
+      semantic_description: '',
       word_type: 'GENERAL',
       ner_type: '',
       ner_target: '',
@@ -206,6 +242,9 @@ export default function KnowledgePage() {
       word: item.word || '',
       definition: item.definition || '',
       context_example: item.context_example || '',
+      category: item.category || 'OPERASIONAL_SAR',
+      canonical_name: item.canonical_name || '',
+      semantic_description: item.semantic_description || '',
       word_type: item.word_type || 'GENERAL',
       ner_type: item.ner_type || '',
       ner_target: item.ner_target || '',
@@ -239,15 +278,18 @@ export default function KnowledgePage() {
   const filteredWords = words.filter((item: any) => {
     const wordStr = (item.word || '').toLowerCase();
     const defStr = (item.definition || '').toLowerCase();
+    const canonStr = (item.canonical_name || '').toLowerCase();
+    const categoryStr = item.category || 'OPERASIONAL_SAR';
     const typeStr = item.word_type || 'GENERAL';
     const statusStr = item.status || 'PENDING';
     const searchLower = searchQuery.toLowerCase();
     
-    const matchesSearch = wordStr.includes(searchLower) || defStr.includes(searchLower);
+    const matchesSearch = wordStr.includes(searchLower) || defStr.includes(searchLower) || canonStr.includes(searchLower);
+    const matchesCategory = filterCategory === 'ALL' ? true : categoryStr === filterCategory;
     const matchesType = filterType === 'ALL' ? true : typeStr === filterType;
     const matchesStatus = filterStatus === 'ALL' ? true : statusStr === filterStatus;
     
-    return matchesSearch && matchesType && matchesStatus;
+    return matchesSearch && matchesCategory && matchesType && matchesStatus;
   });
 
   return (
@@ -264,6 +306,15 @@ export default function KnowledgePage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-4 md:mt-0">
+          <button
+            onClick={() => handleVectorizeAll(false)}
+            disabled={isVectorizing}
+            className="px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-55 cursor-pointer"
+            title="Generate embedding vektor AI untuk pencarian semantik kamus istilah"
+          >
+            {isVectorizing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-indigo-600" />}
+            Sinkron Vektor AI
+          </button>
           <button
             onClick={handleExport}
             disabled={isExporting}
@@ -301,20 +352,33 @@ export default function KnowledgePage() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
             <input 
               type="text" 
-              placeholder="Cari kata atau arti definisi..." 
+              placeholder="Cari kata, bentuk baku, atau arti definisi..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none text-gray-700"
             />
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 flex-wrap">
+            {/* Filter Kategori SAR */}
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="px-3 py-2.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl outline-none"
+            >
+              {SAR_CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
+
             {/* Filter Tipe */}
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="px-3 py-2.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl outline-none"
             >
-              <option value="ALL">SEMUA KATEGORI</option>
+              <option value="ALL">SEMUA TIPE KATA</option>
               <option value="GENERAL">UMUM / GENERAL</option>
               <option value="ABBREVIATION">SINGKATAN / AKRONIM</option>
               <option value="JARGON">JARGON TEKNIS</option>
@@ -339,9 +403,10 @@ export default function KnowledgePage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/20">
-                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Kosakata / Akronim</th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Definisi</th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Tipe NER</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Kosakata & Baku</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Kategori SAR</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Definisi & Semantik</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Vektor AI</th>
                 <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
                 <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 text-right">Aksi</th>
               </tr>
@@ -350,92 +415,111 @@ export default function KnowledgePage() {
               {isLoading ? (
                 Array(5).fill(0).map((_, i) => (
                   <tr key={i}>
-                    <td colSpan={5} className="py-5 px-6">
+                    <td colSpan={6} className="py-5 px-6">
                       <SkeletonLoader className="w-full h-10" />
                     </td>
                   </tr>
                 ))
               ) : isError ? (
                 <tr>
-                  <td colSpan={5} className="py-12">
+                  <td colSpan={6} className="py-12">
                     <ErrorState message="Gagal memuat data kosakata kamus." onRetry={refetch} />
                   </td>
                 </tr>
               ) : filteredWords.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12">
+                  <td colSpan={6} className="py-12">
                     <EmptyState message="Tidak ada kosakata kamus yang ditemukan." />
                   </td>
                 </tr>
               ) : (
-                filteredWords.map((item: any) => (
-                  <tr key={item.id} className="hover:bg-gray-50/30 transition-colors">
-                    <td className="py-4 px-6 font-bold text-gray-900 text-sm">
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span>{item.word}</span>
-                          {item.is_global ? (
-                            <span className="inline-flex px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-bold border border-blue-100 uppercase tracking-wider scale-90">
-                              Pusat
-                            </span>
-                          ) : (
-                            <span className="inline-flex px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold border border-emerald-100 uppercase tracking-wider scale-90">
-                              Lokal
-                            </span>
-                          )}
-                          {item.is_typo_or_slang && (
-                            <span className="inline-flex px-1.5 py-0.5 bg-rose-50 text-rose-600 rounded text-[9px] font-bold border border-rose-100 uppercase tracking-wider scale-90">
-                              Typo/Slang
-                            </span>
-                          )}
-                        </div>
-                        {item.synonym_target && (
-                          <span className="text-[11px] text-orange-600 font-bold mt-0.5 flex items-center gap-1">
-                            ➔ {item.synonym_target}
-                            {item.similarity_score !== null && item.similarity_score !== undefined && (
-                              <span className="text-[9px] text-gray-400 font-normal">
-                                ({Math.round(item.similarity_score * 100)}% match)
+                filteredWords.map((item: any) => {
+                  const catObj = SAR_CATEGORIES.find(c => c.value === (item.category || 'OPERASIONAL_SAR')) || SAR_CATEGORIES[1];
+                  return (
+                    <tr key={item.id} className="hover:bg-gray-50/30 transition-colors">
+                      <td className="py-4 px-6 font-bold text-gray-900 text-sm">
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span>{item.word}</span>
+                            {item.is_global ? (
+                              <span className="inline-flex px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-bold border border-blue-100 uppercase tracking-wider scale-90">
+                                Pusat
+                              </span>
+                            ) : (
+                              <span className="inline-flex px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold border border-emerald-100 uppercase tracking-wider scale-90">
+                                Lokal
                               </span>
                             )}
+                            {item.is_typo_or_slang && (
+                              <span className="inline-flex px-1.5 py-0.5 bg-rose-50 text-rose-600 rounded text-[9px] font-bold border border-rose-100 uppercase tracking-wider scale-90">
+                                Typo/Slang
+                              </span>
+                            )}
+                          </div>
+                          {item.canonical_name && (
+                            <span className="text-[11px] text-blue-600 font-bold mt-0.5 flex items-center gap-1">
+                              Baku: {item.canonical_name}
+                            </span>
+                          )}
+                          {item.synonym_target && (
+                            <span className="text-[11px] text-orange-600 font-bold mt-0.5 flex items-center gap-1">
+                              ➔ {item.synonym_target}
+                              {item.similarity_score !== null && item.similarity_score !== undefined && (
+                                <span className="text-[9px] text-gray-400 font-normal">
+                                  ({Math.round(item.similarity_score * 100)}% match)
+                                </span>
+                              )}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase mt-0.5">
+                            {item.word_type || 'GENERAL'} • Freq: {item.frequency || 1}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-sm">
+                        <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-bold border shadow-xs ${catObj.badgeColor}`}>
+                          {catObj.label}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-gray-600 text-sm leading-relaxed max-w-sm">
+                        {item.definition}
+                        {item.semantic_description && (
+                          <span className="block text-[11px] text-indigo-600 mt-1 font-medium bg-indigo-50/50 p-1.5 rounded-md border border-indigo-100/50">
+                            Semantik AI: {item.semantic_description}
                           </span>
                         )}
-                        <span className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase mt-0.5">
-                          {item.word_type || 'GENERAL'} • Freq: {item.frequency || 1}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-gray-600 text-sm leading-relaxed max-w-sm">
-                      {item.definition}
-                      {item.context_example && (
-                        <span className="block text-[11px] text-gray-400 mt-1 italic font-medium">
-                          Contoh: "{item.context_example}"
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-4 px-6 text-sm">
-                      {item.ner_type ? (
-                        <span className="inline-flex px-2.5 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold border border-purple-100 shadow-sm">
-                          {item.ner_type}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-xs italic font-medium">Bukan NER</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-6">
-                      {item.status === 'APPROVED' ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100 shadow-sm">
-                          <CheckCircle className="w-3.5 h-3.5 text-green-500" /> Approved
-                        </span>
-                      ) : item.status === 'PENDING' ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-bold border border-orange-100 shadow-sm">
-                          <HelpCircle className="w-3.5 h-3.5 text-orange-500" /> Pending
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-bold border border-red-100 shadow-sm">
-                          <AlertCircle className="w-3.5 h-3.5 text-red-500" /> Rejected
-                        </span>
-                      )}
-                    </td>
+                        {item.context_example && (
+                          <span className="block text-[11px] text-gray-400 mt-1 italic font-medium">
+                            Contoh: "{item.context_example}"
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 px-6 text-sm">
+                        {item.has_vector ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-100 shadow-xs">
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Vektor Aktif
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 text-gray-500 rounded-lg text-xs font-medium border border-gray-200 shadow-xs">
+                            <Cpu className="w-3.5 h-3.5 text-gray-400" /> Belum Vektor
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 px-6">
+                        {item.status === 'APPROVED' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100 shadow-sm">
+                            <CheckCircle className="w-3.5 h-3.5 text-green-500" /> Approved
+                          </span>
+                        ) : item.status === 'PENDING' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-bold border border-orange-100 shadow-sm">
+                            <HelpCircle className="w-3.5 h-3.5 text-orange-500" /> Pending
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-bold border border-red-100 shadow-sm">
+                            <AlertCircle className="w-3.5 h-3.5 text-red-500" /> Rejected
+                          </span>
+                        )}
+                      </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center justify-end gap-1.5">
                         {item.is_global && tenantSlug !== 'pusat' && tenantSlug !== 'global' ? (
@@ -463,7 +547,8 @@ export default function KnowledgePage() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -537,7 +622,32 @@ export default function KnowledgePage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="block font-bold text-gray-700">Kategori Tipe</label>
+                      <label className="block font-bold text-gray-700">Bentuk Baku / Istilah Resmi</label>
+                      <input
+                        type="text"
+                        value={formData.canonical_name}
+                        onChange={(e) => setFormData({ ...formData, canonical_name: e.target.value })}
+                        placeholder="Contoh: Perahu Kayu Bermesin"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block font-bold text-gray-700">Kategori Standar SAR</label>
+                      <select
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-medium"
+                      >
+                        {SAR_CATEGORIES.filter(c => c.value !== 'ALL').map((c) => (
+                          <option key={c.value} value={c.value}>{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block font-bold text-gray-700">Karakter Istilah (Tipe)</label>
                       <select
                         value={formData.word_type}
                         onChange={(e) => setFormData({ ...formData, word_type: e.target.value })}
@@ -600,6 +710,23 @@ export default function KnowledgePage() {
                       placeholder="Contoh: Nelayan pergi memancing menggunakan kapal pompong"
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
                     />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block font-bold text-gray-700 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                      Konteks Semantik untuk AI (Opsional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.semantic_description}
+                      onChange={(e) => setFormData({ ...formData, semantic_description: e.target.value })}
+                      placeholder="Contoh: Digunakan di pesisir Sumatra & Riau untuk perahu kayu bermesin dompeng"
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:bg-white outline-none text-gray-800"
+                    />
+                    <span className="text-[10px] text-gray-400 block leading-tight font-medium">
+                      Memberikan petunjuk tambahan bagi model embedding AI ketika mencari kedekatan makna.
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">

@@ -24,12 +24,7 @@ interface LaporSarContextType {
 const LaporSarContext = createContext<LaporSarContextType | undefined>(undefined);
 
 export function LaporSarProvider({ children }: { children: React.ReactNode }) {
-  const [isLaporSarOpen, setIsLaporSarOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sarbot_is_lapor_sar_open') === 'true';
-    }
-    return false;
-  });
+  const [isLaporSarOpen, setIsLaporSarOpen] = useState(false);
   const [laporSarUserId, setLaporSarUserId] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedUser = localStorage.getItem('sarbot_lapor_sar_user_id');
@@ -100,10 +95,12 @@ export function LaporSarProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Persist states to localStorage when they change
+  // Clean up any legacy drawer auto-open flag in localStorage
   useEffect(() => {
-    localStorage.setItem('sarbot_is_lapor_sar_open', isLaporSarOpen.toString());
-  }, [isLaporSarOpen]);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('sarbot_is_lapor_sar_open');
+    }
+  }, []);
 
   useEffect(() => {
     if (laporSarUserId) {

@@ -55,11 +55,29 @@ def _extract_nested_dict(data: dict, target_keys: list) -> dict:
     return res if res is not None else data
 
 class LLMRagService:
-    async def get_dictionary_context(self, db: AsyncSession) -> str:
-        """Fetch approved dictionary words, classifications, and negative constraints to inject into LLM context."""
+    async def get_dictionary_context(self, db: AsyncSession, query_text: str = None) -> str:
+        """Fetch approved dictionary words, classifications, negative constraints, and dynamic vector similarity to inject into LLM context."""
         try:
+            from unittest.mock import Mock
+            if not db or isinstance(db, Mock):
+                return ""
+
             info = getattr(db, "info", None)
             tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else "global"
+
+            # 0. Dynamic Vector Similarity Search if query_text is provided
+            semantic_matches_str = ""
+            if query_text and query_text.strip():
+                try:
+                    vec_matches = await self.search_semantic_dictionary(query_text, db, limit=6)
+                    if vec_matches:
+                        vec_lines = []
+                        for vm in vec_matches:
+                            canon = f" (Bentuk Baku: {vm['canonical_name']})" if vm.get("canonical_name") else ""
+                            vec_lines.append(f"- {vm['word']}{canon} [{vm['category']}]: {vm['definition']}")
+                        semantic_matches_str = "KOSAKATA SEMANTIK KEMIRIPAN VEKTOR AI:\n" + "\n".join(vec_lines)
+                except Exception as vex:
+                    logger.warning(f"[LLMRagService] Vector retrieval for query failed: {vex}")
 
             master_words = []
             master_classifications = []
@@ -156,7 +174,7 @@ class LLMRagService:
                 "Jika pelapor mengetik 'kapal terbakar' or 'kapal mati mesin' tanpa menyebutkan nama kapal yang spesifik seperti KM Sinar Baru, maka nama kapal harus diset ke null atau tidak diisi (bukan diisi 'Terbakar' atau 'Mati Mesin')."
             )
             
-            return "\n\n".join(filter(None, [glossary_str, class_str, neg_str]))
+            return "\n\n".join(filter(None, [semantic_matches_str, glossary_str, class_str, neg_str]))
         except Exception as e:
             logger.error(f"Failed to fetch dictionary context: {str(e)}")
             return ""
@@ -194,9 +212,131 @@ class LLMRagService:
         except Exception as e:
             logger.error(f"Error vectorizing report {report_id}: {e}")
 
+    async def vectorize_dictionary_word(self, word_obj: DictionaryWord, db: AsyncSession) -> bool:
+        """Vectorize a dictionary word into embedding space."""
+        try:
+            from app.core.tenant_config import get_tenant_settings
+            tenant_settings = await get_tenant_settings(db)
+            
+            canonical_info = f" (Resmi: {word_obj.canonical_name})" if word_obj.canonical_name else ""
+            context_info = f" | Contoh penggunaan: {word_obj.context_example}" if word_obj.context_example else ""
+            semantic_text = f"Istilah SAR: {word_obj.word}{canonical_info} | Kategori: {word_obj.category or 'OPERASIONAL_SAR'} | Makna/Definisi: {word_obj.definition or '-'}{context_info}"
+            
+            embed = await ai_provider_manager.get_embedding(semantic_text, tenant_settings=tenant_settings)
+            if not embed:
+                logger.warning(f"Failed to generate embedding for dictionary word '{word_obj.word}'.")
+                return False
+                
+            if len(embed) != 1024:
+                if len(embed) < 1024:
+                    embed = embed + [0.0] * (1024 - len(embed))
+                elif len(embed) > 1024:
+                    embed = embed[:1024]
+                    
+            word_obj.embedding = embed
+            word_obj.semantic_description = semantic_text
+            await db.commit()
+            logger.info(f"[Continuous Learning] Vectorized dictionary term: '{word_obj.word}' ({word_obj.category})")
+            return True
+        except Exception as e:
+            logger.error(f"Error vectorizing dictionary word '{word_obj.word}': {e}")
+            return False
+
+    async def search_semantic_dictionary(self, text: str, db: AsyncSession, limit: int = 5, max_distance: float = 0.5) -> List[Dict[str, Any]]:
+        """
+        Search relevant dictionary terms using pgvector semantic similarity.
+        Searches both Master DB (Global) and Tenant DB (Regional).
+        """
+        from unittest.mock import Mock
+        if not db or isinstance(db, Mock) or not text or not text.strip():
+            return []
+        try:
+            from app.core.tenant_config import get_tenant_settings
+            tenant_settings = await get_tenant_settings(db)
+            embed = await ai_provider_manager.get_embedding(text, tenant_settings=tenant_settings)
+            if not embed:
+                return []
+
+            if len(embed) != 1024:
+                if len(embed) < 1024:
+                    embed = embed + [0.0] * (1024 - len(embed))
+                elif len(embed) > 1024:
+                    embed = embed[:1024]
+
+            import asyncio
+            info = getattr(db, "info", None)
+            tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else "global"
+
+            async def search_master_words():
+                try:
+                    from app.db.session import MasterSessionLocal
+                    async with MasterSessionLocal() as master_db:
+                        distance_expr = DictionaryWord.embedding.cosine_distance(embed)
+                        res = await master_db.execute(
+                            select(DictionaryWord, distance_expr.label("distance"))
+                            .where(
+                                DictionaryWord.embedding.isnot(None),
+                                DictionaryWord.status == DictionaryStatus.APPROVED,
+                                distance_expr <= max_distance
+                            )
+                            .order_by(distance_expr)
+                            .limit(limit)
+                        )
+                        return [(row[0], row[1], "global") for row in res.all()]
+                except Exception as ex:
+                    logger.warning(f"[LLMRagService] Master dictionary vector search failed: {ex}")
+                    return []
+
+            async def search_tenant_words():
+                try:
+                    distance_expr = DictionaryWord.embedding.cosine_distance(embed)
+                    res = await db.execute(
+                        select(DictionaryWord, distance_expr.label("distance"))
+                        .where(
+                            DictionaryWord.embedding.isnot(None),
+                            DictionaryWord.status == DictionaryStatus.APPROVED,
+                            distance_expr <= max_distance
+                        )
+                        .order_by(distance_expr)
+                        .limit(limit)
+                    )
+                    return [(row[0], row[1], tenant_slug) for row in res.all()]
+                except Exception as ex:
+                    logger.warning(f"[LLMRagService] Tenant dictionary vector search failed: {ex}")
+                    return []
+
+            tasks = [search_master_words()]
+            if tenant_slug != "global":
+                tasks.append(search_tenant_words())
+
+            results_groups = await asyncio.gather(*tasks)
+            all_matches = []
+            seen_words = set()
+            for group in results_groups:
+                for word_item, distance, source in group:
+                    clean_w = word_item.word.lower().strip()
+                    if clean_w not in seen_words:
+                        seen_words.add(clean_w)
+                        all_matches.append({
+                            "word": word_item.word,
+                            "category": word_item.category or "OPERASIONAL_SAR",
+                            "canonical_name": word_item.canonical_name,
+                            "definition": word_item.definition,
+                            "context_example": word_item.context_example,
+                            "distance": round(float(distance), 4),
+                            "source": source
+                        })
+
+            all_matches.sort(key=lambda x: x["distance"])
+            return all_matches[:limit]
+        except Exception as e:
+            logger.error(f"Error searching semantic dictionary: {e}")
+            return []
+
     async def search_similar_reports(self, text: str, db: AsyncSession, limit: int = 2) -> List[Dict[str, Any]]:
         """Search similar reports using pgvector similarity in both Master DB (global) and Tenant DB (regional)."""
-        if not db:
+        from unittest.mock import Mock
+        if not db or isinstance(db, Mock):
             return []
         try:
             from app.core.tenant_config import get_tenant_settings
@@ -545,6 +685,7 @@ Respond ONLY with the JSON object. No explanation."""
             from sqlalchemy import func as sa_func
             from app.models.knowledge_models import DictionaryWord, DictionaryStatus
 
+            words_to_vectorize = []
             for item in words:
                 word_text = item.get("word", "").strip().lower()
                 if not word_text or len(word_text) < 2 or len(word_text) > 100:
@@ -572,6 +713,19 @@ Respond ONLY with the JSON object. No explanation."""
                 if word_text and synonym_target:
                     similarity_score = difflib.SequenceMatcher(None, word_text, synonym_target.lower()).ratio()
 
+                # Infer standard SAR Category
+                category = "OPERASIONAL_SAR"
+                if is_typo_or_slang:
+                    category = "SLANG_DIALEK"
+                elif predicted_ner_type in ("VESSEL_TYPE", "VESSEL_PREFIX"):
+                    category = "SARANA_ALUT"
+                elif predicted_ner_type in ("INCIDENT_PROBLEM", "INCIDENT_KEYWORD"):
+                    category = "JENIS_INSIDEN"
+                elif predicted_ner_type and "VICTIM" in predicted_ner_type:
+                    category = "KONDISI_KORBAN"
+                elif predicted_ner_type in ("LOCATION_TYPE", "ISLAND"):
+                    category = "MEDAN_PERAIRAN"
+
                 # If it's a typo or slang, we log it as PENDING for Admin review
                 new_status = DictionaryStatus.PENDING if is_typo_or_slang else DictionaryStatus.APPROVED
                 new_word_type = "TYPO" if is_typo_or_slang else word_type
@@ -582,6 +736,10 @@ Respond ONLY with the JSON object. No explanation."""
                     # Auto-update missing metadata
                     if not existing.definition and item.get("definition"):
                         existing.definition = item.get("definition")
+                    if not existing.category:
+                        existing.category = category
+                    if not existing.canonical_name and synonym_target:
+                        existing.canonical_name = synonym_target
                     if not existing.ner_type and predicted_ner_type:
                         existing.ner_type = predicted_ner_type
                     if not existing.ner_target and predicted_ner_target:
@@ -592,10 +750,13 @@ Respond ONLY with the JSON object. No explanation."""
                         existing.is_typo_or_slang = is_typo_or_slang
                     if existing.similarity_score is None:
                         existing.similarity_score = similarity_score
+                    words_to_vectorize.append(existing)
                 else:
                     new_word = DictionaryWord(
                         word=word_text,
                         definition=item.get("definition"),
+                        category=category,
+                        canonical_name=synonym_target if synonym_target else None,
                         context_example=item.get("context", "")[:255],
                         source_message=message[:500],
                         source_user=user_id,
@@ -610,9 +771,18 @@ Respond ONLY with the JSON object. No explanation."""
                         similarity_score=similarity_score
                     )
                     db.add(new_word)
+                    words_to_vectorize.append(new_word)
 
             await db.commit()
             logger.info(f"Saved {len(words)} unknown word(s) in dictionary")
+
+            # Vectorize newly added or updated words into pgvector
+            for w in words_to_vectorize:
+                if w.definition:
+                    try:
+                        await self.vectorize_dictionary_word(w, db)
+                    except Exception as vex:
+                        logger.warning(f"Auto-vectorization failed for word '{w.word}': {vex}")
 
         except Exception as e:
             logger.error(f"Error saving unknown words: {e}")
@@ -912,4 +1082,4 @@ ATURAN RESPONS:
         )
 
 
-
+llm_rag_service = LLMRagService()

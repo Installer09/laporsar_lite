@@ -2,7 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const host = request.headers.get('host') || '';
+  const host = (request.headers.get('host') || '').toLowerCase();
+
+  // Ignore tunnels, preview platforms, and cloudflare quick tunnel
+  if (
+    host.includes('trycloudflare.com') ||
+    host.includes('pages.dev') ||
+    host.includes('vercel.app') ||
+    host.includes('ngrok')
+  ) {
+    return NextResponse.next();
+  }
 
   // Get subdomain
   const parts = host.split('.');

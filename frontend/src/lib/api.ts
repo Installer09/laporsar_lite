@@ -16,7 +16,18 @@ export const getBackendUrl = () => {
 
 export const getTenantSlug = () => {
   if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
+    const host = window.location.hostname.toLowerCase();
+
+    // Ignore tunnels, preview platforms, and local IP addresses
+    if (
+      host.includes('trycloudflare.com') ||
+      host.includes('pages.dev') ||
+      host.includes('vercel.app') ||
+      host.includes('ngrok')
+    ) {
+      return null;
+    }
+
     const parts = host.split('.');
     
     // Localhost development: e.g. jakarta.localhost (2 parts)
@@ -85,7 +96,9 @@ api.interceptors.response.use(
       if (!isLoginRequest) {
         localStorage.removeItem('token');
         if (typeof window !== 'undefined') {
-          if (sessionStorage.getItem('logging_out') !== 'true') {
+          const currentPath = window.location.pathname;
+          const isPublic = currentPath === '/login' || currentPath === '/register' || currentPath === '/help-center';
+          if (!isPublic && sessionStorage.getItem('logging_out') !== 'true') {
             window.location.href = '/login';
           }
         }
@@ -130,8 +143,8 @@ export const deleteContact = async (id: number) => {
   return data;
 };
 
-export const getKnowledgeBase = async () => {
-  const { data } = await api.get('/knowledge/dictionary');
+export const getKnowledgeBase = async (params?: any) => {
+  const { data } = await api.get('/knowledge/dictionary', { params });
   return data;
 };
 
@@ -147,6 +160,11 @@ export const updateDictionaryWord = async (id: number, wordData: any, isGlobal: 
 
 export const deleteDictionaryWord = async ({ id, isGlobal }: { id: number; isGlobal: boolean }) => {
   const { data } = await api.delete(`/knowledge/dictionary/${id}?is_global=${isGlobal}`);
+  return data;
+};
+
+export const vectorizeAllDictionary = async (forceAll: boolean = false) => {
+  const { data } = await api.post(`/knowledge/dictionary/vectorize-all?force_all=${forceAll}`);
   return data;
 };
 

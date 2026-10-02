@@ -4,7 +4,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
-import { LaporSarDrawer } from "@/components/layout/LaporSarDrawer";
 import { GlobalReportDetailModal } from "@/components/ui/GlobalReportDetailModal";
 import { decodeJwt, getTenantRedirectUrl } from '@/lib/utils';
 import { getTenantSlug } from '@/lib/api';
@@ -64,8 +63,14 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
               
               if (normalizedTokenTenant !== normalizedCurrentTenant) {
                 const redirectUrl = getTenantRedirectUrl(payload.tenant_slug);
-                window.location.href = `${redirectUrl}${window.location.pathname}${window.location.search}`;
-                return;
+                if (redirectUrl !== window.location.origin) {
+                  const targetUrl = new URL(`${redirectUrl}${window.location.pathname}${window.location.search}`);
+                  if (token) {
+                    targetUrl.searchParams.set('token', token);
+                  }
+                  window.location.href = targetUrl.toString();
+                  return;
+                }
               }
             }
 
@@ -172,7 +177,6 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
-      {(userRole === 'User' || userRole === 'Admin' || userRole === 'admin' || userRole === 'Operator' || userRole === 'Super Admin') && <LaporSarDrawer />}
       <GlobalReportDetailModal />
     </>
   );

@@ -67,12 +67,13 @@ async def verify_jwt(request: Request, credentials: Optional[HTTPAuthorizationCr
         req_tenant_slug = request.headers.get("X-Tenant-Slug") or request.headers.get("x-tenant-slug")
         
         if not req_tenant_slug:
-            host = request.headers.get("host", "")
-            parts = host.split(".")
-            if len(parts) > 1:
-                first_part = parts[0].split(":")[0]
-                if first_part not in ("www", "admin", "localhost", "127", "localhost:3000", "localhost:8000"):
-                    req_tenant_slug = first_part
+            host = request.headers.get("host", "").lower()
+            if not any(ignored in host for ignored in ("trycloudflare.com", "pages.dev", "vercel.app", "ngrok")):
+                parts = host.split(".")
+                if len(parts) > 1:
+                    first_part = parts[0].split(":")[0]
+                    if first_part not in ("www", "admin", "localhost", "127", "localhost:3000", "localhost:8000"):
+                        req_tenant_slug = first_part
                     
         if not req_tenant_slug:
             req_tenant_slug = request.path_params.get("tenant_slug")

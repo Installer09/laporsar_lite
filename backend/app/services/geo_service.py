@@ -20,17 +20,55 @@ def parse_coordinates(text: str) -> Optional[Tuple[float, float]]:
     """
     Extract latitude and longitude from a text string.
     Supports multiple formats:
-      - Decimal: 3.391282, 106.241521
-      - DMS: 03°23'28.6" LU / 106°14'29.5" BT
-      - Mixed: 03°23'28.6"N 106°14'29.5"E
+      - Decimal (dot/comma): -6.123, 106.456 or -6,123, 106,456
+      - DMM (Degrees Decimal Minutes): 03° 23.475' S / 106° 14.492' E
+      - DMS (Degrees Minutes Seconds): 03°23'28.6" LU / 106°14'29.5" BT
+      - Maritime/Natural text: 03 23.475 S 106 14.492 T
     Returns (lat, lon) or None if not found.
     """
-    # --- Try decimal format first: e.g. "3.391282, 106.241521" ---
-    decimal_pattern = r'(-?\d{1,3}\.\d{3,})\s*(?:[,/]\s*|\s+)(-?\d{1,3}\.\d{3,})'
+    if not text.strip():
+        return None
+
+    # --- 1. Try DMS / DMM with hemisphere letters (NSEW / LULS / BTBB / UT) ---
+    # Matches:
+    # Group 1: degrees
+    # Group 2: minutes (can be float like 23.475 for DMM)
+    # Group 3: optional seconds (for DMS)
+    # Group 4: hemisphere indicator
+    dms_dmm_pattern = (
+        r"(\d{1,3})[°º\s]?"                                  # degrees + optional degree symbol/space
+        r"\s*(\d{1,2}(?:[\.,]\d+)?)['''′']?"                 # minutes (integer or decimal) + optional minute symbol
+        r"(?:\s*(\d{1,2}(?:[\.,]\d+)?)[\"\"″\"\"']?)?"       # optional seconds + optional quote
+        r"\s*([NSEWUSTB]|LS|LU|BT|BB|[Uu]tara|[Ss]elatan|[Tt]imur|[Bb]arat)\b" # hemisphere
+    )
+    matches = re.findall(dms_dmm_pattern, text, re.IGNORECASE)
+    if len(matches) >= 2:
+        coords = []
+        for deg, mins, secs, hem in matches:
+            deg_val = float(deg)
+            mins_val = float(mins.replace(",", ".")) if mins else 0.0
+            secs_val = float(secs.replace(",", ".")) if (secs and secs.strip()) else 0.0
+
+            decimal = deg_val + (mins_val / 60.0) + (secs_val / 3600.0)
+            hem_u = hem.upper()
+            if hem_u in ('S', 'LS', 'SELATAN'):
+                decimal = -decimal
+            elif hem_u in ('W', 'BB', 'B', 'BARAT'):
+                decimal = -decimal
+            coords.append(decimal)
+
+        lat, lon = coords[0], coords[1]
+        # Heuristic swap: latitude is smaller for Indonesia (lat < 15, lon > 90)
+        if abs(lat) > 20 and abs(lon) <= 20:
+            lat, lon = lon, lat
+        return (round(lat, 6), round(lon, 6))
+
+    # --- 2. Try decimal format: e.g. "3.391282, 106.241521" or "-6,123, 106,456" ---
+    decimal_pattern = r'(-?\d{1,3}(?:[\.,]\d{2,}))\s*(?:[,/]\s*|\s+)(-?\d{1,3}(?:[\.,]\d{2,}))'
     match = re.search(decimal_pattern, text)
     if match:
-        val1 = float(match.group(1))
-        val2 = float(match.group(2))
+        val1 = float(match.group(1).replace(",", "."))
+        val2 = float(match.group(2).replace(",", "."))
         # Heuristic: latitude is usually smaller for Indonesia (0-11°)
         if abs(val1) <= 15 and abs(val2) > 15:
             return (val1, val2)
@@ -38,34 +76,6 @@ def parse_coordinates(text: str) -> Optional[Tuple[float, float]]:
             return (val2, val1)
         else:
             return (val1, val2)
-
-    # --- Try DMS format: 03°23'28.6" LU / 106°14'29.5" BT ---
-    # Supports LU, LS, BT, BB and various quote characters
-    dms_pattern = (
-        r"(\d{1,3})[°º]"             # degrees
-        r"\s*(\d{1,2})['''′']"       # minutes (ASCII + Unicode quotes)
-        r"\s*(\d{1,2}(?:\.\d+)?)?"    # seconds (optional)
-        r'[""″""]?'                  # optional closing quote (ASCII + Unicode)
-        r"\s*([NSEW]|LS|LU|BT|BB)"   # hemisphere (added LU, LS, BT, BB)
-    )
-    matches = re.findall(dms_pattern, text, re.IGNORECASE)
-    if len(matches) >= 2:
-        coords = []
-        for deg, mins, secs, hem in matches:
-            seconds = float(secs.replace(",", ".")) if (secs and secs.strip()) else 0.0
-            decimal = float(deg) + float(mins) / 60 + seconds / 3600
-            hem_u = hem.upper()
-            if hem_u in ('S', 'LS'):
-                decimal = -decimal
-            elif hem_u in ('W', 'BB'):
-                decimal = -decimal
-            coords.append(decimal)
-
-        lat, lon = coords[0], coords[1]
-        # Sanity: ensure lat is the smaller one for Indonesia (lat < 15, lon > 90)
-        if abs(lat) > 20 and abs(lon) <= 20:
-            lat, lon = lon, lat
-        return (round(lat, 6), round(lon, 6))
 
     return None
 
