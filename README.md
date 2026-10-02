@@ -150,12 +150,17 @@ Setelah informasi terkonfirmasi:
 ### 🎙️ 1. Transkripsi Suara Darurat Sub-Detik (< 1s)
 Pelapor yang berada dalam kondisi panik tidak perlu mengetik panjang. Cukup tekan tombol rekam suara di Telegram/WhatsApp, sistem mentranskripsinya secara instan dengan akurasi tinggi menggunakan model Whisper Large V3.
 
-### 🗣️ 2. Pemahaman Dialek Daerah & Auto-Learning Kamus
-Mendukung kamus istilah maritim dan bahasa daerah yang dapat dikustomisasi per wilayah kerja Kantor SAR (KPP). Sistem dilengkapi fitur *auto-learning* yang otomatis mencatat kata-kata baru yang belum terdaftar untuk ditinjau oleh operator.
+### 🗣️ 2. Kamus Istilah Semantik (pgvector) & Auto-Learning Dialek
+- **Pencarian Semantik Berbasis Vektor (`pgvector`):** Menggunakan model embedding 1024-dimensi untuk menghitung jarak kosinus (*cosine distance*) sehingga sistem dapat memahami sinonim dan variasi istilah lokal meskipun tidak sama persis secara leksikal.
+- **Kategorisasi Taksonomi Standar SAR:** Istilah dikelompokkan secara terstruktur ke dalam 6 kategori: `OPERASIONAL_SAR`, `SLANG_DIALEK`, `SARANA_ALUT`, `JENIS_INSIDEN`, `KONDISI_KORBAN`, dan `MEDAN_PERAIRAN`.
+- **Pemetaan Sinonim Kanonikal:** Memetakan istilah lokal/slang (misal: *"pompong"*, *"jukung"*, *"kelotok"*) langsung ke padanan resmi (*canonical name*) di SOP operasi SAR.
+- **Auto-Learning Vocabulary:** Sistem secara otomatis mendeteksi kata atau akronim baru yang belum terdaftar dari pesan masuk dan menyimpannya sebagai draft (*PENDING*) untuk ditinjau oleh operator.
+- **Batch Vectorization:** Operator dapat melakukan sinkronisasi vektor seluruh kamus dengan satu klik langsung dari antarmuka dasbor.
 
 ### 🗺️ 3. Peta Taktis Operasi & Analisis Hotspot (GIS)
-- **Visualisasi Peta Interaktif:** Didukung oleh Leaflet & PostGIS dengan fitur pengelompokan (*Marker Clustering*) agar peta tetap bersih saat terjadi eskalasi kejadian.
-- **Spatial Hotspot Density:** Menganalisis kerapatan zona rawan musibah secara spasial untuk pertimbangan penempatan armada siaga SAR.
+- **Visualisasi Peta Interaktif:** Didukung oleh Leaflet & PostGIS dengan fitur pengelompokan (*Marker Clustering*) agar visualisasi tetap responsif saat terjadi lonjakan laporan.
+- **Analisis Kerapatan Hotspot Spasial:** Menghitung konsentrasi insiden di suatu wilayah menggunakan kalkulasi spasial PostGIS dan jarak *Haversine*, memudahkan pimpinan menentukan penempatan pos siaga SAR.
+- **Geofencing & Radius Pencarian:** Mendukung penentuan radius pencarian awal (*Search Area*) secara dinamis berdasarkan jenis musibah dan kecepatan arus/angin.
 - **Ekspor KML / GPX:** Unduh koordinat kejadian dalam format `.kml` untuk langsung dimuat ke GPS Garmin kapal SAR atau Google Earth Pro.
 
 ### 📍 4. Webview Location Picker (Telegram WebApp)
@@ -358,6 +363,9 @@ Berikut rincian variabel konfigurasi utama pada file `.env`:
 | `AI_LLM_PROVIDER` | Penyedia model kecerdasan teks | `gemini` *(atau `groq`, `openai`)* |
 | `AI_LLM_MODEL` | Model penalaran bahasa | `gemini-1.5-flash` *(atau `llama-3.3-70b-versatile`)* |
 | `AI_LLM_API_KEY` | Kunci API pemrosesan teks | `AIzaSy_...` |
+| `AI_EMBED_PROVIDER` | Penyedia model embedding vektor | `gemini` *(atau `openai`, `ollama`)* |
+| `AI_EMBED_MODEL` | Model embedding vektor | `text-embedding-004` *(atau `text-embedding-3-small`)* |
+| `AI_EMBED_API_KEY` | Kunci API model embedding | `AIzaSy_...` |
 | `TELEGRAM_BOT_TOKEN` | Token bot Telegram dari BotFather | `123456:ABC-DEF...` |
 | `TELEGRAM_SAR_GROUP_ID` | ID grup Telegram koordinasi SAR | `-100123456789` |
 
@@ -381,7 +389,7 @@ Berikut rincian variabel konfigurasi utama pada file `.env`:
 5. **Kirim Disposisi SAR:** Klik tombol **Ekspor KML** untuk meneruskan rute koordinat ke perangkat navigasi GPS tim penyelamat di lapangan.
 
 ### Bagi Administrator Sistem
-1. **Manajemen Kamus:** Buka menu **Kamus Istilah** untuk menambahkan kata dialek setempat atau menyetujui kata-kata baru hasil deteksi *Auto-Learning*.
+1. **Manajemen Kamus:** Buka menu **Kamus Istilah** untuk menambahkan kata dialek setempat, melakukan pencarian semantik vektor, atau menyetujui kata-kata baru hasil deteksi *Auto-Learning*.
 2. **Manajemen Tenant:** Melalui akun Super Admin, buat dan kelola Kantor SAR cabang wilayah kerja baru beserta batas yurisdiksinya.
 3. **Pencadangan Data:** Buka menu **Penyimpanan Berkas** dan **System Backup** untuk mengunduh arsip basis data dan log audit secara berkala.
 
@@ -390,12 +398,13 @@ Berikut rincian variabel konfigurasi utama pada file `.env`:
 ## 🛠️ 9. Teknologi yang Digunakan (Tech Stack)
 
 - **Backend:** [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12/3.14 Asynchronous), [SQLAlchemy 2.0](https://www.sqlalchemy.org/), [Pydantic v2](https://docs.pydantic.dev/).
-- **Database & Spatial:** [PostgreSQL 16](https://www.postgresql.org/) dengan ekstensi spasial [PostGIS 3.4](https://postgis.net/) dan [Redis 7](https://redis.io/).
+- **Database & Spatial / Vector:** [PostgreSQL 16](https://www.postgresql.org/) dengan ekstensi spasial [PostGIS 3.4](https://postgis.net/), ekstensi vektor [pgvector](https://github.com/pgvector/pgvector), dan [Redis 7](https://redis.io/).
 - **Frontend Command Center:** [Next.js 16](https://nextjs.org/) (App Router), [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Tailwind CSS v4](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/).
 - **Geospasial & Peta:** [Leaflet](https://leafletjs.com/), [React Leaflet](https://react-leaflet.js.org/), dan Leaflet MarkerCluster.
 - **Kecerdasan Buatan (AI Engine):**
   - *Speech-to-Text:* [Groq Cloud Whisper Large V3](https://groq.com/) / OpenAI Whisper.
   - *Large Language Model (LLM):* [Google Gemini 1.5 Flash](https://ai.google.dev/) & Meta Llama 3.3.
+  - *Embeddings & RAG:* [Google Gemini text-embedding-004](https://ai.google.dev/) & OpenAI text-embedding-3-small.
 - **Kanal Pesan:** Telegram Bot API (Webhook & WebApp View), WhatsApp Cloud API Webhook.
 - **DevOps & Jaringan:** [Docker](https://www.docker.com/), Docker Compose, [Cloudflare Tunnel](https://www.cloudflare.com/products/tunnel/) (Zero Trust).
 

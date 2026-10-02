@@ -29,7 +29,7 @@ Dengan arsitektur **Lapor SAR Lite**:
 │  [ cloudflared daemon ] ─── Meneruskan ke Port 3000         │
 │             │                                               │
 │             ▼                                               │
-│     Frontend (Next.js 14) ─── Port 3000                     │
+│     Frontend (Next.js 16) ─── Port 3000                     │
 │     - Halaman Pelapor Mobile (PWA)                          │
 │     - Dashboard Operator & Peta Spasial SAR                 │
 │     - Manajemen Berkas & Audio Player (/storage)            │
@@ -39,12 +39,13 @@ Dengan arsitektur **Lapor SAR Lite**:
 │             │                                               │
 │      ┌──────┴───────────────────────┐                       │
 │      ▼                              ▼                       │
-│  PostGIS Database                Redis                      │
-│  (Database Spasial & Geometri)   (Cache Cepat)              │
+│  PostGIS & pgvector Database     Redis                      │
+│  (Database Spasial & Vektor)     (Cache Cepat)              │
 │                                                             │
 │  Layanan AI Luar (Cloud API):                               │
 │  - Groq Whisper Large V3 (Voice Note Transkripsi < 1s)      │
 │  - Google Gemini 1.5 Flash / Groq Llama 3.3 (Ekstraksi SAR) │
+│  - Gemini text-embedding-004 (Vektorisasi Kamus Semantik)   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -92,6 +93,11 @@ AI_STT_API_KEY=gsk_MASUKKAN_API_KEY_GROQ_ANDA
 AI_LLM_PROVIDER=gemini
 AI_LLM_MODEL=gemini-1.5-flash
 AI_LLM_API_KEY=AIzaSy_MASUKKAN_API_KEY_GEMINI_ANDA
+
+# Masukkan API Key Embedding untuk Kamus Semantik & RAG (pgvector)
+AI_EMBED_PROVIDER=gemini
+AI_EMBED_MODEL=text-embedding-004
+AI_EMBED_API_KEY=AIzaSy_MASUKKAN_API_KEY_GEMINI_ANDA
 ```
 
 *(Tips: Dapatkan API Key Groq gratis di [console.groq.com](https://console.groq.com) dan Gemini di [aistudio.google.com](https://aistudio.google.com)).*
@@ -174,6 +180,12 @@ Untuk memukau audiens dalam presentasi, jalankan skenario berikut:
 2. Tunjukkan statistik penggunaan disk lokal server (misal: 15 MB terpakai dari sisa 80 GB disk).
 3. Klik tombol **Play** pada berkas audio laporan tadi untuk memutar rekaman suara pelapor langsung melalui browser laptop.
 4. Setelah demo selesai, klik tombol **"Reset Berkas Demo"** untuk mengembalikan penyimpanan ke kondisi bersih.
+
+### Skenario 5: Eksplorasi Kamus Semantik & Vektor AI (/knowledge)
+1. Buka menu **Kamus Istilah** (`/knowledge`) di panel kiri.
+2. Ketik kata atau konsep dalam kotak **Pencarian Semantik AI** (contoh: *"perahu kecil nelayan"*).
+3. Tunjukkan kepada audiens bagaimana sistem berbasis **pgvector** menemukan istilah lokal terkait (seperti *"pompong"*, *"kelotok"*, *"jukung"*) lengkap dengan skor jarak semantiknya (*cosine distance*).
+4. Tunjukkan tombol **"Vektorisasi Semua Istilah"** untuk mendemonstrasikan kapabilitas sinkronisasi embedding RAG lokal ke database.
 
 ---
 
