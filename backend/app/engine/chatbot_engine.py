@@ -380,13 +380,13 @@ class ChatbotEngine:
         if "bantuan sar" in msg_clean or msg_clean in ("/bantuan", "info sar", "tanya sar", "bantuan sar lainnya"):
             session.state = "MODE_BANTUAN"
             reply = (
-                "ℹ️ *Pusat Informasi & Bantuan SAR*\n\n"
-                "Silakan tanyakan hal-hal seputar informasi SAR, Prosedur/SOP Penyelamatan, Kamus Istilah SAR, atau Kontak Darurat.\n"
-                "*(Asisten AI akan menjawab pertanyaan Anda berdasarkan dokumen resmi BASARNAS)*\n\n"
-                "💡 *Contoh pertanyaan:*\n"
-                "• _Bagaimana SOP pertolongan orang tenggelam?_\n"
-                "• _Apa singkatan KMM dan Laka Kapal?_\n"
-                "• _Berapa nomor darurat Call Center BASARNAS?_"
+                "*Pusat Informasi & Bantuan Standar Operasional Prosedur (SOP) SAR*\n\n"
+                "Silakan tanyakan hal-hal seputar informasi operasi SAR, Prosedur/SOP Penyelamatan, Kamus Istilah SAR, atau Kontak Darurat.\n"
+                "(Jawaban disusun resmi berdasarkan dokumen dan regulasi BASARNAS)\n\n"
+                "*Contoh pertanyaan:*\n"
+                "- Bagaimana SOP pertolongan orang tenggelam di laut?\n"
+                "- Apa ketentuan dan definisi Kondisi Membahayakan Manusia (KMM)?\n"
+                "- Berapa nomor darurat resmi Call Center BASARNAS?"
             )
             buttons = ["🚨 Laporkan Kejadian", "🚨 Lapor Cepat (SOS)", "🤖 Cek Status Laporan"]
             self._update_history(session, "assistant", reply, buttons=buttons)
