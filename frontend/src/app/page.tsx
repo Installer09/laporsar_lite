@@ -19,8 +19,8 @@ import { useRouter } from 'next/navigation';
 const NationalDashboardPage = dynamic(() => import('./national-dashboard/page'), {
   ssr: false,
   loading: () => (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#090d1a]">
-      <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
+    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+      <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
     </div>
   ),
 });
@@ -368,7 +368,7 @@ function SaasPortalLandingPage() {
               <button
                 onClick={() => {
                   setIsAuthModalOpen(false);
-                  window.open('/login', '_blank');
+                  router.push('/login');
                 }}
                 className="p-4 border border-slate-200 rounded-xl bg-slate-50 hover:border-slate-300 hover:bg-slate-100/60 text-center flex flex-col items-center justify-center gap-2.5 transition-colors group cursor-pointer shadow-xs"
               >
@@ -382,7 +382,7 @@ function SaasPortalLandingPage() {
               <button
                 onClick={() => {
                   setIsAuthModalOpen(false);
-                  window.open('/register', '_blank');
+                  router.push('/register');
                 }}
                 className="p-4 border border-slate-200 rounded-xl bg-slate-50 hover:border-slate-300 hover:bg-slate-100/60 text-center flex flex-col items-center justify-center gap-2.5 transition-colors group cursor-pointer shadow-xs"
               >
@@ -667,23 +667,15 @@ export default function Home() {
     }
   }, [router]);
 
-  if (isTenant === null) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#090d1a]">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
-      </div>
-    );
-  }
-
   // Root domain (SaaS Landing Page) when not logged in
   if (!isTenant && !isAuthenticated) {
     return <SaasPortalLandingPage />;
   }
 
-  if (isAuthenticated === null) {
+  if (isTenant === null || isAuthenticated === null) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#090d1a]">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
       </div>
     );
   }

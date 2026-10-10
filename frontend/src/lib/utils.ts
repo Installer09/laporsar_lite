@@ -49,31 +49,30 @@ export function getTenantRedirectUrl(targetTenant: string | null): string {
   }
   
   const cleanTarget = (!targetTenant || targetTenant === 'pusat') ? null : targetTenant;
-  
+  const portSuffix = port ? `:${port}` : '';
   let newHost = host;
   
   if (hostname.endsWith('localhost')) {
     if (cleanTarget) {
-      newHost = `${cleanTarget}.localhost${port ? `:${port}` : ''}`;
+      newHost = `${cleanTarget}.localhost${portSuffix}`;
     } else {
-      newHost = `localhost${port ? `:${port}` : ''}`;
+      newHost = `localhost${portSuffix}`;
     }
   } else {
     const parts = hostname.split('.');
-    if (parts.length > 2) {
-      const isIp = hostname.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/);
-      if (!isIp) {
-        const baseDomain = parts.slice(1).join('.');
-        if (cleanTarget) {
-          newHost = `${cleanTarget}.${baseDomain}${port ? `:${port}` : ''}`;
-        } else {
-          newHost = `${baseDomain}${port ? `:${port}` : ''}`;
-        }
-      }
+    
+    // Check if current hostname is a root domain or subdomain
+    // Root domains: laporsar.lan (2 parts), laporsar.basarnas.go.id (starts with laporsar)
+    const isRootDomain = parts[0] === 'laporsar' || parts[0] === 'www' || parts.length <= 2;
+    
+    const baseDomain = isRootDomain 
+      ? (parts[0] === 'www' ? parts.slice(1).join('.') : hostname)
+      : parts.slice(1).join('.');
+    
+    if (cleanTarget) {
+      newHost = `${cleanTarget}.${baseDomain}${portSuffix}`;
     } else {
-      if (cleanTarget) {
-        newHost = `${cleanTarget}.${hostname}${port ? `:${port}` : ''}`;
-      }
+      newHost = `${baseDomain}${portSuffix}`;
     }
   }
   

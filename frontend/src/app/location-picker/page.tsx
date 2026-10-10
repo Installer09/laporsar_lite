@@ -1,7 +1,17 @@
 "use client";
 
 import React, { use, Suspense } from "react";
-import LocationPickerMap from "@/components/LocationPickerMap";
+import dynamic from "next/dynamic";
+
+const LocationPickerMap = dynamic(() => import("@/components/LocationPickerMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-white text-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div>
+      <p className="text-xs text-slate-500">Memuat peta...</p>
+    </div>
+  ),
+});
 
 interface SearchParams {
   session_id?: string;

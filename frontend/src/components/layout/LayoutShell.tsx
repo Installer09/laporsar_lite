@@ -16,12 +16,12 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const [isAuthorized, setIsAuthorized] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  const isStaticPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/help-center' || pathname === '/widget-registration';
-  const isPublicPage = isStaticPublicPage || (pathname === '/' && !currentTenant && isAuthenticated === false);
+  const isStaticPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/help-center' || pathname === '/widget-registration' || pathname === '/chat' || pathname === '/location-picker';
+  const isPublicPage = isStaticPublicPage;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const isStaticPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/help-center' || pathname === '/widget-registration';
+      const isStaticPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/help-center' || pathname === '/widget-registration' || pathname === '/chat' || pathname === '/location-picker';
       
       const urlParams = new URLSearchParams(window.location.search);
       const isLogout = urlParams.get('logout') === 'true';
@@ -46,7 +46,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
       }
 
       const token = localStorage.getItem('token');
-      const isPublicPageLocal = isStaticPublicPage || (pathname === '/' && !currentTenant && !token);
+      const isPublicPageLocal = isStaticPublicPage || (pathname === '/' && !currentTenant);
 
       if (token) {
         try {
@@ -156,10 +156,19 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Root domain landing page when not logged in: render children (Landing Page) directly without sidebar/header
+  if (pathname === '/' && !currentTenant && !isAuthenticated) {
+    return (
+      <div className="flex-1 overflow-y-auto h-full w-full">
+        {children}
+      </div>
+    );
+  }
+
   if (isAuthenticated === null || !isAuthorized) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#090d1a]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-slate-300"></div>
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-slate-600"></div>
       </div>
     );
   }
