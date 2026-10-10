@@ -10,7 +10,7 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://laporsar_admin:laporsar_admin@db:5432/laporsar_master
       - REDIS_URL=redis://redis:6379/0
-      - FRONTEND_URL=http://localhost:3000
+      - FRONTEND_URL=${FRONTEND_URL:-http://laporsar.lan}
       - LOCAL_STORAGE_DIR=/app/uploads
       # AI Provider configurations will be read from .env
     env_file:

@@ -170,24 +170,34 @@ import jwt
 
 # Configure CORS — restrict to known frontend origins
 _allowed_origins = [
-    config_settings.FRONTEND_URL,           # e.g. http://localhost:3000
-    "http://localhost:3000",         # Next.js dev server
+    config_settings.FRONTEND_URL,           # e.g. http://laporsar.lan
+    "http://localhost:3000",                # Next.js dev server
     "http://127.0.0.1:3000",
+    "http://localhost",
+    "http://127.0.0.1",
+    "http://laporsar.lan",
+    "https://laporsar.lan",
+    "http://192.168.70.20",
+    "https://192.168.70.20",
 ]
 
-# Support subdomains dynamically on localhost and production frontend URL
+# Support subdomains dynamically on localhost, LAN, IP, and production frontend URL
 import re
 frontend_url = config_settings.FRONTEND_URL.rstrip('/')
 _origin_regexes = [
-    r"https?://([a-zA-Z0-9-]+\.)*localhost:3000",
-    r"https?://([a-zA-Z0-9-]+\.)*127\.0\.0\.1:3000"
+    r"https?://([a-zA-Z0-9-]+\.)*localhost(:[0-9]+)?",
+    r"https?://([a-zA-Z0-9-]+\.)*127\.0\.0\.1(:[0-9]+)?",
+    r"https?://([a-zA-Z0-9-]+\.)*laporsar\.lan(:[0-9]+)?",
+    r"https?://([a-zA-Z0-9-]+\.)*laporsar\.basarnas\.go\.id(:[0-9]+)?",
+    r"https?://192\.168\.70\.20(:[0-9]+)?",
+    r"https?://([a-zA-Z0-9-]+\.)*trycloudflare\.com",
 ]
 
 match = re.match(r'(https?://)(.*)', frontend_url)
 if match:
     protocol, domain = match.groups()
     escaped_domain = re.escape(domain)
-    _origin_regexes.append(f"{protocol}([a-zA-Z0-9-]+\\.)*{escaped_domain}")
+    _origin_regexes.append(f"{protocol}([a-zA-Z0-9-]+\\.)*{escaped_domain}(:[0-9]+)?")
 
 allow_origin_regex = "^(" + "|".join(_origin_regexes) + ")$"
 
