@@ -19,8 +19,8 @@ const createCustomMarker = () => {
     className: 'custom-marker',
     html: `
       <div class="relative flex items-center justify-center">
-        <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-orange-400 opacity-75"></span>
-        <div class="relative w-7 h-7 bg-orange-600 border-2 border-white rounded-full flex items-center justify-center shadow-lg">
+        <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-slate-400 opacity-75"></span>
+        <div class="relative w-7 h-7 bg-slate-900 border-2 border-white rounded-full flex items-center justify-center shadow-lg">
           <div class="w-2.5 h-2.5 bg-white rounded-full"></div>
         </div>
       </div>
@@ -130,13 +130,13 @@ export default function MapPickerInner({ initialLat = 3.945, initialLng = 108.38
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari lokasi (cth: Pantai Piwang Natuna)..."
-            className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+            className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
           />
         </div>
         <button
           type="submit"
           disabled={isSearching}
-          className="px-4 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white text-sm font-medium rounded-xl flex items-center gap-2 transition-colors shadow-sm"
+          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white text-sm font-medium rounded-xl flex items-center gap-2 transition-colors shadow-sm"
         >
           {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
           Cari
@@ -170,7 +170,7 @@ export default function MapPickerInner({ initialLat = 3.945, initialLng = 108.38
             value={latInput}
             onChange={(e) => handleLatChange(e.target.value)}
             placeholder="Contoh: 3.945000"
-            className="w-full px-3 py-2 bg-white border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 rounded-xl text-sm font-mono transition-all outline-none text-gray-800"
+            className="w-full px-3 py-2 bg-white border border-gray-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 rounded-xl text-sm font-mono transition-all outline-none text-gray-800"
           />
         </div>
         <div>
@@ -180,12 +180,12 @@ export default function MapPickerInner({ initialLat = 3.945, initialLng = 108.38
             value={lngInput}
             onChange={(e) => handleLngChange(e.target.value)}
             placeholder="Contoh: 108.384000"
-            className="w-full px-3 py-2 bg-white border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 rounded-xl text-sm font-mono transition-all outline-none text-gray-800"
+            className="w-full px-3 py-2 bg-white border border-gray-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 rounded-xl text-sm font-mono transition-all outline-none text-gray-800"
           />
         </div>
         <div className="sm:col-span-2 text-[10px] text-gray-400 italic flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mt-1">
           <span>*Klik peta untuk memindahkan pin secara presisi</span>
-          <span className="font-semibold text-orange-600">Bisa diketik manual untuk akurasi tinggi</span>
+          <span className="font-semibold text-slate-800">Bisa diketik manual untuk akurasi tinggi</span>
         </div>
       </div>
     </div>

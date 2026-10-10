@@ -159,7 +159,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   if (isAuthenticated === null || !isAuthorized) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#090d1a]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-slate-300"></div>
       </div>
     );
   }

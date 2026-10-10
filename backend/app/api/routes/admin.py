@@ -194,45 +194,19 @@ async def create_tenant(tenant_in: TenantCreate, background_tasks: BackgroundTas
             detail=f"Gagal mendaftarkan tenant di database master: {str(e)}"
         )
 
-    # 4. Trigger Alembic migrations & Seeding
+    # 4. Fully provision tenant schema, seed data, and admin account
     try:
-        run_tenant_migrations(new_tenant.db_url)
-        await seed_tenant_data(new_tenant.db_url)
-
-        # Create local administrator user in regional DB
-        from app.core.security import get_password_hash
-        from app.models.settings_models import User
-        
-        tenant_sessionmaker = get_tenant_sessionmaker(new_tenant.db_url)
-        async with tenant_sessionmaker() as tenant_db:
-            hashed_pwd = get_password_hash(tenant_in.admin_password)
-            new_user = User(
-                name=new_tenant.admin_name,
-                email=new_tenant.admin_email,
-                phone=new_tenant.admin_phone,
-                role="Admin",
-                hashed_password=hashed_pwd,
-                is_active=True,
-                is_verified=True
-            )
-            tenant_db.add(new_user)
-            await tenant_db.commit()
-
-        # Register user mapping in master DB
-        new_mapping = UserTenantMapping(
-            email=admin_email_clean,
-            tenant_slug=slug_clean
-        )
-        db_master.add(new_mapping)
-        await db_master.commit()
-        logger.info("Successfully created local administrator and master mapping.")
+        from app.db.provision_tenant import provision_tenant_db
+        await provision_tenant_db(new_tenant, admin_password=tenant_in.admin_password, db_master=db_master)
     except Exception as e:
         logger.error(f"Post-creation setup failed for tenant {new_tenant.slug}: {e}")
+        # Non-fatal to registration, but logged
 
-    # 5. Create MinIO Bucket for Tenant in background
+    # 5. Create storage directories / bucket for Tenant
     try:
         from app.services.storage_service import storage_service
-        background_tasks.add_task(storage_service.create_bucket_if_not_exists, new_tenant.s3_bucket)
+        if hasattr(storage_service, "create_bucket_if_not_exists"):
+            background_tasks.add_task(storage_service.create_bucket_if_not_exists, new_tenant.s3_bucket)
     except Exception as e:
         logger.warning(f"Could not queue bucket creation task: {e}")
 
@@ -356,6 +330,25 @@ async def delete_tenant(tenant_id: int, db_master: AsyncSession = Depends(get_ma
         {"slug": tenant.slug}
     )
     
+    # Delete mirrored global reports
+    await db_master.execute(
+        text("DELETE FROM global_reports WHERE tenant_slug = :slug"),
+        {"slug": tenant.slug}
+    )
+    
+    # Dispose and remove connection pool from cache
+    try:
+        from app.db.session import tenant_engines, tenant_sessionmakers
+        clean_url = tenant.db_url
+        if clean_url.startswith("postgresql://"):
+            clean_url = clean_url.replace("postgresql://", "postgresql+asyncpg://")
+        if clean_url in tenant_engines:
+            await tenant_engines[clean_url].dispose()
+            tenant_engines.pop(clean_url, None)
+            tenant_sessionmakers.pop(clean_url, None)
+    except Exception as pool_err:
+        logger.warning(f"Engine disposal note during tenant deletion: {pool_err}")
+
     # Delete tenant record from master registry
     await db_master.delete(tenant)
     
@@ -468,16 +461,13 @@ async def test_tenant_connection(tenant_id: int, db_master: AsyncSession = Depen
         if engine:
             await engine.dispose()
 
-    # Test S3 connection
+    # Test S3 / Local Storage connection
     s3_status = "success"
     s3_latency = None
     s3_error = None
 
     from app.services.storage_service import storage_service
-    if not storage_service._client:
-        s3_status = "error"
-        s3_error = "Storage client not initialized."
-    else:
+    if hasattr(storage_service, "_client") and storage_service._client:
         start_time = time.perf_counter()
         try:
             exists = storage_service._client.bucket_exists(tenant.s3_bucket)
@@ -485,6 +475,19 @@ async def test_tenant_connection(tenant_id: int, db_master: AsyncSession = Depen
             if not exists:
                 s3_status = "error"
                 s3_error = f"Bucket '{tenant.s3_bucket}' not found."
+        except Exception as e:
+            s3_status = "error"
+            s3_error = str(e)
+    else:
+        # Local storage mode (Lapor SAR Lite)
+        start_time = time.perf_counter()
+        try:
+            if storage_service.is_available():
+                s3_latency = (time.perf_counter() - start_time) * 1000.0
+                s3_status = "success"
+            else:
+                s3_status = "error"
+                s3_error = "Direktori penyimpanan lokal tidak dapat diakses."
         except Exception as e:
             s3_status = "error"
             s3_error = str(e)

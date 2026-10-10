@@ -97,14 +97,14 @@ export function Header() {
       <div className="flex-1 max-w-xl flex items-center gap-4" ref={searchRef}>
         <button
           onClick={toggleSidebar}
-          className="p-2.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all border border-transparent hover:border-orange-100 shrink-0"
+          className="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200 shrink-0"
           title={isSidebarOpen ? "Tutup Sidebar" : "Buka Sidebar"}
         >
           <Menu className="w-5 h-5" />
         </button>
 
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input 
             type="text" 
             value={searchQuery}
@@ -114,7 +114,7 @@ export function Header() {
             }}
             onFocus={() => setShowSearchDrop(true)}
             placeholder="Cari Laporan atau Kontak..." 
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none text-gray-700"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200/60 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white transition-all outline-none text-slate-800"
           />
           {isSearching && (
             <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
@@ -183,7 +183,7 @@ export function Header() {
             <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
               <div className="p-4 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="font-bold text-gray-900">Notifikasi Terbaru</h3>
-                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{latestReports.length} Baru</span>
+                <span className="text-xs bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded-full">{latestReports.length} Baru</span>
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {latestReports.length > 0 ? (
@@ -210,7 +210,7 @@ export function Header() {
                 )}
               </div>
               <div className="p-3 border-t border-gray-100 text-center">
-                <Link href="/reports" onClick={() => setShowNotifDrop(false)} className="text-sm text-orange-600 font-medium hover:text-orange-700">
+                <Link href="/reports" onClick={() => setShowNotifDrop(false)} className="text-sm text-slate-900 font-semibold hover:text-slate-700">
                   Lihat Semua Laporan
                 </Link>
               </div>

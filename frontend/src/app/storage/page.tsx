@@ -110,7 +110,7 @@ export default function StorageManagerPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
             <div className="flex items-center gap-2">
-              <span className="p-2 bg-orange-100 text-orange-600 rounded-lg">
+              <span className="p-2 bg-slate-100 text-slate-800 rounded-lg">
                 <HardDrive className="w-6 h-6" />
               </span>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Manajemen Berkas & Media</h1>
@@ -159,7 +159,7 @@ export default function StorageManagerPage() {
           <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between text-slate-500">
               <span className="text-xs font-semibold uppercase tracking-wider">Ruang Terpakai</span>
-              <HardDrive className="w-5 h-5 text-orange-600" />
+              <HardDrive className="w-5 h-5 text-slate-800" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-2xl font-bold text-slate-900">{stats?.total_size_mb ?? 0} MB</span>
@@ -228,7 +228,7 @@ export default function StorageManagerPage() {
               onClick={() => setCategoryFilter(tab.id)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px ${
                 categoryFilter === tab.id
-                  ? 'border-orange-600 text-orange-600'
+                  ? 'border-slate-900 text-slate-900 font-bold'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
@@ -240,7 +240,7 @@ export default function StorageManagerPage() {
         {/* Content Section */}
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400">
-            <Loader2 className="w-8 h-8 animate-spin text-orange-600 mb-2" />
+            <Loader2 className="w-8 h-8 animate-spin text-slate-800 mb-2" />
             <span className="text-sm font-medium">Memindai media penyimpanan server...</span>
           </div>
         ) : files.length === 0 ? (
@@ -328,7 +328,7 @@ export default function StorageManagerPage() {
                   <a
                     href={file.url}
                     download={file.filename}
-                    className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-700 font-medium"
+                    className="inline-flex items-center gap-1 text-slate-800 hover:text-slate-800 font-medium"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Unduh

@@ -142,7 +142,7 @@ export default function HotspotMapLayer({ epsKm = 5.0, minSamples = 2 }: Hotspot
                       {props.risk_level} RISK (SKOR: {props.risk_score})
                     </span>
                     <span className="text-[10px] font-bold text-gray-500 flex items-center gap-1">
-                      <Flame className="w-3 h-3 text-orange-500" />
+                      <Flame className="w-3 h-3 text-slate-500" />
                       Hotspot #{props.cluster_id}
                     </span>
                   </div>

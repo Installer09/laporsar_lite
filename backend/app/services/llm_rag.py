@@ -59,8 +59,7 @@ class LLMRagService:
     async def get_dictionary_context(self, db: AsyncSession, query_text: str = None) -> str:
         """Fetch approved dictionary words, classifications, negative constraints, and dynamic vector similarity to inject into LLM context."""
         try:
-            from unittest.mock import Mock
-            if not db or isinstance(db, Mock):
+            if not db:
                 return ""
 
             info = getattr(db, "info", None)

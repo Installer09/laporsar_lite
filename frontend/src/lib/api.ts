@@ -14,6 +14,32 @@ export const getBackendUrl = () => {
   return API_URL.replace(/\/api$/, '');
 };
 
+export const getWsUrl = (token?: string | null): string => {
+  let wsUrl = '';
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+  } else if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.startsWith('http')) {
+    wsUrl = process.env.NEXT_PUBLIC_API_URL.replace(/^http/, 'ws').replace(/\/api\/?$/, '/api/ws');
+  } else if (typeof window !== 'undefined') {
+    const isHttps = window.location.protocol === 'https:';
+    const proto = isHttps ? 'wss:' : 'ws:';
+    const isDevPort = window.location.port === '3000';
+    if (isDevPort) {
+      wsUrl = `${proto}//${window.location.hostname}:8000/api/ws`;
+    } else {
+      wsUrl = `${proto}//${window.location.host}/api/ws`;
+    }
+  } else {
+    wsUrl = 'ws://localhost:8000/api/ws';
+  }
+
+  if (token) {
+    const sep = wsUrl.includes('?') ? '&' : '?';
+    return `${wsUrl}${sep}token=${encodeURIComponent(token)}`;
+  }
+  return wsUrl;
+};
+
 export const getTenantSlug = () => {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname.toLowerCase();
@@ -45,7 +71,7 @@ export const getTenantSlug = () => {
     // If it's laporsar.id (2 parts), there is no subdomain.
     if (parts.length > 2) {
       const tenant = parts[0];
-      if (tenant !== 'www' && tenant !== 'admin' && !tenant.match(/^\d+$/)) {
+      if (tenant !== 'www' && tenant !== 'admin' && tenant !== 'laporsar' && !tenant.match(/^\d+$/)) {
         return tenant;
       }
     }

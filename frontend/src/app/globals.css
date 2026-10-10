@@ -107,9 +107,9 @@ body {
   color: #ffffff;
 }
 
-/* Orange/Amber Pending Cluster */
+/* Amber Pending Cluster (Warm Muted) */
 .sar-cluster-warning {
-  background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
   border: 2px solid #ffffff;
   color: #ffffff;
 }

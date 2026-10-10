@@ -75,7 +75,7 @@ export default function RegisterPage() {
             Badan Nasional Pencarian dan Pertolongan
           </span>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Registrasi Akun <span className="text-orange-600">Lapor SAR</span>
+            Registrasi Akun <span className="text-slate-900 font-extrabold">Lapor SAR</span>
           </h1>
         </div>
 
@@ -111,7 +111,7 @@ export default function RegisterPage() {
               <p className="text-sm text-slate-500 max-w-[280px]">
                 Akun pelapor Anda telah aktif. Anda akan diarahkan ke halaman utama dalam beberapa saat...
               </p>
-              <Loader2 className="w-5 h-5 text-orange-500 animate-spin mt-4" />
+              <Loader2 className="w-5 h-5 text-slate-400 animate-spin mt-4" />
             </motion.div>
           ) : (
             <>
@@ -131,7 +131,7 @@ export default function RegisterPage() {
                       placeholder="Contoh: Budi Santoso"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500/50 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/5 transition-all font-semibold focus:bg-white"
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none  transition-all font-semibold focus:bg-white"
                     />
                   </div>
                 </div>
@@ -149,7 +149,7 @@ export default function RegisterPage() {
                       placeholder="Contoh: budi@gmail.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500/50 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/5 transition-all font-semibold focus:bg-white"
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none  transition-all font-semibold focus:bg-white"
                     />
                   </div>
                 </div>
@@ -167,7 +167,7 @@ export default function RegisterPage() {
                       placeholder="Contoh: 08123456789"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500/50 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/5 transition-all font-semibold focus:bg-white"
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none  transition-all font-semibold focus:bg-white"
                     />
                   </div>
                 </div>
@@ -185,7 +185,7 @@ export default function RegisterPage() {
                       placeholder="Minimal 6 karakter"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500/50 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/5 transition-all font-semibold focus:bg-white"
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none  transition-all font-semibold focus:bg-white"
                     />
                   </div>
                 </div>
@@ -208,12 +208,12 @@ export default function RegisterPage() {
                         const resolvedSlug = resolveTenantFromCity(val, tenants);
                         setTenantSlug(resolvedSlug);
                       }}
-                      className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500/50 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/5 transition-all font-semibold focus:bg-white"
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none  transition-all font-semibold focus:bg-white"
                     />
                   </div>
                   {userCity.trim() && (
-                    <p className="text-[10px] text-orange-600 font-extrabold flex items-center gap-1 mt-1 pl-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+                    <p className="text-[10px] text-slate-900 font-extrabold font-extrabold flex items-center gap-1 mt-1 pl-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                       Kantor SAR Penanggung Jawab: {tenants.find((t: any) => t.slug === tenantSlug)?.name || 'Kantor Basarnas Pusat'}
                     </p>
                   )}
@@ -235,7 +235,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3 mt-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
+                  className="w-full py-3 mt-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>
@@ -255,7 +255,7 @@ export default function RegisterPage() {
               <div className="mt-5 text-center">
                 <p className="text-xs text-slate-500 font-semibold">
                   Sudah memiliki akun?{' '}
-                  <a href="/login" className="text-orange-550 hover:text-orange-600 font-bold underline transition-colors">
+                  <a href="/login" className="text-slate-900 hover:text-slate-900 font-extrabold font-bold underline transition-colors">
                     Masuk di sini
                   </a>
                 </p>

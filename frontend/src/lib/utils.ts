@@ -35,8 +35,11 @@ export function getTenantRedirectUrl(targetTenant: string | null): string {
   const protocol = window.location.protocol;
   const port = window.location.port;
 
-  // For tunnels and preview platforms, do not modify hostname
+  // For local development, IPs, tunnels, and preview platforms, keep origin intact
   if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/) ||
     hostname.includes('trycloudflare.com') ||
     hostname.includes('pages.dev') ||
     hostname.includes('vercel.app') ||

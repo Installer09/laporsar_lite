@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import axios from "axios";
+import { api } from "@/lib/api";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -54,8 +54,7 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
   useEffect(() => {
     async function loadSessionCoords() {
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const response = await axios.get(`${backendUrl}/api/public/webview-session/${sessionId}`);
+        const response = await api.get(`/public/webview-session/${sessionId}`);
         const data = response.data;
         
         if (data.koordinat_lat !== null && data.koordinat_lng !== null) {
@@ -149,8 +148,7 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
     setSaving(true);
     setStatus("idle");
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      await axios.post(`${backendUrl}/api/public/webview-session/${sessionId}/location`, {
+      await api.post(`/public/webview-session/${sessionId}/location`, {
         koordinat_lat: position[0],
         koordinat_lng: position[1],
         lokasi_teks: address || `Koordinat ${position[0].toFixed(5)}, ${position[1].toFixed(5)}`
@@ -204,7 +202,7 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
       {/* Top Banner */}
       <div className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-base font-bold flex items-center gap-2 text-orange-400">
+          <h1 className="text-base font-bold flex items-center gap-2 text-slate-500">
             <span className="h-2 w-2 rounded-full bg-red-500"></span>
             PETA LOKASI LAPOR SAR
           </h1>
@@ -215,10 +213,10 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
         <button 
           onClick={detectCurrentLocation}
           disabled={detecting}
-          className="p-2 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg border border-slate-700 transition-all text-orange-400 text-xs flex items-center gap-1.5"
+          className="p-2 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg border border-slate-700 transition-all text-slate-500 text-xs flex items-center gap-1.5"
         >
           {detecting ? (
-            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-orange-400 border-t-transparent"></div>
+            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-transparent"></div>
           ) : (
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -265,7 +263,7 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
         {/* Selected Coordinates Card */}
         <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
           <div className="flex items-start gap-2.5">
-            <svg className="h-5 w-5 text-orange-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-5 w-5 text-slate-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -301,7 +299,7 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
           className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 ${
             saving 
               ? "bg-slate-800 text-slate-400 cursor-not-allowed" 
-              : "bg-orange-600 hover:bg-orange-700 text-white"
+              : "bg-slate-900 hover:bg-slate-800 text-white"
           }`}
         >
           {saving ? (

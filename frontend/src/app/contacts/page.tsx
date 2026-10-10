@@ -170,7 +170,7 @@ export default function ContactsPage() {
               setImportError('');
               setIsImportModalOpen(true);
             }}
-            className="px-3.5 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
           >
             <Upload className="w-3.5 h-3.5" />
             Impor Kolektif
@@ -187,7 +187,7 @@ export default function ContactsPage() {
               placeholder="Cari nama atau nomor telepon..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none"
+              className="w-full pl-9 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-slate-900/10 focus:bg-white transition-all outline-none"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export default function ContactsPage() {
               value={platformFilter}
               onChange={(e) => setPlatformFilter(e.target.value)}
               aria-label="Filter berdasarkan platform"
-              className="bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500/20 focus:bg-white cursor-pointer transition-all"
+              className="bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-slate-900/10 focus:bg-white cursor-pointer transition-all"
             >
               <option value="">Semua Platform</option>
               <option value="whatsapp">WhatsApp</option>
@@ -326,7 +326,7 @@ export default function ContactsPage() {
               {/* Modal Header */}
               <div className="p-5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
                     <User className="w-5 h-5" />
                   </div>
                   <div>
@@ -353,7 +353,7 @@ export default function ContactsPage() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Contoh: Nurul Huda"
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                     />
                   </div>
                   
@@ -365,7 +365,7 @@ export default function ContactsPage() {
                       value={formData.phone_number}
                       onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                       placeholder="Contoh: 08127639215"
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-mono"
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-mono"
                     />
                   </div>
 
@@ -375,7 +375,7 @@ export default function ContactsPage() {
                       <select
                         value={formData.source}
                         onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                       >
                         <option value="manual">Manual</option>
                         <option value="whatsapp">WhatsApp</option>
@@ -390,7 +390,7 @@ export default function ContactsPage() {
                         value={formData.last_location}
                         onChange={(e) => setFormData({ ...formData, last_location: e.target.value })}
                         placeholder="Contoh: Pantai Piwang"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                       />
                     </div>
                   </div>
@@ -402,7 +402,7 @@ export default function ContactsPage() {
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                       placeholder="Contoh: Nelayan lokal Pantai Piwang / Potensi SAR Anambas"
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 resize-none leading-normal"
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 resize-none leading-normal"
                     />
                   </div>
                 </form>
@@ -421,7 +421,7 @@ export default function ContactsPage() {
                   type="submit"
                   form="contactForm"
                   disabled={updateMutation.isPending}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 disabled:bg-gray-200 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 disabled:bg-gray-200 disabled:cursor-not-allowed"
                 >
                   {updateMutation.isPending ? (
                     <>
@@ -458,7 +458,7 @@ export default function ContactsPage() {
               {/* Modal Header */}
               <div className="p-5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
                     <Upload className="w-5 h-5" />
                   </div>
                   <div>
@@ -492,7 +492,7 @@ export default function ContactsPage() {
                   <button
                     type="button"
                     onClick={handleTemplateDownload}
-                    className="mt-2 text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 hover:underline cursor-pointer"
+                    className="mt-2 text-xs font-bold text-slate-800 hover:text-slate-800 flex items-center gap-1 hover:underline cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" /> Unduh Template CSV Contoh
                   </button>
@@ -501,7 +501,7 @@ export default function ContactsPage() {
                 <form id="importForm" onSubmit={handleImportSubmit} className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-gray-700">Pilih File CSV</label>
-                    <div className="border-2 border-dashed border-gray-200 hover:border-orange-500/50 rounded-2xl p-6 transition-all flex flex-col items-center justify-center gap-2 bg-gray-50/50 hover:bg-white relative">
+                    <div className="border-2 border-dashed border-gray-200 hover:border-slate-900/50 rounded-2xl p-6 transition-all flex flex-col items-center justify-center gap-2 bg-gray-50/50 hover:bg-white relative">
                       <input
                         type="file"
                         accept=".csv"
@@ -577,7 +577,7 @@ export default function ContactsPage() {
                     type="submit"
                     form="importForm"
                     disabled={isImporting || !importFile}
-                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 disabled:bg-gray-200 disabled:cursor-not-allowed cursor-pointer"
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 disabled:bg-gray-200 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isImporting ? (
                       <>

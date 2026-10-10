@@ -82,18 +82,29 @@ async def login(
     # 3. Centralized Login resolution if tenant DB is not pre-resolved
     resolved_db = db
     resolved_tenant_slug = tenant.slug if tenant else None
+    email_clean = request.username.lower().strip()
+
+    from sqlalchemy import func
 
     if not resolved_db:
         # Query master DB to find tenant slug for this email
-        email_clean = request.username.lower().strip()
         result_map = await db_master.execute(
-            select(UserTenantMapping).where(UserTenantMapping.email == email_clean)
+            select(UserTenantMapping).where(func.lower(UserTenantMapping.email) == email_clean)
         )
         mapping = result_map.scalar_one_or_none()
-        if not mapping:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Username atau password salah")
         
-        resolved_tenant_slug = mapping.tenant_slug
+        if mapping:
+            resolved_tenant_slug = mapping.tenant_slug
+        else:
+            # Fallback check: check if user exists in master DB (pusat)
+            res_master_user = await db_master.execute(
+                select(User).where(func.lower(User.email) == email_clean)
+            )
+            master_user = res_master_user.scalar_one_or_none()
+            if master_user:
+                resolved_tenant_slug = "pusat"
+            else:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Username atau password salah")
         
         # Get tenant connection details from Master DB
         result_tenant = await db_master.execute(
@@ -110,7 +121,7 @@ async def login(
         tenant_sessionmaker = get_tenant_sessionmaker(active_tenant.db_url)
         async with tenant_sessionmaker() as temp_db:
             # Find user and verify password in the resolved database
-            result_user = await temp_db.execute(select(User).where(User.email == request.username))
+            result_user = await temp_db.execute(select(User).where(func.lower(User.email) == email_clean))
             user = result_user.scalar_one_or_none()
             
             if not user or not verify_password(request.password, user.hashed_password):
@@ -123,6 +134,7 @@ async def login(
             expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
             payload = {
                 "sub": user.email,
+                "name": user.name or "Petugas SAR",
                 "exp": expire,
                 "role": user.role,
                 "user_id": user.id,
@@ -131,8 +143,8 @@ async def login(
             token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
             return {"access_token": token, "token_type": "bearer"}
 
-    # 3. Existing subdomain-based login fallback
-    result = await resolved_db.execute(select(User).where(User.email == request.username))
+    # 4. Existing subdomain-based login fallback
+    result = await resolved_db.execute(select(User).where(func.lower(User.email) == email_clean))
     user = result.scalar_one_or_none()
     
     if not user or not verify_password(request.password, user.hashed_password):
@@ -144,6 +156,7 @@ async def login(
     expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": user.email,
+        "name": user.name or "Petugas SAR",
         "exp": expire,
         "role": user.role,
         "user_id": user.id,

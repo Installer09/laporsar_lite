@@ -70,7 +70,7 @@ export default function HelpCenter() {
       <header className="w-full z-10 bg-white/80 backdrop-blur-md border-b border-slate-200/80 py-4 px-6 sm:px-8 flex items-center justify-between shadow-sm sticky top-0">
         <button 
           onClick={() => router.push('/')}
-          className="flex items-center gap-2 text-slate-700 hover:text-orange-600 transition-colors font-extrabold text-xs cursor-pointer group"
+          className="flex items-center gap-2 text-slate-700 hover:text-slate-800 transition-colors font-extrabold text-xs cursor-pointer group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
           Kembali ke Portal
@@ -85,7 +85,7 @@ export default function HelpCenter() {
             />
           </div>
           <span className="text-xs font-black text-slate-800 tracking-tight font-sans">
-            Pusat Bantuan <span className="text-orange-600">Lapor SAR</span>
+            Pusat Bantuan <span className="text-slate-800">Lapor SAR</span>
           </span>
         </div>
       </header>
@@ -104,14 +104,14 @@ export default function HelpCenter() {
         {/* Search Input bar */}
         <div className="max-w-xl mx-auto relative group">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <Search className="w-4.5 h-4.5 text-slate-400 group-focus-within:text-orange-550 transition-colors" />
+            <Search className="w-4.5 h-4.5 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
           </div>
           <input
             type="text"
             placeholder="Cari pertanyaan, panduan, atau topik bantuan..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:outline-none focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 text-xs sm:text-sm font-medium text-slate-700 transition-all font-sans"
+            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 focus:ring-4 focus:ring-slate-900/10 text-xs sm:text-sm font-medium text-slate-700 transition-all font-sans"
           />
         </div>
       </section>
@@ -140,7 +140,7 @@ export default function HelpCenter() {
           {/* Card 2: Widget Integration Code */}
           <div className="p-6 bg-white border border-slate-200/80 rounded-2xl shadow-sm flex flex-col justify-between space-y-4">
             <div className="space-y-3 text-left">
-              <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-bold">
                 <Code className="w-5 h-5" />
               </div>
               <h3 className="text-sm font-extrabold text-slate-800">Integrasi Widget Lapor</h3>
@@ -192,7 +192,7 @@ export default function HelpCenter() {
         <section className="space-y-6 pt-6">
           <div className="text-center md:text-left space-y-1.5">
             <h2 className="text-lg font-black text-slate-900 flex items-center justify-center md:justify-start gap-2">
-              <HelpCircle className="w-5 h-5 text-orange-550" /> Pertanyaan Sering Diajukan (FAQ)
+              <HelpCircle className="w-5 h-5 text-slate-900" /> Pertanyaan Sering Diajukan (FAQ)
             </h2>
             <p className="text-xs text-slate-500 font-medium">
               Informasi lengkap seputar mekanisme sistem dan pengajuan integrasi tombol darurat.
@@ -214,7 +214,7 @@ export default function HelpCenter() {
                       </span>
                       <ChevronDown 
                         className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-300 ${
-                          isOpen ? 'rotate-180 text-orange-500' : ''
+                          isOpen ? 'rotate-180 text-slate-500' : ''
                         }`} 
                       />
                     </button>
@@ -248,7 +248,7 @@ export default function HelpCenter() {
         {/* 5. Detailed Widget Integration Steps */}
         <section className="bg-slate-900 text-slate-100 p-6 sm:p-8 rounded-2xl shadow-xl space-y-6 text-left relative overflow-hidden">
           <div className="space-y-2 relative z-10">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-orange-500/10 border border-orange-500/20 text-[10px] font-bold text-orange-400">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-1000/10 border border-slate-900/20 text-[10px] font-bold text-slate-500">
               <Code className="w-3.5 h-3.5" /> Panduan Developer & Webmaster
             </div>
             <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
@@ -261,7 +261,7 @@ export default function HelpCenter() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 pt-2 font-medium">
             <div className="space-y-2 bg-white/5 border border-white/10 p-4 rounded-xl">
-              <div className="w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-bold font-sans">
+              <div className="w-6 h-6 rounded-full bg-slate-1000 text-white flex items-center justify-center text-xs font-bold font-sans">
                 1
               </div>
               <h4 className="text-xs font-extrabold text-white">Daftarkan Akun</h4>
@@ -271,7 +271,7 @@ export default function HelpCenter() {
             </div>
             
             <div className="space-y-2 bg-white/5 border border-white/10 p-4 rounded-xl">
-              <div className="w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-bold font-sans">
+              <div className="w-6 h-6 rounded-full bg-slate-1000 text-white flex items-center justify-center text-xs font-bold font-sans">
                 2
               </div>
               <h4 className="text-xs font-extrabold text-white">Salin Kode Iframe</h4>
@@ -281,7 +281,7 @@ export default function HelpCenter() {
             </div>
 
             <div className="space-y-2 bg-white/5 border border-white/10 p-4 rounded-xl">
-              <div className="w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-bold font-sans">
+              <div className="w-6 h-6 rounded-full bg-slate-1000 text-white flex items-center justify-center text-xs font-bold font-sans">
                 3
               </div>
               <h4 className="text-xs font-extrabold text-white">Tempel di Website</h4>
@@ -298,7 +298,7 @@ export default function HelpCenter() {
             </div>
             <button 
               onClick={copyWidgetCode}
-              className="px-3 py-1.5 bg-orange-500 hover:bg-orange-655 hover:scale-[1.02] text-white font-bold text-[10px] rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 self-end sm:self-center font-sans"
+              className="px-3 py-1.5 bg-slate-1000 hover:bg-slate-800 hover:scale-[1.02] text-white font-bold text-[10px] rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 self-end sm:self-center font-sans"
             >
               {copied ? (
                 <>

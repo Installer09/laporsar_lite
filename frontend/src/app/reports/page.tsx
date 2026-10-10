@@ -9,7 +9,8 @@ import {
   updateReport, 
   deleteReport,
   generateInfoAwal,
-  sendBroadcast
+  sendBroadcast,
+  getWsUrl
 } from '@/lib/api';
 import { 
   Search, 
@@ -93,17 +94,8 @@ function ReportsPageContent() {
 
   // WebSocket real-time sirens and updates
   useEffect(() => {
-    const getWsUrl = () => {
-      if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000/api` : 'http://localhost:8000/api');
-      if (apiUrl.startsWith('http')) {
-        return apiUrl.replace(/^http/, 'ws').replace(/\/api\/?$/, '/api/ws');
-      }
-      return typeof window !== 'undefined' ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:8000/api/ws` : 'ws://localhost:8000/api/ws';
-    };
-
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const wsUrl = token ? `${getWsUrl()}?token=${token}` : getWsUrl();
+    const wsUrl = getWsUrl(token);
     const ws = new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {
@@ -751,7 +743,7 @@ function ReportsPageContent() {
           className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl text-white font-semibold text-xs flex items-center justify-between shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-orange-500 block animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-amber-400 block animate-pulse" />
             <span>{newReportAlert.message}</span>
           </div>
           <button
@@ -778,7 +770,7 @@ function ReportsPageContent() {
           </button>
           <button 
             onClick={handleOpenCreate}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Buat Laporan Manual</span>
@@ -796,7 +788,7 @@ function ReportsPageContent() {
               placeholder="Cari kejadian, nomor, atau lokasi..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none text-gray-700"
+              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white transition-all outline-none text-gray-700"
             />
           </div>
 
@@ -804,7 +796,7 @@ function ReportsPageContent() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-650 outline-none focus:ring-2 focus:ring-orange-500/10 focus:bg-white cursor-pointer"
+              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-650 outline-none focus:ring-2 focus:ring-slate-900/10 focus:bg-white cursor-pointer"
             >
               <option value="ALL">Semua Tipe</option>
               <option value="Laka Kapal">Laka Kapal</option>
@@ -817,7 +809,7 @@ function ReportsPageContent() {
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-650 outline-none focus:ring-2 focus:ring-orange-500/10 focus:bg-white cursor-pointer"
+              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-650 outline-none focus:ring-2 focus:ring-slate-900/10 focus:bg-white cursor-pointer"
             >
               <option value="ALL">Semua Waktu</option>
               <option value="TODAY">Hari Ini</option>
@@ -830,7 +822,7 @@ function ReportsPageContent() {
             <button 
               className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all border ${
                 filter === 'ALL' 
-                  ? 'bg-gray-100 border-gray-200 text-gray-800 shadow-sm' 
+                  ? 'bg-slate-900 border-slate-900 text-white shadow-sm' 
                   : 'text-gray-500 border-transparent hover:bg-gray-50'
               }`}
               onClick={() => setFilter('ALL')}
@@ -840,7 +832,7 @@ function ReportsPageContent() {
             <button 
               className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all border flex items-center gap-1.5 ${
                 filter === 'PENDING' 
-                  ? 'bg-orange-50 border-orange-200 text-orange-700 shadow-sm' 
+                  ? 'bg-amber-50 border-amber-200 text-amber-800 shadow-sm' 
                   : 'text-gray-500 border-transparent hover:bg-gray-50'
               }`}
               onClick={() => setFilter('PENDING')}
@@ -902,7 +894,7 @@ function ReportsPageContent() {
                       <div className="flex items-center gap-3.5">
                         <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm border ${
                           report.status === 'PENDING' 
-                            ? 'bg-orange-50 border-orange-100 text-orange-600' 
+                            ? 'bg-amber-50 border-amber-200 text-amber-700' 
                             : report.status === 'AKTIF' 
                             ? 'bg-red-50 border-red-100 text-red-600' 
                             : 'bg-green-50 border-green-100 text-green-600'
@@ -933,7 +925,7 @@ function ReportsPageContent() {
                         onChange={(e) => handleStatusChange(report.id, e.target.value, report.no_laporan)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-bold border outline-none cursor-pointer transition-all shadow-sm ${
                           report.status === 'PENDING' 
-                            ? 'bg-orange-50 border-orange-200 text-orange-700 focus:ring-2 focus:ring-orange-500/10' 
+                            ? 'bg-amber-50 border-amber-200 text-amber-800 focus:ring-2 focus:ring-amber-500/10' 
                             : report.status === 'AKTIF' 
                             ? 'bg-red-50 border-red-200 text-red-700 focus:ring-2 focus:ring-red-500/10' 
                             : report.status === 'TIDAK_AKTIF' 
@@ -941,7 +933,7 @@ function ReportsPageContent() {
                             : 'bg-red-50 border-red-200 text-red-600 focus:ring-2 focus:ring-red-500/10'
                         }`}
                       >
-                        <option value="PENDING" className="text-orange-700 font-bold bg-white">Menunggu Validasi</option>
+                        <option value="PENDING" className="text-amber-800 font-bold bg-white">Menunggu Validasi</option>
                         <option value="AKTIF" className="text-red-700 font-bold bg-white">Aktif / Valid</option>
                         <option value="TIDAK_AKTIF" className="text-gray-500 font-bold bg-white">Tidak Aktif</option>
                         <option value="SALAH_LAPORAN" className="text-red-600 font-bold bg-white">Salah Laporan</option>
@@ -951,7 +943,7 @@ function ReportsPageContent() {
                       <div className="flex items-center justify-end gap-1.5">
                         <button 
                           onClick={() => handleOpenBroadcast(report)}
-                          className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all border border-transparent hover:border-orange-100"
+                          className="p-2 text-gray-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200"
                           title="Pendalaman & Kirim Grup (Info Awal)"
                         >
                           <Pencil className="w-4 h-4" />
@@ -1003,7 +995,7 @@ function ReportsPageContent() {
               {/* Modal Header */}
               <div className="p-5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div>
@@ -1032,14 +1024,14 @@ function ReportsPageContent() {
                   <div className="space-y-4 text-sm">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-3">
-                        <User className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
+                        <User className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
                         <div>
                           <p className="text-[10px] text-gray-400 font-bold uppercase">Nama Pelapor</p>
                           <p className="font-bold text-gray-800 mt-0.5">{selectedReport.pelapor_nama}</p>
                         </div>
                       </div>
                       <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-3">
-                        <Phone className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
+                        <Phone className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
                         <div>
                           <p className="text-[10px] text-gray-400 font-bold uppercase">Nomor Pelapor</p>
                           <p className="font-bold text-gray-800 mt-0.5 font-mono">{selectedReport.pelapor_nomor}</p>
@@ -1049,21 +1041,21 @@ function ReportsPageContent() {
 
                     <div className="grid grid-cols-3 gap-4">
                       <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-3">
-                        <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
+                        <AlertTriangle className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
                         <div className="min-w-0">
                           <p className="text-[10px] text-gray-400 font-bold uppercase truncate">Jenis Kejadian</p>
                           <p className="font-bold text-gray-800 mt-0.5 truncate">{selectedReport.jenis_kejadian}</p>
                         </div>
                       </div>
                       <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-3">
-                        <Calendar className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
+                        <Calendar className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
                         <div className="min-w-0">
                           <p className="text-[10px] text-gray-400 font-bold uppercase truncate">Waktu Kejadian</p>
                           <p className="font-bold text-gray-800 mt-0.5 truncate">{selectedReport.waktu}</p>
                         </div>
                       </div>
                       <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-3">
-                        <MapPin className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
+                        <MapPin className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
                         <div className="min-w-0">
                           <p className="text-[10px] text-gray-400 font-bold uppercase truncate">Lokasi Kejadian</p>
                           <p className="font-bold text-gray-800 mt-0.5 truncate">{selectedReport.lokasi_teks}</p>
@@ -1073,14 +1065,14 @@ function ReportsPageContent() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-3">
-                        <Users2 className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
+                        <Users2 className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
                         <div>
                           <p className="text-[10px] text-gray-400 font-bold uppercase">Data Korban</p>
                           <p className="font-bold text-gray-800 mt-0.5">{selectedReport.korban}</p>
                         </div>
                       </div>
                       <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-3">
-                        <Info className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
+                        <Info className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
                         <div>
                           <p className="text-[10px] text-gray-400 font-bold uppercase">Status Laporan</p>
                           <p className="font-bold text-gray-800 mt-0.5 uppercase tracking-wide">{selectedReport.status}</p>
@@ -1094,11 +1086,11 @@ function ReportsPageContent() {
                     </div>
 
                     {selectedReport.gmaps_link && (
-                      <div className="p-3 bg-orange-50 text-orange-800 rounded-xl border border-orange-100 flex gap-2">
-                        <Info className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                      <div className="p-3 bg-slate-50 text-slate-800 rounded-xl border border-slate-200 flex gap-2">
+                        <Info className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
                         <div className="text-xs">
                           <p className="font-bold">Informasi Geospasial</p>
-                          <a href={selectedReport.gmaps_link} target="_blank" rel="noopener noreferrer" className="underline mt-1 block font-semibold text-orange-700 hover:text-orange-950">
+                          <a href={selectedReport.gmaps_link} target="_blank" rel="noopener noreferrer" className="underline mt-1 block font-semibold text-slate-900 hover:text-slate-700">
                             Buka Lokasi di Google Maps &rarr;
                           </a>
                         </div>
@@ -1117,7 +1109,7 @@ function ReportsPageContent() {
                           value={formData.pelapor_nama}
                           onChange={(e) => setFormData({ ...formData, pelapor_nama: e.target.value })}
                           placeholder="Contoh: Bang Andra"
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -1128,7 +1120,7 @@ function ReportsPageContent() {
                           value={formData.pelapor_nomor}
                           onChange={(e) => setFormData({ ...formData, pelapor_nomor: e.target.value })}
                           placeholder="Contoh: 08123456789"
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                         />
                       </div>
                     </div>
@@ -1139,7 +1131,7 @@ function ReportsPageContent() {
                         <select
                           value={formData.jenis_kejadian}
                           onChange={(e) => setFormData({ ...formData, jenis_kejadian: e.target.value })}
-                          className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                          className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                         >
                           <option value="Laka Kapal">Laka Kapal</option>
                           <option value="Laka Pesawat">Laka Pesawat</option>
@@ -1156,7 +1148,7 @@ function ReportsPageContent() {
                           value={formData.waktu}
                           onChange={(e) => setFormData({ ...formData, waktu: e.target.value })}
                           placeholder="Contoh: Tadi subuh"
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -1167,7 +1159,7 @@ function ReportsPageContent() {
                           value={formData.lokasi_teks}
                           onChange={(e) => setFormData({ ...formData, lokasi_teks: e.target.value })}
                           placeholder="Contoh: Perairan Senoa"
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                         />
                       </div>
                     </div>
@@ -1181,7 +1173,7 @@ function ReportsPageContent() {
                           value={formData.korban}
                           onChange={(e) => setFormData({ ...formData, korban: e.target.value })}
                           placeholder="Contoh: 1 orang pingsan"
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -1189,7 +1181,7 @@ function ReportsPageContent() {
                         <select
                           value={formData.status}
                           onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                          className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                          className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                         >
                           <option value="PENDING">PENDING (Menunggu Validasi)</option>
                           <option value="AKTIF">AKTIF (Valid & Broadcasted)</option>
@@ -1207,7 +1199,7 @@ function ReportsPageContent() {
                         value={formData.kronologi}
                         onChange={(e) => setFormData({ ...formData, kronologi: e.target.value })}
                         placeholder="Uraikan kronologi kejadian insiden selengkap mungkin..."
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 leading-normal resize-none"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 leading-normal resize-none"
                       />
                     </div>
                   </form>
@@ -1228,7 +1220,7 @@ function ReportsPageContent() {
                     type="submit"
                     form="reportForm"
                     disabled={createMutation.isPending || updateMutation.isPending}
-                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 disabled:bg-gray-200 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 disabled:bg-gray-200 disabled:cursor-not-allowed"
                   >
                     {(createMutation.isPending || updateMutation.isPending) ? (
                       <>
@@ -1265,13 +1257,13 @@ function ReportsPageContent() {
               {/* Modal Header */}
               <div className="p-5 border-b border-gray-100 bg-[#111827] text-white flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
+                  <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-white shadow-md">
                     <Send className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="font-bold text-base flex items-center gap-2">
                       Pendalaman Info Awal & Diseminasi Grup
-                      <span className="text-xs bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2.5 py-0.5 rounded-full font-mono">
+                      <span className="text-xs bg-slate-800 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-mono">
                         {selectedReport.no_laporan}
                       </span>
                     </h3>
@@ -1297,7 +1289,7 @@ function ReportsPageContent() {
                   {/* Title Bar */}
                   <div className="px-6 py-4 border-b border-gray-150 bg-white flex items-center justify-between shrink-0 shadow-sm">
                     <span className="text-xs font-black uppercase tracking-wider text-gray-700">Form Pendalaman Data Operasional</span>
-                    <span className="text-[9px] bg-orange-50 text-orange-700 font-bold px-2 py-0.5 rounded-full border border-orange-105">Lengkapi Seksi 1-4</span>
+                    <span className="text-[9px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-full border border-slate-200">Lengkapi Seksi 1-4</span>
                   </div>
 
                   {/* Single Consolidated Scroll Container */}
@@ -1306,7 +1298,7 @@ function ReportsPageContent() {
                     {/* SECTION 1: DASAR & LOKASI */}
                     <div className="space-y-4">
                       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider text-orange-600 border-b border-gray-50 pb-2">1. Waktu & Lokasi Kejadian</h4>
+                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">1. Waktu & Lokasi Kejadian</h4>
                         
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
@@ -1316,7 +1308,7 @@ function ReportsPageContent() {
                               value={bcForm.waktu}
                               onChange={(e) => setBcForm({ ...bcForm, waktu: e.target.value })}
                               placeholder="Contoh: Minggu, 24 Mei 2026 Pukul 11:23 WIB"
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -1326,7 +1318,7 @@ function ReportsPageContent() {
                               value={bcForm.lokasi_teks}
                               onChange={(e) => setBcForm({ ...bcForm, lokasi_teks: e.target.value })}
                               placeholder="Contoh: Perairan Jemaja, Kabupaten Anambas"
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                             />
                           </div>
                         </div>
@@ -1340,7 +1332,7 @@ function ReportsPageContent() {
                               value={bcForm.koordinat_lat}
                               onChange={(e) => setBcForm({ ...bcForm, koordinat_lat: e.target.value })}
                               placeholder="Contoh: 2.8896"
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-mono"
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-mono"
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -1351,20 +1343,20 @@ function ReportsPageContent() {
                               value={bcForm.koordinat_lng}
                               onChange={(e) => setBcForm({ ...bcForm, koordinat_lng: e.target.value })}
                               placeholder="Contoh: 105.2871"
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-mono"
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-mono"
                             />
                           </div>
                         </div>
                       </div>
 
                       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider text-orange-600 border-b border-gray-50 pb-2">Kronologi Awal</h4>
+                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">Kronologi Awal</h4>
                         <textarea
                           rows={5}
                           value={bcForm.kronologi}
                           onChange={(e) => setBcForm({ ...bcForm, kronologi: e.target.value })}
                           placeholder="Uraikan peristiwa awal kejadian musibah..."
-                          className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 leading-normal resize-none"
+                          className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 leading-normal resize-none"
                         />
                       </div>
                     </div>
@@ -1372,7 +1364,7 @@ function ReportsPageContent() {
                     {/* SECTION 2: KEADAAN KORBAN */}
                     <div className="space-y-4">
                       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider text-orange-600 border-b border-gray-50 pb-2">2. Keadaan Korban (Breakdown)</h4>
+                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">2. Keadaan Korban (Breakdown)</h4>
                         
                         <div className="grid grid-cols-4 gap-3">
                           <div className="space-y-1.5">
@@ -1382,7 +1374,7 @@ function ReportsPageContent() {
                               value={bcForm.korban_total}
                               onChange={(e) => setBcForm({ ...bcForm, korban_total: e.target.value })}
                               placeholder="Org"
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-bold"
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-bold"
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -1392,7 +1384,7 @@ function ReportsPageContent() {
                               value={bcForm.korban_selamat}
                               onChange={(e) => setBcForm({ ...bcForm, korban_selamat: e.target.value })}
                               placeholder="Org"
-                              className="w-full px-3 py-2 bg-green-50/50 border border-green-200 rounded-xl text-xs focus:ring-1 focus:ring-green-500 focus:bg-white outline-none text-green-800 font-bold"
+                              className="w-full px-3 py-2 bg-green-50/50 border border-green-200 rounded-xl text-xs focus:ring-2 focus:ring-green-500/20 focus:border-green-400 focus:bg-white outline-none text-green-800 font-bold"
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -1402,17 +1394,17 @@ function ReportsPageContent() {
                               value={bcForm.korban_meninggal}
                               onChange={(e) => setBcForm({ ...bcForm, korban_meninggal: e.target.value })}
                               placeholder="Org"
-                              className="w-full px-3 py-2 bg-red-50/50 border border-red-200 rounded-xl text-xs focus:ring-1 focus:ring-red-500 focus:bg-white outline-none text-red-800 font-bold"
+                              className="w-full px-3 py-2 bg-red-50/50 border border-red-200 rounded-xl text-xs focus:ring-2 focus:ring-red-500/20 focus:border-red-400 focus:bg-white outline-none text-red-800 font-bold"
                             />
                           </div>
                           <div className="space-y-1.5">
-                            <label className="block text-[11px] font-bold text-orange-700">DP (Hilang)</label>
+                            <label className="block text-[11px] font-bold text-amber-800">DP (Hilang)</label>
                             <input
                               type="number"
                               value={bcForm.korban_hilang}
                               onChange={(e) => setBcForm({ ...bcForm, korban_hilang: e.target.value })}
                               placeholder="Org"
-                              className="w-full px-3 py-2 bg-orange-50/50 border border-orange-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-orange-800 font-bold"
+                              className="w-full px-3 py-2 bg-amber-50/50 border border-amber-200 rounded-xl text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 focus:bg-white outline-none text-amber-900 font-bold"
                             />
                           </div>
                         </div>
@@ -1421,11 +1413,11 @@ function ReportsPageContent() {
                       {/* List Detail Korban */}
                       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
                         <div className="flex items-center justify-between border-b border-gray-50 pb-2">
-                          <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider text-orange-600">Daftar Rincian Identitas Korban</h4>
+                          <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider">Daftar Rincian Identitas Korban</h4>
                           <button
                             type="button"
                             onClick={handleAddVictim}
-                            className="px-2.5 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 text-[10px] font-extrabold rounded-lg border border-orange-100 flex items-center gap-1 transition-all"
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10px] font-extrabold rounded-lg border border-slate-200 flex items-center gap-1 transition-all"
                           >
                             <Plus className="w-3.5 h-3.5" /> Tambah Korban
                           </button>
@@ -1452,12 +1444,12 @@ function ReportsPageContent() {
                                   value={vic.nama}
                                   onChange={(e) => handleUpdateVictim(index, 'nama', e.target.value)}
                                   placeholder="Nama Korban"
-                                  className="px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-[11px] outline-none focus:ring-1 focus:ring-orange-500 w-full"
+                                  className="px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-[11px] outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 w-full"
                                 />
                                 <select
                                   value={vic.jenis_kelamin}
                                   onChange={(e) => handleUpdateVictim(index, 'jenis_kelamin', e.target.value)}
-                                  className="px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-[11px] outline-none focus:ring-1 focus:ring-orange-500 w-full"
+                                  className="px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-[11px] outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 w-full"
                                 >
                                   <option value="Laki-laki">Laki-laki</option>
                                   <option value="Perempuan">Perempuan</option>
@@ -1496,7 +1488,7 @@ function ReportsPageContent() {
                     <div className="space-y-4">
                       {(selectedReport.jenis_kejadian.toUpperCase().includes("KAPAL") || selectedReport.jenis_kejadian.toUpperCase().includes("LAUT")) && (
                         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-                          <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider text-orange-600 border-b border-gray-50 pb-2">3. Rincian Data Kapal (LAKA KAPAL)</h4>
+                          <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">3. Rincian Data Kapal (LAKA KAPAL)</h4>
                           
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
@@ -1506,7 +1498,7 @@ function ReportsPageContent() {
                                 value={bcForm.kapal_nama}
                                 onChange={(e) => setBcForm({ ...bcForm, kapal_nama: e.target.value })}
                                 placeholder="Contoh: MV SS 2"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                             <div className="space-y-1.5">
@@ -1516,7 +1508,7 @@ function ReportsPageContent() {
                                 value={bcForm.kapal_jenis}
                                 onChange={(e) => setBcForm({ ...bcForm, kapal_jenis: e.target.value })}
                                 placeholder="Contoh: Kapal Kargo"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                           </div>
@@ -1529,7 +1521,7 @@ function ReportsPageContent() {
                                 value={bcForm.kapal_warna}
                                 onChange={(e) => setBcForm({ ...bcForm, kapal_warna: e.target.value })}
                                 placeholder="Contoh: Hitam Kuning"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                             <div className="space-y-1.5">
@@ -1539,7 +1531,7 @@ function ReportsPageContent() {
                                 value={bcForm.kapal_imo}
                                 onChange={(e) => setBcForm({ ...bcForm, kapal_imo: e.target.value })}
                                 placeholder="Contoh: 9158123"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                           </div>
@@ -1571,7 +1563,7 @@ function ReportsPageContent() {
 
                       {(selectedReport.jenis_kejadian.toUpperCase().includes("PESAWAT") || selectedReport.jenis_kejadian.toUpperCase().includes("UDARA")) && (
                         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-                          <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider text-orange-600 border-b border-gray-50 pb-2">3. Rincian Data Pesawat (LAKA PESAWAT)</h4>
+                          <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">3. Rincian Data Pesawat (LAKA PESAWAT)</h4>
                           
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
@@ -1581,7 +1573,7 @@ function ReportsPageContent() {
                                 value={bcForm.pesawat_nama}
                                 onChange={(e) => setBcForm({ ...bcForm, pesawat_nama: e.target.value })}
                                 placeholder="Contoh: Boeing 737"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                             <div className="space-y-1.5">
@@ -1591,7 +1583,7 @@ function ReportsPageContent() {
                                 value={bcForm.pesawat_jenis}
                                 onChange={(e) => setBcForm({ ...bcForm, pesawat_jenis: e.target.value })}
                                 placeholder="Contoh: Pesawat Penumpang"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                           </div>
@@ -1604,7 +1596,7 @@ function ReportsPageContent() {
                                 value={bcForm.pesawat_warna}
                                 onChange={(e) => setBcForm({ ...bcForm, pesawat_warna: e.target.value })}
                                 placeholder="Contoh: Biru Putih"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                             <div className="space-y-1.5">
@@ -1614,7 +1606,7 @@ function ReportsPageContent() {
                                 value={bcForm.pesawat_register}
                                 onChange={(e) => setBcForm({ ...bcForm, pesawat_register: e.target.value })}
                                 placeholder="Contoh: PK-ABC"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                           </div>
@@ -1627,7 +1619,7 @@ function ReportsPageContent() {
                                 value={bcForm.pesawat_rute}
                                 onChange={(e) => setBcForm({ ...bcForm, pesawat_rute: e.target.value })}
                                 placeholder="Contoh: Jakarta - Natuna"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                             <div className="space-y-1.5">
@@ -1637,7 +1629,7 @@ function ReportsPageContent() {
                                 value={bcForm.pesawat_operator}
                                 onChange={(e) => setBcForm({ ...bcForm, pesawat_operator: e.target.value })}
                                 placeholder="Contoh: Sriwijaya Air"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                           </div>
@@ -1646,7 +1638,7 @@ function ReportsPageContent() {
 
                       {(!selectedReport.jenis_kejadian.toUpperCase().includes("KAPAL") && !selectedReport.jenis_kejadian.toUpperCase().includes("PESAWAT") && !selectedReport.jenis_kejadian.toUpperCase().includes("LAUT") && !selectedReport.jenis_kejadian.toUpperCase().includes("UDARA")) && (
                         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-                          <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider text-orange-600 border-b border-gray-50 pb-2">3. Rincian Data Sarana/Kendaraan (KPK / LANTAS)</h4>
+                          <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">3. Rincian Data Sarana/Kendaraan (KPK / LANTAS)</h4>
                           
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
@@ -1656,7 +1648,7 @@ function ReportsPageContent() {
                                 value={bcForm.alat_jenis}
                                 onChange={(e) => setBcForm({ ...bcForm, alat_jenis: e.target.value })}
                                 placeholder="Contoh: Pompong / Sepeda Motor"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                             <div className="space-y-1.5">
@@ -1666,7 +1658,7 @@ function ReportsPageContent() {
                                 value={bcForm.alat_warna}
                                 onChange={(e) => setBcForm({ ...bcForm, alat_warna: e.target.value })}
                                 placeholder="Contoh: Hijau Putih"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                           </div>
@@ -1679,7 +1671,7 @@ function ReportsPageContent() {
                                 value={bcForm.alat_nopol}
                                 onChange={(e) => setBcForm({ ...bcForm, alat_nopol: e.target.value })}
                                 placeholder="Contoh: BP 1234 NN"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                             <div className="space-y-1.5">
@@ -1689,7 +1681,7 @@ function ReportsPageContent() {
                                 value={bcForm.alat_pemilik}
                                 onChange={(e) => setBcForm({ ...bcForm, alat_pemilik: e.target.value })}
                                 placeholder="Contoh: Bpk Nurul Huda"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                               />
                             </div>
                           </div>
@@ -1700,7 +1692,7 @@ function ReportsPageContent() {
                     {/* SECTION 4: OPERASIONAL & CUACA */}
                     <div className="space-y-4">
                       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider text-orange-600 border-b border-gray-50 pb-2">4. Unsur SAR & Alut Palsar Terlibat</h4>
+                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">4. Unsur SAR & Alut Palsar Terlibat</h4>
                         
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
@@ -1713,7 +1705,7 @@ function ReportsPageContent() {
                               value={bcForm.unsur_sar_str}
                               onChange={(e) => setBcForm({ ...bcForm, unsur_sar_str: e.target.value })}
                               placeholder="Contoh:&#10;Kantor SAR Natuna&#10;BPBD Natuna&#10;Masyarakat"
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none resize-none font-medium leading-normal"
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none font-medium leading-normal"
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -1726,14 +1718,14 @@ function ReportsPageContent() {
                               value={bcForm.alut_palsar_str}
                               onChange={(e) => setBcForm({ ...bcForm, alut_palsar_str: e.target.value })}
                               placeholder="Contoh:&#10;LCR&#10;RIB Anambas&#10;Peralatan Selam"
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none resize-none font-medium leading-normal"
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none font-medium leading-normal"
                             />
                           </div>
                         </div>
                       </div>
 
                       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider text-orange-600 border-b border-gray-50 pb-2">Cuaca, Aksi, & Hasil</h4>
+                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">Cuaca, Aksi, & Hasil</h4>
                         
                         <div className="space-y-1.5">
                           <label className="block text-xs font-bold text-gray-700">Kondisi Cuaca</label>
@@ -1742,7 +1734,7 @@ function ReportsPageContent() {
                             value={bcForm.cuaca}
                             onChange={(e) => setBcForm({ ...bcForm, cuaca: e.target.value })}
                             placeholder="Contoh: Cuaca Berawan Tebal, Suhu 26°C, Gelombang 0.5-1.25 M"
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
                           />
                         </div>
 
@@ -1754,7 +1746,7 @@ function ReportsPageContent() {
                               value={bcForm.aksi}
                               onChange={(e) => setBcForm({ ...bcForm, aksi: e.target.value })}
                               placeholder="Contoh: Kantor SAR berkoordinasi dengan potensi SAR terdekat"
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none resize-none"
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none"
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -1764,7 +1756,7 @@ function ReportsPageContent() {
                               value={bcForm.hasil}
                               onChange={(e) => setBcForm({ ...bcForm, hasil: e.target.value })}
                               placeholder="Contoh: Masih dalam pencarian / Pemantauan..."
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none resize-none"
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none"
                             />
                           </div>
                         </div>
@@ -1777,7 +1769,7 @@ function ReportsPageContent() {
                 <div className="w-5/12 h-full flex flex-col bg-slate-900 text-slate-100">
                   <div className="p-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between shrink-0">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <FileText className="w-4 h-4 text-orange-500" /> Pratinjau Info Awal Resmi
+                      <FileText className="w-4 h-4 text-slate-400" /> Pratinjau Info Awal Resmi
                     </span>
                     <button
                       type="button"
@@ -1785,7 +1777,7 @@ function ReportsPageContent() {
                       onClick={() => handleRefreshPreview(selectedReport.id)}
                       className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold rounded-lg border border-slate-700 flex items-center gap-1.5 transition-all disabled:opacity-50"
                     >
-                      {isPreviewLoading ? <Loader2 className="w-3 h-3 animate-spin text-orange-500" /> : <Activity className="w-3 h-3" />}
+                      {isPreviewLoading ? <Loader2 className="w-3 h-3 animate-spin text-slate-400" /> : <Activity className="w-3 h-3" />}
                       Segarkan Preview
                     </button>
                   </div>
@@ -1794,7 +1786,7 @@ function ReportsPageContent() {
                   <div className="flex-1 overflow-hidden relative bg-slate-950">
                     {isPreviewLoading && !previewText ? (
                       <div className="h-full w-full flex flex-col items-center justify-center gap-2 text-slate-500 absolute inset-0 z-10 bg-slate-950/80">
-                        <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+                        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
                         <span className="text-[10px] font-semibold tracking-wider uppercase animate-pulse">Menghimpun Laporan Info Awal...</span>
                       </div>
                     ) : null}
@@ -1802,15 +1794,15 @@ function ReportsPageContent() {
                       value={previewText}
                       onChange={(e) => setPreviewText(e.target.value)}
                       placeholder="Klik 'Segarkan Preview' untuk memuat format info awal."
-                      className="w-full h-full p-5 bg-slate-950 text-green-400 font-mono text-xs leading-relaxed resize-none outline-none border-none focus:ring-0 selection:bg-orange-600 selection:text-white"
+                      className="w-full h-full p-5 bg-slate-950 text-green-400 font-mono text-xs leading-relaxed resize-none outline-none border-none focus:ring-0 selection:bg-slate-700 selection:text-white"
                     />
                   </div>
 
                   {/* Submit / Action Panel */}
                   <div className="p-5 border-t border-slate-800 bg-slate-950 shrink-0 space-y-3">
-                    <div className="p-3 bg-orange-950/40 border border-orange-500/20 rounded-2xl flex gap-2">
-                      <ShieldAlert className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
-                      <p className="text-[10px] text-orange-300 leading-normal font-semibold">
+                    <div className="p-3 bg-slate-900 border border-slate-800 rounded-2xl flex gap-2">
+                      <ShieldAlert className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-slate-300 leading-normal font-semibold">
                         Tindakan ini akan secara otomatis memperbarui rincian di PostgreSQL dan memicu diseminasi pesan ke grup WhatsApp & Telegram SAR Command Center.
                       </p>
                     </div>
@@ -1827,11 +1819,11 @@ function ReportsPageContent() {
                         type="button"
                         disabled={isBroadcasting || isPreviewLoading}
                         onClick={handleSaveAndBroadcast}
-                        className="flex-1 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+                        className="flex-1 py-3 bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
                       >
                         {isBroadcasting ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin text-slate-900" />
                             <span>Menyiarkan Laporan...</span>
                           </>
                         ) : (
@@ -1858,7 +1850,7 @@ export default function ReportsPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
       </div>
     }>
       <ReportsPageContent />

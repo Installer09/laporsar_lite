@@ -16,7 +16,7 @@ interface DashboardMapInnerProps {
   isPublic?: boolean;
 }
 
-// Custom Premium Pulse Marker Icon for Emergencies (Red/Orange based on status)
+// Custom Pulse Marker Icon (Red/Amber based on status)
 const createIncidentMarker = (jenisKejadian: string, status: string, zoom: number) => {
   if (typeof window === 'undefined') return null;
   
@@ -78,13 +78,13 @@ const createIncidentMarker = (jenisKejadian: string, status: string, zoom: numbe
 
   const iconSvg = getCategorySvg(jenisKejadian);
 
-  // Determine colors based on status: PENDING is orange/amber, AKTIF is pulsing red
+  // Determine colors based on status: PENDING is amber, AKTIF is pulsing red
   let pulseColor = "bg-red-400";
   let gradientColors = "from-red-600 to-rose-700";
   
   if (status === 'PENDING') {
-    pulseColor = "bg-orange-400";
-    gradientColors = "from-orange-600 to-amber-700";
+    pulseColor = "bg-amber-400";
+    gradientColors = "from-amber-600 to-amber-700";
   }
 
   return L.divIcon({
@@ -359,8 +359,8 @@ export default function DashboardMapInner({ reports = [], locations = [], kmlPat
             key={`kml_poly_${index}`}
             positions={polygonCoords}
             pathOptions={{
-              color: '#ea580c',      // Orange border (amber-600)
-              fillColor: '#f97316',  // Amber fill
+              color: '#475569',      // Slate border
+              fillColor: '#475569',  // Subtle slate fill
               fillOpacity: 0.05,     // Low opacity for subtle commands center look
               weight: 2,             // Semi-thin elegant border
               dashArray: '5, 5'      // Dashed border for official boundary look

@@ -268,7 +268,7 @@ async def get_tenant(request: Request, db_master: AsyncSession = Depends(get_mas
             parts = host.split(".")
             if len(parts) > 1:
                 first_part = parts[0].split(":")[0]  # Remove port if present
-                if first_part not in ("www", "admin", "localhost", "127", "localhost:3000", "localhost:8000"):
+                if first_part not in ("www", "admin", "localhost", "127", "localhost:3000", "localhost:8000", "laporsar"):
                     tenant_slug = first_part
 
     if not tenant_slug:

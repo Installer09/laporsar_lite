@@ -99,7 +99,7 @@ export function Sidebar() {
             className="w-10 h-10 object-contain rounded-lg shrink-0 shadow-md p-0.5 border border-slate-100" 
           />
         ) : (
-          <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-orange-600/10">
+          <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shrink-0 shadow-sm">
             <Activity className="text-white w-6 h-6" />
           </div>
         )}
@@ -150,7 +150,7 @@ export function Sidebar() {
                     {isActive && (
                       <motion.div
                         layoutId="active-nav-bg"
-                        className="absolute inset-0 bg-orange-50 rounded-lg border border-orange-100/50"
+                        className="absolute inset-0 bg-slate-100 rounded-lg border border-slate-200/80"
                         initial={false}
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                       />
@@ -158,11 +158,11 @@ export function Sidebar() {
                     <div className={cn(
                       "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                       isSidebarOpen ? "justify-start" : "justify-center",
-                      isActive ? "text-orange-600" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                      isActive ? "text-slate-900 font-semibold" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                     )}
                     title={!isSidebarOpen ? item.label : undefined}
                     >
-                      <item.icon className={cn("w-5 h-5 shrink-0 transition-colors duration-200", isActive ? "text-orange-500" : "text-slate-400")} />
+                      <item.icon className={cn("w-5 h-5 shrink-0 transition-colors duration-200", isActive ? "text-slate-900" : "text-slate-400")} />
                       <AnimatePresence initial={false}>
                         {isSidebarOpen && (
                           <motion.span

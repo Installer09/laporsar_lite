@@ -21,7 +21,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Ensure pgvector extension is created
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+    try:
+        op.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+    except Exception:
+        pass
 
     # Add new standardized columns to dictionary_words
     try:

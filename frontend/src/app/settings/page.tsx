@@ -28,7 +28,7 @@ const MapPicker = dynamic(() => import('@/components/MapPicker'), {
   ssr: false,
   loading: () => (
     <div className="h-[300px] w-full bg-slate-900/50 rounded-xl flex items-center justify-center">
-      <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+      <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
     </div>
   ),
 });
@@ -889,8 +889,8 @@ export default function SettingsPage() {
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold rounded-xl text-left transition-all duration-300 ${
                       activeTab === tab.id
-                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/10'
-                        : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
+                        ? 'bg-slate-900 text-white shadow-sm'
+                        : 'text-gray-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <tab.icon className={`w-4 h-4 transition-transform duration-300 ${activeTab === tab.id ? 'scale-110' : ''}`} />
@@ -964,7 +964,7 @@ export default function SettingsPage() {
                 </div>
 
                 {isLoadingIdentity ? (
-                  <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-orange-500" /></div>
+                  <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate-500" /></div>
                 ) : (
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -975,7 +975,7 @@ export default function SettingsPage() {
                           value={identityForm.identitas_nama_instansi}
                           onChange={(e) => setIdentityForm({ ...identityForm, identitas_nama_instansi: e.target.value })}
                           placeholder="Kantor Pencarian dan Pertolongan Natuna"
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -985,7 +985,7 @@ export default function SettingsPage() {
                           value={identityForm.identitas_motto}
                           onChange={(e) => setIdentityForm({ ...identityForm, identitas_motto: e.target.value })}
                           placeholder="We Are Family - Profesional, Modern, Teruji"
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none resize-none"
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none resize-none"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -995,7 +995,7 @@ export default function SettingsPage() {
                           value={identityForm.identitas_wilayah_kerja}
                           onChange={(e) => setIdentityForm({ ...identityForm, identitas_wilayah_kerja: e.target.value })}
                           placeholder="Kabupaten Natuna, Kepulauan Riau, Indonesia"
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                         />
                       </div>
                     </div>
@@ -1003,7 +1003,7 @@ export default function SettingsPage() {
                     {/* KML File Uploader */}
                     <div className="border border-dashed border-gray-200 rounded-3xl p-6 bg-gray-50/50 space-y-4">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 flex-shrink-0">
+                        <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-800 flex-shrink-0">
                           <FileText className="w-6 h-6" />
                         </div>
                         <div>
@@ -1013,9 +1013,9 @@ export default function SettingsPage() {
                       </div>
 
                       {identityForm.identitas_kml_path ? (
-                        <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex items-center justify-between">
+                        <div className="bg-slate-100 border border-slate-200 p-4 rounded-2xl flex items-center justify-between">
                           <div className="flex items-center gap-2.5">
-                            <Check className="w-4 h-4 text-orange-600 font-bold" />
+                            <Check className="w-4 h-4 text-slate-800 font-bold" />
                             <span className="text-xs font-semibold text-gray-700 truncate max-w-[280px]">
                               {identityForm.identitas_kml_path.split('/').pop()}
                             </span>
@@ -1044,7 +1044,7 @@ export default function SettingsPage() {
                             htmlFor="kml-upload"
                             className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold text-xs rounded-xl shadow-sm cursor-pointer transition-all flex items-center gap-2"
                           >
-                            {kmlUploadMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin text-orange-500" /> : <Plus className="w-4 h-4" />}
+                            {kmlUploadMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin text-slate-500" /> : <Plus className="w-4 h-4" />}
                             Pilih & Unggah File KML
                           </label>
                         </div>
@@ -1054,7 +1054,7 @@ export default function SettingsPage() {
                     {/* Logo Instansi Uploader */}
                     <div className="border border-dashed border-gray-200 rounded-3xl p-6 bg-gray-50/50 space-y-4">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 flex-shrink-0">
+                        <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-800 flex-shrink-0">
                           <Building2 className="w-6 h-6" />
                         </div>
                         <div>
@@ -1064,12 +1064,12 @@ export default function SettingsPage() {
                       </div>
 
                       {identityForm.identitas_logo_path ? (
-                        <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex items-center justify-between">
+                        <div className="bg-slate-100 border border-slate-200 p-4 rounded-2xl flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <img 
                               src={`${getBackendUrl().replace(/\/api\/?$/, '')}/${identityForm.identitas_logo_path}`} 
                               alt="Logo Kantor" 
-                              className="w-12 h-12 object-contain bg-white rounded-xl border border-orange-100 p-1" 
+                              className="w-12 h-12 object-contain bg-white rounded-xl border border-slate-200 p-1" 
                             />
                             <div className="flex flex-col">
                               <span className="text-xs font-semibold text-gray-700">Logo Kustom Aktif</span>
@@ -1102,7 +1102,7 @@ export default function SettingsPage() {
                             htmlFor="logo-upload"
                             className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold text-xs rounded-xl shadow-sm cursor-pointer transition-all flex items-center gap-2"
                           >
-                            {logoUploadMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin text-orange-500" /> : <Plus className="w-4 h-4" />}
+                            {logoUploadMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin text-slate-500" /> : <Plus className="w-4 h-4" />}
                             Pilih & Unggah Logo Kantor
                           </label>
                         </div>
@@ -1113,7 +1113,7 @@ export default function SettingsPage() {
                       <button
                         onClick={handleSaveIdentity}
                         disabled={updateIdentityMutation.isPending}
-                        className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-sm rounded-2xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/10 active:scale-95"
+                        className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-2xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-sm active:scale-95"
                       >
                         {updateIdentityMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Simpan Identitas Kantor
@@ -1134,14 +1134,14 @@ export default function SettingsPage() {
                   </div>
                   <button
                     onClick={openAddLocation}
-                    className="px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95"
+                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95"
                   >
                     <Plus className="w-4 h-4" /> Tambah Pos/Unit
                   </button>
                 </div>
 
                 {isLoadingLocations ? (
-                  <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-orange-500" /></div>
+                  <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate-500" /></div>
                 ) : !locationsData || locationsData.length === 0 ? (
                   <div className="text-center py-16 space-y-3">
                     <MapPin className="w-12 h-12 text-gray-300 mx-auto" />
@@ -1151,7 +1151,7 @@ export default function SettingsPage() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {locationsData.map((loc: any) => (
-                      <div key={loc.id} className="p-5 border border-gray-100 hover:border-orange-200 hover:bg-orange-50/10 rounded-2xl transition-all flex flex-col justify-between space-y-4">
+                      <div key={loc.id} className="p-5 border border-gray-100 hover:border-slate-200 hover:bg-slate-100/10 rounded-2xl transition-all flex flex-col justify-between space-y-4">
                         <div>
                           <div className="flex items-center justify-between">
                             <span className="px-2.5 py-1 bg-gray-100 text-gray-700 text-[10px] font-extrabold rounded-md uppercase flex items-center gap-1.5">
@@ -1171,7 +1171,7 @@ export default function SettingsPage() {
                             <div className="flex gap-1.5">
                               <button
                                 onClick={() => openEditLocation(loc)}
-                                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-orange-600 transition-all"
+                                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-slate-900 transition-all"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
@@ -1188,7 +1188,7 @@ export default function SettingsPage() {
                             </div>
                           </div>
                           <h3 className="font-bold text-gray-900 mt-2 text-sm md:text-base">{loc.name}</h3>
-                          <p className="text-xs text-gray-400 flex items-center gap-1 mt-1"><MapPin className="w-3.5 h-3.5 flex-shrink-0 text-orange-500" /> {loc.address || 'Alamat tidak terisi'}</p>
+                          <p className="text-xs text-gray-400 flex items-center gap-1 mt-1"><MapPin className="w-3.5 h-3.5 flex-shrink-0 text-slate-500" /> {loc.address || 'Alamat tidak terisi'}</p>
                         </div>
 
                         <div className="border-t border-gray-100 pt-3 flex flex-wrap gap-2 text-[10px] text-gray-500">
@@ -1222,7 +1222,7 @@ export default function SettingsPage() {
                     onClick={() => setClassSopActiveTab('classifications')}
                     className={`pb-3 px-4 font-bold text-xs tracking-wide transition-all relative flex items-center gap-1.5 ${
                       classSopActiveTab === 'classifications'
-                        ? 'text-orange-600'
+                        ? 'text-slate-800'
                         : 'text-gray-400 hover:text-gray-600'
                     }`}
                   >
@@ -1231,7 +1231,7 @@ export default function SettingsPage() {
                     {classSopActiveTab === 'classifications' && (
                       <motion.div
                         layoutId="classSopActiveTabUnderline"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-900"
                       />
                     )}
                   </button>
@@ -1239,7 +1239,7 @@ export default function SettingsPage() {
                     onClick={() => setClassSopActiveTab('sop')}
                     className={`pb-3 px-4 font-bold text-xs tracking-wide transition-all relative flex items-center gap-1.5 ${
                       classSopActiveTab === 'sop'
-                        ? 'text-orange-600'
+                        ? 'text-slate-800'
                         : 'text-gray-400 hover:text-gray-600'
                     }`}
                   >
@@ -1248,7 +1248,7 @@ export default function SettingsPage() {
                     {classSopActiveTab === 'sop' && (
                       <motion.div
                         layoutId="classSopActiveTabUnderline"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-900"
                       />
                     )}
                   </button>
@@ -1271,14 +1271,14 @@ export default function SettingsPage() {
                         </div>
                         <button
                           onClick={openAddClassification}
-                          className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95"
+                          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95"
                         >
                           <Plus className="w-4 h-4" /> Tambah Klasifikasi
                         </button>
                       </div>
 
                       {isLoadingClassifications ? (
-                        <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-orange-500" /></div>
+                        <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate-500" /></div>
                       ) : !classificationsData || classificationsData.length === 0 ? (
                         <div className="text-center py-16 space-y-3">
                           <FileText className="w-12 h-12 text-gray-300 mx-auto" />
@@ -1293,12 +1293,12 @@ export default function SettingsPage() {
                                 {cls.sop_document_id && (
                                   <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
                                     <FileText className="w-3.5 h-3.5 text-slate-400" />
-                                    <span>SOP: <span className="text-orange-600 font-semibold">{sopDocumentsData.find((d: any) => d.id === cls.sop_document_id)?.title || `Dokumen SOP #${cls.sop_document_id}`}</span></span>
+                                    <span>SOP: <span className="text-slate-800 font-semibold">{sopDocumentsData.find((d: any) => d.id === cls.sop_document_id)?.title || `Dokumen SOP #${cls.sop_document_id}`}</span></span>
                                   </div>
                                 )}
                                 <div className="flex flex-wrap gap-1">
                                   {cls.keywords?.split(',').map((kw: string, i: number) => (
-                                    <span key={i} className="px-2 py-0.5 bg-orange-50 border border-orange-100/50 text-orange-700 text-[10px] font-semibold rounded-md">
+                                    <span key={i} className="px-2 py-0.5 bg-slate-100 border border-slate-200/50 text-slate-800 text-[10px] font-semibold rounded-md">
                                       {kw.trim()}
                                     </span>
                                   ))}
@@ -1307,7 +1307,7 @@ export default function SettingsPage() {
                               <div className="flex gap-1.5 flex-shrink-0">
                                 <button
                                   onClick={() => openEditClassification(cls)}
-                                  className="p-1.5 hover:bg-gray-50 rounded-xl text-gray-500 hover:text-orange-600 transition-all"
+                                  className="p-1.5 hover:bg-gray-50 rounded-xl text-gray-500 hover:text-slate-900 transition-all"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
@@ -1345,7 +1345,7 @@ export default function SettingsPage() {
                         {/* UPLOAD FORM CARD (LEFT COLUMN) */}
                         <div className="bg-white rounded-2xl border border-gray-150 shadow-sm p-5 space-y-4 lg:col-span-1">
                           <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                            <div className="p-2 bg-orange-50 rounded-xl text-orange-600">
+                            <div className="p-2 bg-slate-100 rounded-xl text-slate-800">
                               <UploadCloud className="w-5 h-5" />
                             </div>
                             <div>
@@ -1377,7 +1377,7 @@ export default function SettingsPage() {
                                 value={sopTitle}
                                 onChange={(e) => setSopTitle(e.target.value)}
                                 placeholder="Contoh: SOP Penyelamatan Laut B"
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-semibold"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-semibold"
                               />
                             </div>
 
@@ -1386,7 +1386,7 @@ export default function SettingsPage() {
                               <select
                                 value={sopDocType}
                                 onChange={(e) => setSopDocType(e.target.value)}
-                                className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-semibold"
+                                className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-semibold"
                               >
                                 <option value="SOP">SOP / PROSEDUR KERJA</option>
                                 <option value="PANDUAN">PANDUAN TAKTIS</option>
@@ -1422,10 +1422,10 @@ export default function SettingsPage() {
                                 onClick={() => fileInputRef.current?.click()}
                                 className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[120px] ${
                                   isDragging
-                                    ? 'border-orange-500 bg-orange-50/50'
+                                    ? 'border-slate-900 bg-slate-100/50'
                                     : sopFile
                                     ? 'border-green-500 bg-green-50/20 hover:bg-green-50/30'
-                                    : 'border-gray-200 hover:border-orange-400 hover:bg-gray-50'
+                                    : 'border-gray-200 hover:border-slate-400 hover:bg-gray-50'
                                 }`}
                               >
                                 <input
@@ -1473,7 +1473,7 @@ export default function SettingsPage() {
                             <button
                               type="submit"
                               disabled={uploadSopMutation.isPending || !sopFile}
-                              className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:opacity-90 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed active:scale-95"
+                              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed active:scale-95"
                             >
                               {uploadSopMutation.isPending ? (
                                 <>
@@ -1499,7 +1499,7 @@ export default function SettingsPage() {
                                 placeholder="Cari nama dokumen SOP..." 
                                 value={sopSearchQuery}
                                 onChange={(e) => setSopSearchQuery(e.target.value)}
-                                className="w-full pl-8 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-[11px] focus:ring-2 focus:ring-orange-500/20 outline-none text-gray-700 font-medium"
+                                className="w-full pl-8 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-[11px] focus:ring-2 focus:ring-slate-900/10 outline-none text-gray-700 font-medium"
                               />
                             </div>
                             <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
@@ -1561,7 +1561,7 @@ export default function SettingsPage() {
                                       <td className="py-2.5 px-4">
                                         <span className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wider ${
                                           item.doc_type === 'SOP'
-                                            ? 'bg-orange-50 text-orange-700 border border-orange-100'
+                                            ? 'bg-slate-100 text-slate-800 border border-slate-200'
                                             : item.doc_type === 'PANDUAN'
                                             ? 'bg-blue-50 text-blue-700 border border-blue-100'
                                             : item.doc_type === 'REGULASI'
@@ -1613,7 +1613,7 @@ export default function SettingsPage() {
                                                 <button
                                                   onClick={() => handleTriggerVectorize(item.id, item.is_global)}
                                                   disabled={vectorizingDocId === item.id}
-                                                  className="px-2 py-0.5 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-bold text-[8px] rounded transition-all flex items-center gap-0.5"
+                                                  className="px-2 py-0.5 bg-slate-100 hover:bg-slate-100 text-slate-800 border border-slate-200 font-bold text-[8px] rounded transition-all flex items-center gap-0.5"
                                                   title="Index Ulang Vector"
                                                 >
                                                   {vectorizingDocId === item.id ? (
@@ -1660,7 +1660,7 @@ export default function SettingsPage() {
                 </div>
 
                 {isLoadingSettings ? (
-                  <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-orange-500" /></div>
+                  <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate-500" /></div>
                 ) : (
                   <div className="space-y-6">
                     {/* Telegram Section */}
@@ -1677,7 +1677,7 @@ export default function SettingsPage() {
                               value={formData.telegram_token || ''}
                               onChange={(e) => handleConfigChange('telegram_token', e.target.value)}
                               placeholder="Contoh: 1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ"
-                              className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             />
                             <button
                               type="button"
@@ -1695,7 +1695,7 @@ export default function SettingsPage() {
                             value={formData.telegram_group || ''}
                             onChange={(e) => handleConfigChange('telegram_group', e.target.value)}
                             placeholder="Contoh: -100123456789"
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                           />
                         </div>
                         <div className="md:col-span-2">
@@ -1705,7 +1705,7 @@ export default function SettingsPage() {
                             value={webhookBaseUrl}
                             onChange={(e) => setWebhookBaseUrl(e.target.value)}
                             placeholder="Contoh: https://plated-coach-womanless.ngrok-free.dev"
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                           />
                           <p className="text-[10px] text-gray-400 mt-1">
                             Kosongkan jika di server production. Isi jika Anda menggunakan tunnel seperti ngrok untuk local development (harus menggunakan HTTPS).
@@ -1742,7 +1742,7 @@ export default function SettingsPage() {
                             value={formData.wa_phone_id || ''}
                             onChange={(e) => handleConfigChange('wa_phone_id', e.target.value)}
                             placeholder="Phone Number ID dari Meta Developer Portal"
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                           />
                         </div>
                         <div>
@@ -1753,7 +1753,7 @@ export default function SettingsPage() {
                               value={formData.wa_verify_token || ''}
                               onChange={(e) => handleConfigChange('wa_verify_token', e.target.value)}
                               placeholder="Contoh: laporsar-verify-secret"
-                              className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             />
                             <button
                               type="button"
@@ -1771,7 +1771,7 @@ export default function SettingsPage() {
                             value={formData.wa_token || ''}
                             onChange={(e) => handleConfigChange('wa_token', e.target.value)}
                             placeholder="Meta Graph API System User Token (Permanent)"
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none resize-none"
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none resize-none"
                           />
                         </div>
                         <div className="md:col-span-2">
@@ -1781,7 +1781,7 @@ export default function SettingsPage() {
                             value={formData.wa_group || ''}
                             onChange={(e) => handleConfigChange('wa_group', e.target.value)}
                             placeholder="ID grup WhatsApp (JID) tujuan forward laporan"
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                           />
                         </div>
                       </div>
@@ -1791,7 +1791,7 @@ export default function SettingsPage() {
                       <button
                         onClick={handleSaveMainConfigs}
                         disabled={updateSettingsMutation.isPending}
-                        className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-sm rounded-2xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/10 active:scale-95"
+                        className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-2xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-sm active:scale-95"
                       >
                         {updateSettingsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Simpan Integrasi Webhook
@@ -1811,14 +1811,14 @@ export default function SettingsPage() {
                 </div>
 
                 {isLoadingSettings ? (
-                  <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-orange-500" /></div>
+                  <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate-500" /></div>
                 ) : (
                   <div className="space-y-8">
                     
                     {/* A. LLM Engine Section */}
                     <div className="bg-gray-50/50 border border-gray-100 p-6 rounded-3xl space-y-4">
-                      <h3 className="font-bold text-gray-900 text-sm md:text-base flex items-center gap-2 text-orange-600">
-                        <Server className="w-5 h-5 text-orange-500" /> LLM Engine (Otak Utama NLP)
+                      <h3 className="font-bold text-gray-900 text-sm md:text-base flex items-center gap-2 text-slate-800">
+                        <Server className="w-5 h-5 text-slate-500" /> LLM Engine (Otak Utama NLP)
                       </h3>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1827,7 +1827,7 @@ export default function SettingsPage() {
                           <select
                             value={formData.ai_llm_provider || 'ollama'}
                             onChange={(e) => handleConfigChange('ai_llm_provider', e.target.value)}
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                           >
                             <option value="ollama">Ollama (Lokal & Gratis)</option>
                             <option value="gemini">Google Gemini API</option>
@@ -1844,7 +1844,7 @@ export default function SettingsPage() {
                               <select
                                 value={formData.ai_llm_model || ''}
                                 onChange={(e) => handleConfigChange('ai_llm_model', e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                               >
                                 <option value="">-- Pilih Model Ollama Lokal --</option>
                                 {ollamaModelsData.models.map((m: string) => (
@@ -1857,14 +1857,14 @@ export default function SettingsPage() {
                                 value={formData.ai_llm_model || ''}
                                 onChange={(e) => handleConfigChange('ai_llm_model', e.target.value)}
                                 placeholder="Ketik manual model Ollama (misal: llama3)..."
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                               />
                             )
                           ) : cloudLlmModels && cloudLlmModels.length > 0 ? (
                             <select
                               value={formData.ai_llm_model || ''}
                               onChange={(e) => handleConfigChange('ai_llm_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="">-- Pilih Model dari Provider --</option>
                               {cloudLlmModels.map((m: string) => (
@@ -1877,7 +1877,7 @@ export default function SettingsPage() {
                               value={formData.ai_llm_model || ''}
                               onChange={(e) => handleConfigChange('ai_llm_model', e.target.value)}
                               placeholder="Ketik manual, atau tekan 'Uji Koneksi' untuk memuat model..."
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             />
                           )}
                         </div>
@@ -1889,7 +1889,7 @@ export default function SettingsPage() {
                             value={formData.ai_llm_base_url || 'http://localhost:11434'}
                             onChange={(e) => handleConfigChange('ai_llm_base_url', e.target.value)}
                             placeholder="http://localhost:11434"
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                           />
                         </div>
 
@@ -1901,7 +1901,7 @@ export default function SettingsPage() {
                               value={formData.ai_llm_api_key || ''}
                               onChange={(e) => handleConfigChange('ai_llm_api_key', e.target.value)}
                               placeholder="Masukkan API key rahasia Anda"
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             />
                           </div>
                         )}
@@ -1914,7 +1914,7 @@ export default function SettingsPage() {
                           disabled={testResult.status === 'testing'}
                           className="px-4 py-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-extrabold rounded-xl border border-slate-200 flex items-center gap-2 transition-all shadow-sm"
                         >
-                          {testResult.status === 'testing' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" /> : <CheckCircle2 className="w-3.5 h-3.5 text-orange-600" />}
+                          {testResult.status === 'testing' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" /> : <CheckCircle2 className="w-3.5 h-3.5 text-slate-800" />}
                           Uji Koneksi Engine LLM
                         </button>
                       </div>
@@ -1932,7 +1932,7 @@ export default function SettingsPage() {
                           <select
                             value={formData.ai_embed_provider || 'ollama'}
                             onChange={(e) => handleConfigChange('ai_embed_provider', e.target.value)}
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                           >
                             <option value="ollama">Ollama (Lokal & Gratis)</option>
                             <option value="gemini">Google Gemini Embedding</option>
@@ -1947,7 +1947,7 @@ export default function SettingsPage() {
                             <select
                               value={formData.ai_embed_model || ''}
                               onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="">-- Pilih Model Ollama Lokal --</option>
                               {ollamaModelsData.models.map((m: string) => (
@@ -1958,7 +1958,7 @@ export default function SettingsPage() {
                             <select
                               value={formData.ai_embed_model || ''}
                               onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="">-- Pilih Model Gemini Embedding --</option>
                               <option value="text-embedding-004">text-embedding-004 (Rekomendasi)</option>
@@ -1968,7 +1968,7 @@ export default function SettingsPage() {
                             <select
                               value={formData.ai_embed_model || ''}
                               onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="">-- Pilih Model OpenAI Embedding --</option>
                               <option value="text-embedding-3-small">text-embedding-3-small (Rekomendasi)</option>
@@ -1979,7 +1979,7 @@ export default function SettingsPage() {
                             <select
                               value={formData.ai_embed_model || ''}
                               onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="">-- Pilih Model Groq Embedding --</option>
                               <option value="bge-large-en-v1.5">bge-large-en-v1.5 (Rekomendasi)</option>
@@ -1988,7 +1988,7 @@ export default function SettingsPage() {
                             <select
                               value={formData.ai_embed_model || ''}
                               onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="">-- Pilih Model Embedding dari Provider --</option>
                               {cloudEmbedModels.map((m: string) => (
@@ -2001,7 +2001,7 @@ export default function SettingsPage() {
                               value={formData.ai_embed_model || ''}
                               onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
                               placeholder="Ketik manual model embedding..."
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             />
                           )}
                         </div>
@@ -2022,7 +2022,7 @@ export default function SettingsPage() {
                           <select
                             value={formData.ai_stt_provider || 'ollama'}
                             onChange={(e) => handleConfigChange('ai_stt_provider', e.target.value)}
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                           >
                             <option value="ollama">Ollama (Lokal & Gratis)</option>
                             <option value="local_whisper">Whisper Server Mandiri (Local/Docker Container)</option>
@@ -2038,7 +2038,7 @@ export default function SettingsPage() {
                             <select
                               value={formData.ai_stt_model || ''}
                               onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="">-- Pilih Model Ollama Lokal --</option>
                               {ollamaModelsData.models.map((m: string) => (
@@ -2049,7 +2049,7 @@ export default function SettingsPage() {
                             <select
                               value={formData.ai_stt_model || 'whisper-1'}
                               onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="whisper-1">whisper-1 (Rekomendasi)</option>
                             </select>
@@ -2057,7 +2057,7 @@ export default function SettingsPage() {
                             <select
                               value={formData.ai_stt_model || 'whisper-large-v3'}
                               onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="whisper-large-v3">whisper-large-v3 (Tercepat & Akurat)</option>
                             </select>
@@ -2065,7 +2065,7 @@ export default function SettingsPage() {
                             <select
                               value={formData.ai_stt_model || 'gemini-1.5-flash'}
                               onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="gemini-1.5-flash">gemini-1.5-flash (Gratis/Murah Multimodal)</option>
                               <option value="gemini-1.5-pro">gemini-1.5-pro (Akurat Multimodal)</option>
@@ -2075,7 +2075,7 @@ export default function SettingsPage() {
                               <select
                                 value={formData.ai_stt_model || ''}
                                 onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                               >
                                 <option value="">-- Pilih Model dari Server Whisper --</option>
                                 {cloudSttModels.map((m: string) => (
@@ -2086,7 +2086,7 @@ export default function SettingsPage() {
                               <select
                                 value={formData.ai_stt_model || 'medium'}
                                 onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                               >
                                 <option value="medium">medium (Rekomendasi - Akurat & Cepat)</option>
                                 <option value="large-v3">large-v3 (Sangat Akurat - Butuh RAM Besar)</option>
@@ -2100,7 +2100,7 @@ export default function SettingsPage() {
                               value={formData.ai_stt_model || 'whisper'}
                               onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
                               placeholder="Ketik manual model STT..."
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             />
                           )}
                         </div>
@@ -2113,7 +2113,7 @@ export default function SettingsPage() {
                               value={formData.ai_stt_base_url || 'http://localhost:8002'}
                               onChange={(e) => handleConfigChange('ai_stt_base_url', e.target.value)}
                               placeholder="http://localhost:8002"
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             />
                           </div>
                         )}
@@ -2126,7 +2126,7 @@ export default function SettingsPage() {
                               value={formData.ai_stt_api_key || ''}
                               onChange={(e) => handleConfigChange('ai_stt_api_key', e.target.value)}
                               placeholder="API Key khusus STT (opsional)"
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             />
                           </div>
                         )}
@@ -2139,7 +2139,7 @@ export default function SettingsPage() {
                           disabled={testResult.status === 'testing'}
                           className="px-4 py-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-extrabold rounded-xl border border-slate-200 flex items-center gap-2 transition-all shadow-sm"
                         >
-                          {testResult.status === 'testing' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" /> : <CheckCircle2 className="w-3.5 h-3.5 text-orange-600" />}
+                          {testResult.status === 'testing' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" /> : <CheckCircle2 className="w-3.5 h-3.5 text-slate-800" />}
                           Uji Koneksi Engine STT
                         </button>
                       </div>
@@ -2152,7 +2152,7 @@ export default function SettingsPage() {
                           ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
                           : testResult.status === 'error'
                           ? 'bg-rose-50 border-rose-100 text-rose-800'
-                          : 'bg-orange-50 border-orange-100 text-orange-800'
+                          : 'bg-slate-100 border-slate-200 text-slate-900'
                       }`}>
                         {testResult.status === 'testing' ? (
                           <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
@@ -2169,7 +2169,7 @@ export default function SettingsPage() {
                       <button
                         onClick={handleSaveMainConfigs}
                         disabled={updateSettingsMutation.isPending}
-                        className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-sm rounded-2xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/10 active:scale-95"
+                        className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-2xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-sm active:scale-95"
                       >
                         {updateSettingsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Simpan Seluruh Konfigurasi AI
@@ -2190,14 +2190,14 @@ export default function SettingsPage() {
                   </div>
                   <button
                     onClick={openAddUser}
-                    className="px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95"
+                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95"
                   >
                     <UserPlus className="w-4 h-4" /> Tambah Pengguna
                   </button>
                 </div>
 
                 {isLoadingUsers ? (
-                  <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-orange-500" /></div>
+                  <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate-500" /></div>
                 ) : !usersData || usersData.length === 0 ? (
                   <div className="text-center py-16 space-y-3">
                     <Users className="w-12 h-12 text-gray-300 mx-auto" />
@@ -2208,7 +2208,7 @@ export default function SettingsPage() {
                     {usersData.map((usr: any) => (
                       <div key={usr.id} className="p-5 border border-gray-100 rounded-2xl flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600 flex-shrink-0 font-bold">
+                          <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-800 flex-shrink-0 font-bold">
                             {usr.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -2230,7 +2230,7 @@ export default function SettingsPage() {
                           <div className="flex gap-1.5 border-l border-gray-100 pl-3">
                             <button
                               onClick={() => openEditUser(usr)}
-                              className="p-1.5 hover:bg-gray-50 rounded-lg text-gray-500 hover:text-orange-600 transition-all"
+                              className="p-1.5 hover:bg-gray-50 rounded-lg text-gray-500 hover:text-slate-900 transition-all"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
@@ -2265,7 +2265,7 @@ export default function SettingsPage() {
                   {/* Backup Card */}
                   <div className="border border-gray-150 p-6 rounded-3xl bg-white shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
                     <div className="space-y-2">
-                      <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600">
+                      <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-800">
                         <Database className="w-6 h-6" />
                       </div>
                       <h3 className="text-base font-bold text-gray-900">Pencadangan Data (Database Backup)</h3>
@@ -2277,7 +2277,7 @@ export default function SettingsPage() {
                     <button
                       onClick={handleDownloadBackup}
                       disabled={isBackingUp}
-                      className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:opacity-90 disabled:opacity-55 active:scale-98 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+                      className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-55 active:scale-98 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
                     >
                       {isBackingUp ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -2367,7 +2367,7 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3">
                       <button
                         onClick={openAddWidget}
-                        className="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+                        className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-95"
                       >
                         <Plus className="w-3.5 h-3.5" /> Tambah Integrasi
                       </button>
@@ -2427,7 +2427,7 @@ export default function SettingsPage() {
                                         navigator.clipboard.writeText(req.api_key);
                                         showSuccessToast('API Key berhasil disalin ke clipboard.');
                                       }}
-                                      className="text-orange-600 hover:text-orange-700 font-bold p-1 hover:bg-orange-50 rounded-lg transition-colors text-[10px]"
+                                      className="text-slate-800 hover:text-slate-800 font-bold p-1 hover:bg-slate-100 rounded-lg transition-colors text-[10px]"
                                       title="Salin API Key"
                                     >
                                       Salin
@@ -2459,7 +2459,7 @@ export default function SettingsPage() {
                                   )}
                                   <button
                                     onClick={() => openEditWidget(req)}
-                                    className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-orange-600 transition-all"
+                                    className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-slate-900 transition-all"
                                     title="Edit Integrasi"
                                   >
                                     <Edit2 className="w-3.5 h-3.5" />
@@ -2499,7 +2499,7 @@ export default function SettingsPage() {
       {locationModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-xl w-full border border-gray-100 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-amber-50/50">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-slate-50/80">
               <h3 className="font-extrabold text-gray-900 text-base md:text-lg">
                 {editingLocation ? `Edit ${editingLocation.name}` : 'Tambah Pos/Unit SAR Baru'}
               </h3>
@@ -2517,7 +2517,7 @@ export default function SettingsPage() {
                     value={locationForm.name}
                     onChange={(e) => setLocationForm({ ...locationForm, name: e.target.value })}
                     placeholder="Contoh: Pos SAR Ranai"
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                   />
                 </div>
                 <div>
@@ -2534,7 +2534,7 @@ export default function SettingsPage() {
                       }
                       setLocationForm({ ...locationForm, type: newType, icon: newIcon });
                     }}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                   >
                     <option value="Kantor SAR">Kantor SAR</option>
                     <option value="Pos SAR">Pos SAR</option>
@@ -2548,7 +2548,7 @@ export default function SettingsPage() {
                     value={locationForm.address}
                     onChange={(e) => setLocationForm({ ...locationForm, address: e.target.value })}
                     placeholder="Alamat lengkap pos"
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                   />
                 </div>
                 <div className="col-span-2">
@@ -2562,7 +2562,7 @@ export default function SettingsPage() {
                           <img 
                             src={`${locationForm.icon.startsWith('http') ? '' : getBackendUrl() + '/'}${locationForm.icon}`} 
                             alt="Custom Icon" 
-                            className="w-16 h-16 rounded-full object-cover border-2 border-orange-500 shadow-md animate-in fade-in zoom-in duration-200"
+                            className="w-16 h-16 rounded-full object-cover border-2 border-slate-900 shadow-md animate-in fade-in zoom-in duration-200"
                           />
                           <button
                             type="button"
@@ -2612,7 +2612,7 @@ export default function SettingsPage() {
                         />
                         <label
                           htmlFor="location-icon-upload"
-                          className="inline-flex items-center gap-1.5 px-4 py-2 border border-orange-200 hover:border-orange-300 hover:bg-orange-50/50 text-orange-600 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 hover:border-slate-300 hover:bg-slate-100/50 text-slate-800 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
                         >
                           <Upload className="w-3.5 h-3.5" />
                           Unggah Gambar Kustom
@@ -2630,7 +2630,7 @@ export default function SettingsPage() {
                               type="button"
                               onClick={() => setLocationForm({ ...locationForm, icon: emoji })}
                               className={`w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 hover:shadow-sm active:scale-95 transition-all text-sm ${
-                                locationForm.icon === emoji ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-500/20 font-bold' : 'text-gray-600'
+                                locationForm.icon === emoji ? 'bg-slate-100 text-slate-800 ring-1 ring-slate-900/20 font-bold' : 'text-gray-600'
                               }`}
                             >
                               {emoji}
@@ -2666,7 +2666,7 @@ export default function SettingsPage() {
                     value={locationForm.unsur}
                     onChange={(e) => setLocationForm({ ...locationForm, unsur: e.target.value })}
                     placeholder="Contoh: Tim Rescuer 1, Tim Medis, Pos AL"
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                   />
                 </div>
 
@@ -2677,7 +2677,7 @@ export default function SettingsPage() {
                     value={locationForm.alut}
                     onChange={(e) => setLocationForm({ ...locationForm, alut: e.target.value })}
                     placeholder="Contoh: RIB 01, LCR, Palsar Selam, Alat Evakuasi"
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                   />
                 </div>
               </div>
@@ -2695,7 +2695,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => locationMutation.mutate(locationForm)}
                 disabled={locationMutation.isPending}
-                className="px-5 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
               >
                 {locationMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {editingLocation ? 'Perbarui Lokasi' : 'Tambahkan Lokasi'}
@@ -2709,7 +2709,7 @@ export default function SettingsPage() {
       {classificationModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full border border-gray-100 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-amber-50/50">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-slate-50/80">
               <h3 className="font-extrabold text-gray-900 text-base">
                 {editingClassification ? 'Edit Klasifikasi Kejadian' : 'Tambah Klasifikasi Kejadian Baru'}
               </h3>
@@ -2726,7 +2726,7 @@ export default function SettingsPage() {
                   value={classificationForm.category}
                   onChange={(e) => setClassificationForm({ ...classificationForm, category: e.target.value })}
                   placeholder="Contoh: Kondisi Membahayakan Manusia"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                 />
               </div>
 
@@ -2737,9 +2737,9 @@ export default function SettingsPage() {
                   value={classificationForm.keywords}
                   onChange={(e) => setClassificationForm({ ...classificationForm, keywords: e.target.value })}
                   placeholder="Contoh: tenggelam, hanyut, tersesat, gigit ular, sumur, runtuh"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none resize-none"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none resize-none"
                 />
-                <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1"><Info className="w-3.5 h-3.5 text-orange-500" /> Kata kunci digunakan untuk memetakan pesan awal dari pelapor ke kategori kejadian ini secara otomatis.</p>
+                <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1"><Info className="w-3.5 h-3.5 text-slate-500" /> Kata kunci digunakan untuk memetakan pesan awal dari pelapor ke kategori kejadian ini secara otomatis.</p>
               </div>
 
               <div>
@@ -2747,7 +2747,7 @@ export default function SettingsPage() {
                 <select
                   value={classificationForm.sop_document_id || ''}
                   onChange={(e) => setClassificationForm({ ...classificationForm, sop_document_id: e.target.value ? parseInt(e.target.value) : null })}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none text-gray-800 font-medium"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none text-gray-800 font-medium"
                 >
                   <option value="">-- Pilih Dokumen SOP --</option>
                   {sopDocumentsData.map((doc: any) => (
@@ -2757,7 +2757,7 @@ export default function SettingsPage() {
                   ))}
                 </select>
                 <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
-                  <Info className="w-3.5 h-3.5 text-orange-500" /> Hubungkan klasifikasi kejadian ini dengan dokumen SOP penanganannya yang telah diunggah.
+                  <Info className="w-3.5 h-3.5 text-slate-500" /> Hubungkan klasifikasi kejadian ini dengan dokumen SOP penanganannya yang telah diunggah.
                 </p>
               </div>
             </div>
@@ -2774,7 +2774,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => classificationMutation.mutate(classificationForm)}
                 disabled={classificationMutation.isPending}
-                className="px-5 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
               >
                 {classificationMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {editingClassification ? 'Simpan' : 'Tambahkan'}
@@ -2788,7 +2788,7 @@ export default function SettingsPage() {
       {userModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full border border-gray-100 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-amber-50/50">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-slate-50/80">
               <h3 className="font-extrabold text-gray-900 text-base">
                 {editingUser ? `Edit Data ${editingUser.name}` : 'Registrasi Administrator Baru'}
               </h3>
@@ -2805,7 +2805,7 @@ export default function SettingsPage() {
                   value={userForm.name}
                   onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
                   placeholder="Nama Lengkap Operator"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                 />
               </div>
 
@@ -2816,7 +2816,7 @@ export default function SettingsPage() {
                   value={userForm.email}
                   onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
                   placeholder="operator@basarnas.go.id"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                 />
               </div>
 
@@ -2827,7 +2827,7 @@ export default function SettingsPage() {
                   value={userForm.phone}
                   onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
                   placeholder="081234567890"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                 />
               </div>
 
@@ -2837,7 +2837,7 @@ export default function SettingsPage() {
                   <select
                     value={userForm.role}
                     onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                   >
                     <option value="Admin">Admin (Kantor / Unit)</option>
                     <option value="Operator">Operator</option>
@@ -2854,7 +2854,7 @@ export default function SettingsPage() {
                     value={userForm.password}
                     onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
                     placeholder={editingUser ? 'Kosongkan jika sama' : '••••••••'}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                   />
                 </div>
               </div>
@@ -2872,7 +2872,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => userMutation.mutate(userForm)}
                 disabled={userMutation.isPending}
-                className="px-5 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
               >
                 {userMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {editingUser ? 'Simpan Data' : 'Registrasikan'}
@@ -2885,7 +2885,7 @@ export default function SettingsPage() {
       {widgetModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full border border-gray-100 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-amber-50/50">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-slate-50/80">
               <h3 className="font-extrabold text-gray-900 text-base">
                 {editingWidget ? `Edit Integrasi: ${editingWidget.partner_name}` : 'Tambah Integrasi Widget Baru'}
               </h3>
@@ -2902,7 +2902,7 @@ export default function SettingsPage() {
                   value={widgetForm.partner_name}
                   onChange={(e) => setWidgetForm({ ...widgetForm, partner_name: e.target.value })}
                   placeholder="Contoh: BPBD Kabupaten Natuna"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                 />
               </div>
 
@@ -2913,7 +2913,7 @@ export default function SettingsPage() {
                   value={widgetForm.website_url}
                   onChange={(e) => setWidgetForm({ ...widgetForm, website_url: e.target.value })}
                   placeholder="Contoh: bpbd.natunakab.go.id"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none font-mono"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none font-mono"
                 />
               </div>
 
@@ -2924,7 +2924,7 @@ export default function SettingsPage() {
                   value={widgetForm.official_email}
                   onChange={(e) => setWidgetForm({ ...widgetForm, official_email: e.target.value })}
                   placeholder="Contoh: info@bpbd.natunakab.go.id"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                 />
               </div>
 
@@ -2935,7 +2935,7 @@ export default function SettingsPage() {
                   value={widgetForm.official_phone}
                   onChange={(e) => setWidgetForm({ ...widgetForm, official_phone: e.target.value })}
                   placeholder="Contoh: 081234567890"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                 />
               </div>
 
@@ -2944,7 +2944,7 @@ export default function SettingsPage() {
                 <select
                   value={widgetForm.status}
                   onChange={(e) => setWidgetForm({ ...widgetForm, status: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none font-semibold text-gray-700"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none font-semibold text-gray-700"
                 >
                   <option value="APPROVED" className="text-emerald-700 font-semibold bg-emerald-50">Disetujui (Aktifkan API Key)</option>
                   <option value="PENDING" className="text-amber-700 font-semibold bg-amber-50">Menunggu (Pending)</option>
@@ -2965,7 +2965,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => widgetMutation.mutate(widgetForm)}
                 disabled={widgetMutation.isPending}
-                className="px-5 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
               >
                 {widgetMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {editingWidget ? 'Simpan Perubahan' : 'Daftarkan Integrasi'}

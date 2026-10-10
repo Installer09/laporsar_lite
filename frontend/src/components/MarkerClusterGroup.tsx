@@ -60,8 +60,8 @@ const createIncidentMarkerIcon = (jenisKejadian: string, status: string, zoom: n
   let gradientColors = "from-red-600 to-rose-700";
 
   if (status === 'PENDING') {
-    pulseColor = "bg-orange-400";
-    gradientColors = "from-orange-600 to-amber-700";
+    pulseColor = "bg-amber-400";
+    gradientColors = "from-amber-600 to-amber-700";
   }
 
   return L.divIcon({

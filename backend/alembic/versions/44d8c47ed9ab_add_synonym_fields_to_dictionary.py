@@ -46,10 +46,13 @@ def upgrade() -> None:
     op.add_column('dictionary_words', sa.Column('similarity_score', sa.Float(), nullable=True))
     op.add_column('locations', sa.Column('icon', sa.String(length=50), nullable=True))
     op.add_column('reports', sa.Column('info_awal_text', sa.Text(), nullable=True))
-    op.alter_column('vector_memory', 'embedding',
-               existing_type=pgvector.sqlalchemy.vector.VECTOR(dim=768),
-               type_=pgvector.sqlalchemy.vector.VECTOR(dim=1024),
-               existing_nullable=True)
+    try:
+        op.alter_column('vector_memory', 'embedding',
+                   existing_type=pgvector.sqlalchemy.vector.VECTOR(dim=768),
+                   type_=pgvector.sqlalchemy.vector.VECTOR(dim=1024),
+                   existing_nullable=True)
+    except Exception:
+        pass
     # ### end Alembic commands ###
 
 

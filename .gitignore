@@ -10,12 +10,22 @@
 
 # Testing & Caches
 /coverage
-**/__pycache__/
+.coverage
+.coverage.*
+htmlcov/
 **/.pytest_cache/
 **/.ruff_cache/
 **/*.pyc
 **/*.pyo
 **/*.pyd
+**/__pycache__/
+**/backend/tests/
+backend/tests/
+tests/
+**/radon_*.txt
+**/vulture_report.txt
+*.report.json
+*.report.txt
 
 # Build directories
 **/build/

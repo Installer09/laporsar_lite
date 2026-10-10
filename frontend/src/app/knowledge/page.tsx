@@ -298,7 +298,7 @@ export default function KnowledgePage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-            <Database className="w-8 h-8 text-orange-600 shrink-0" />
+            <Database className="w-8 h-8 text-slate-800 shrink-0" />
             Kamus Istilah Bot
           </h1>
           <p className="text-gray-500 mt-1">
@@ -338,7 +338,7 @@ export default function KnowledgePage() {
           </button>
           <button 
             onClick={handleOpenCreate}
-            className="px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
           >
             <Plus className="w-5 h-5" /> Tambah Kosakata
           </button>
@@ -355,7 +355,7 @@ export default function KnowledgePage() {
               placeholder="Cari kata, bentuk baku, atau arti definisi..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none text-gray-700"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none text-gray-700"
             />
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 flex-wrap">
@@ -462,7 +462,7 @@ export default function KnowledgePage() {
                             </span>
                           )}
                           {item.synonym_target && (
-                            <span className="text-[11px] text-orange-600 font-bold mt-0.5 flex items-center gap-1">
+                            <span className="text-[11px] text-slate-800 font-bold mt-0.5 flex items-center gap-1">
                               ➔ {item.synonym_target}
                               {item.similarity_score !== null && item.similarity_score !== undefined && (
                                 <span className="text-[9px] text-gray-400 font-normal">
@@ -511,8 +511,8 @@ export default function KnowledgePage() {
                             <CheckCircle className="w-3.5 h-3.5 text-green-500" /> Approved
                           </span>
                         ) : item.status === 'PENDING' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-bold border border-orange-100 shadow-sm">
-                            <HelpCircle className="w-3.5 h-3.5 text-orange-500" /> Pending
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-800 rounded-lg text-xs font-bold border border-slate-200 shadow-sm">
+                            <HelpCircle className="w-3.5 h-3.5 text-slate-500" /> Pending
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-bold border border-red-100 shadow-sm">
@@ -578,7 +578,7 @@ export default function KnowledgePage() {
               {/* Modal Header */}
               <div className="p-5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
                     <Book className="w-5 h-5" />
                   </div>
                   <div>
@@ -618,7 +618,7 @@ export default function KnowledgePage() {
                         value={formData.word}
                         onChange={(e) => setFormData({ ...formData, word: e.target.value })}
                         placeholder="Contoh: pompong"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 disabled:bg-gray-150 disabled:text-gray-400 disabled:cursor-not-allowed font-semibold"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 disabled:bg-gray-150 disabled:text-gray-400 disabled:cursor-not-allowed font-semibold"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -628,7 +628,7 @@ export default function KnowledgePage() {
                         value={formData.canonical_name}
                         onChange={(e) => setFormData({ ...formData, canonical_name: e.target.value })}
                         placeholder="Contoh: Perahu Kayu Bermesin"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-semibold"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-semibold"
                       />
                     </div>
                   </div>
@@ -639,7 +639,7 @@ export default function KnowledgePage() {
                       <select
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-medium"
+                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-medium"
                       >
                         {SAR_CATEGORIES.filter(c => c.value !== 'ALL').map((c) => (
                           <option key={c.value} value={c.value}>{c.label}</option>
@@ -651,7 +651,7 @@ export default function KnowledgePage() {
                       <select
                         value={formData.word_type}
                         onChange={(e) => setFormData({ ...formData, word_type: e.target.value })}
-                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-medium"
+                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-medium"
                       >
                         <option value="GENERAL">GENERAL / UMUM</option>
                         <option value="ABBREVIATION">SINGKATAN / AKRONIM</option>
@@ -667,7 +667,7 @@ export default function KnowledgePage() {
                           type="checkbox"
                           checked={formData.is_typo_or_slang}
                           onChange={(e) => setFormData({ ...formData, is_typo_or_slang: e.target.checked, word_type: e.target.checked ? 'TYPO' : formData.word_type })}
-                          className="w-3.5 h-3.5 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                          className="w-3.5 h-3.5 text-slate-800 border-gray-300 rounded focus:ring-slate-900/10"
                         />
                         Salah Ketik / Slang Pelapor
                       </label>
@@ -684,7 +684,7 @@ export default function KnowledgePage() {
                         onChange={(e) => setFormData({ ...formData, synonym_target: e.target.value })}
                         placeholder="Contoh: pompong"
                         disabled={!formData.is_typo_or_slang}
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed font-semibold"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed font-semibold"
                       />
                     </div>
                   </div>
@@ -697,7 +697,7 @@ export default function KnowledgePage() {
                       value={formData.definition}
                       onChange={(e) => setFormData({ ...formData, definition: e.target.value })}
                       placeholder="Masukkan penjelasan arti atau definisi kosakata dalam konteks SAR..."
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 leading-normal resize-none"
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 leading-normal resize-none"
                     />
                   </div>
 
@@ -708,7 +708,7 @@ export default function KnowledgePage() {
                       value={formData.context_example}
                       onChange={(e) => setFormData({ ...formData, context_example: e.target.value })}
                       placeholder="Contoh: Nelayan pergi memancing menggunakan kapal pompong"
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800"
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800"
                     />
                   </div>
 
@@ -735,7 +735,7 @@ export default function KnowledgePage() {
                       <select
                         value={formData.ner_type || ''}
                         onChange={(e) => setFormData({ ...formData, ner_type: e.target.value })}
-                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-medium"
+                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-medium"
                       >
                         <option value="">Bukan NER (Umum)</option>
                         <option value="Nama Tempat">Nama Tempat / Lokasi</option>
@@ -750,7 +750,7 @@ export default function KnowledgePage() {
                       <select
                         value={formData.ner_target || ''}
                         onChange={(e) => setFormData({ ...formData, ner_target: e.target.value })}
-                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-medium"
+                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-medium"
                       >
                         <option value="">Tidak Ada Target</option>
                         {/* Target Klasifikasi Resmi */}
@@ -771,7 +771,7 @@ export default function KnowledgePage() {
                       <select
                         value={formData.status}
                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:bg-white outline-none text-gray-800 font-medium"
+                        className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none text-gray-800 font-medium"
                       >
                         <option value="APPROVED">APPROVED (AKTIF)</option>
                         <option value="PENDING">PENDING</option>
@@ -812,7 +812,7 @@ export default function KnowledgePage() {
                   type="submit"
                   form="dictionaryForm"
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 disabled:bg-gray-250 disabled:cursor-not-allowed active:scale-95"
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 disabled:bg-gray-250 disabled:cursor-not-allowed active:scale-95"
                 >
                   {(createMutation.isPending || updateMutation.isPending) ? (
                     <>
@@ -849,7 +849,7 @@ export default function KnowledgePage() {
               {/* Modal Header */}
               <div className="p-5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
                     <Upload className="w-5 h-5" />
                   </div>
                   <div>
@@ -887,7 +887,7 @@ export default function KnowledgePage() {
                   <button
                     type="button"
                     onClick={handleTemplateDownload}
-                    className="mt-2 text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 hover:underline cursor-pointer"
+                    className="mt-2 text-xs font-bold text-slate-800 hover:text-slate-800 flex items-center gap-1 hover:underline cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" /> Unduh Template CSV Contoh
                   </button>
@@ -896,7 +896,7 @@ export default function KnowledgePage() {
                 <form id="importForm" onSubmit={handleImportSubmit} className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-gray-700">Pilih File CSV</label>
-                    <div className="border-2 border-dashed border-gray-200 hover:border-orange-500/50 rounded-2xl p-6 transition-all flex flex-col items-center justify-center gap-2 bg-gray-50/50 hover:bg-white relative">
+                    <div className="border-2 border-dashed border-gray-200 hover:border-slate-900/50 rounded-2xl p-6 transition-all flex flex-col items-center justify-center gap-2 bg-gray-50/50 hover:bg-white relative">
                       <input
                         type="file"
                         accept=".csv"
@@ -989,7 +989,7 @@ export default function KnowledgePage() {
                     type="submit"
                     form="importForm"
                     disabled={isImporting || !importFile}
-                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 disabled:bg-gray-200 disabled:cursor-not-allowed cursor-pointer"
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 disabled:bg-gray-200 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isImporting ? (
                       <>

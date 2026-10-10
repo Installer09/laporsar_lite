@@ -56,6 +56,8 @@ async def lifespan(app: FastAPI):
         from app.db.session import SessionLocal
         from sqlalchemy.future import select
         from app.models.master_models import Tenant
+        from app.db.provision_tenant import provision_tenant_db
+
         async with SessionLocal() as db_master:
             res = await db_master.execute(select(Tenant).where(Tenant.slug == "pusat"))
             pusat_tenant = res.scalar_one_or_none()
@@ -70,8 +72,20 @@ async def lifespan(app: FastAPI):
                 db_master.add_all(default_tenants)
                 await db_master.commit()
                 logger.info("Default Master Tenants (pusat, natuna, jakarta, surabaya) seeded successfully")
+
+            # Ensure all registered tenants have active databases, tables, users, and mappings
+            res_all = await db_master.execute(select(Tenant))
+            all_tenants = res_all.scalars().all()
+            for t in all_tenants:
+                if t.slug in ("pusat", "natuna", "jakarta", "surabaya") and not t.is_active:
+                    t.is_active = True
+                    await db_master.commit()
+                try:
+                    await provision_tenant_db(t, admin_password="admin", db_master=db_master)
+                except Exception as prov_err:
+                    logger.warning(f"Auto-provision note for tenant '{t.slug}': {prov_err}")
     except Exception as e:
-        logger.error(f"Failed to seed Master Default Tenants: {e}")
+        logger.error(f"Failed to seed/provision Master Default Tenants: {e}")
 
     # Seed Master Dictionary Words
     try:

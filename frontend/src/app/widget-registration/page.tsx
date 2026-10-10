@@ -54,7 +54,7 @@ export default function WidgetRegistrationPage() {
       <header className="w-full z-10 bg-white/80 backdrop-blur-md border-b border-slate-200/80 py-4 px-6 sm:px-8 flex items-center justify-between shadow-sm sticky top-0 shrink-0">
         <button 
           onClick={() => router.push('/')}
-          className="flex items-center gap-2 text-slate-700 hover:text-orange-600 transition-colors font-extrabold text-xs cursor-pointer group"
+          className="flex items-center gap-2 text-slate-700 hover:text-slate-800 transition-colors font-extrabold text-xs cursor-pointer group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
           Kembali ke Portal
@@ -69,7 +69,7 @@ export default function WidgetRegistrationPage() {
       <main className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 z-10">
         <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-4">
           {/* LOGO */}
-          <div className="mx-auto h-16 w-16 bg-white rounded-3xl flex items-center justify-center shadow-lg shadow-orange-500/10 border border-slate-100 overflow-hidden">
+          <div className="mx-auto h-16 w-16 bg-white rounded-3xl flex items-center justify-center shadow-lg shadow-sm border border-slate-100 overflow-hidden">
             <img src="/logo.png" alt="Lapor SAR Logo" className="w-12 h-12 object-contain" />
           </div>
           <div>
@@ -114,7 +114,7 @@ export default function WidgetRegistrationPage() {
                           value={partnerName}
                           onChange={(e) => setPartnerName(e.target.value)}
                           placeholder="Contoh: BPBD Kabupaten Natuna"
-                          className="block w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all text-gray-900 font-semibold"
+                          className="block w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none transition-all text-gray-900 font-semibold"
                         />
                       </div>
                     </div>
@@ -131,7 +131,7 @@ export default function WidgetRegistrationPage() {
                           value={websiteUrl}
                           onChange={(e) => setWebsiteUrl(e.target.value)}
                           placeholder="Contoh: bpbd.natunakab.go.id"
-                          className="block w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all text-gray-900 font-semibold"
+                          className="block w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none transition-all text-gray-900 font-semibold"
                         />
                       </div>
                       <p className="text-[10px] text-gray-400 mt-1.5 italic pl-0.5">Catatan: Masukkan domain tanpa http/https (misalnya bpbd.natunakab.go.id).</p>
@@ -149,7 +149,7 @@ export default function WidgetRegistrationPage() {
                           value={officialEmail}
                           onChange={(e) => setOfficialEmail(e.target.value)}
                           placeholder="Contoh: info@bpbd.natunakab.go.id"
-                          className="block w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all text-gray-900 font-semibold"
+                          className="block w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none transition-all text-gray-900 font-semibold"
                         />
                       </div>
                     </div>
@@ -166,7 +166,7 @@ export default function WidgetRegistrationPage() {
                           value={officialPhone}
                           onChange={(e) => setOfficialPhone(e.target.value)}
                           placeholder="Contoh: 081234567890"
-                          className="block w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all text-gray-900 font-semibold"
+                          className="block w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none transition-all text-gray-900 font-semibold"
                         />
                       </div>
                     </div>
@@ -176,7 +176,7 @@ export default function WidgetRegistrationPage() {
                     <button
                       type="submit"
                       disabled={submitMutation.isPending}
-                      className="w-full flex justify-center items-center gap-2 py-3 px-4 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
+                      className="w-full flex justify-center items-center gap-2 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
                     >
                       {submitMutation.isPending ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -229,13 +229,13 @@ export default function WidgetRegistrationPage() {
 
           {/* Panduan Pemasangan Widget Lapor SAR */}
           <div className="mt-8 bg-white/80 backdrop-blur-sm border border-slate-200/80 p-6 rounded-3xl space-y-3 shadow-md max-w-lg mx-auto w-full">
-            <h3 className="text-sm font-bold text-orange-600 flex items-center gap-2">
-              <Info className="w-5 h-5 text-orange-500" /> Panduan Pemasangan Widget Lapor SAR
+            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <Info className="w-5 h-5 text-slate-500" /> Panduan Pemasangan Widget Lapor SAR
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Untuk menempelkan widget <strong className="text-slate-800">Lapor SAR</strong> pada website pihak ketiga (misalnya website BPBD, Pemerintah Daerah, atau Kantor SAR Daerah), salin potongan kode di bawah ini dan letakkan sebelum tag penutup <code className="text-orange-650 font-mono font-bold">&lt;/body&gt;</code> pada halaman web yang bersangkutan.
+              Untuk menempelkan widget <strong className="text-slate-800">Lapor SAR</strong> pada website pihak ketiga (misalnya website BPBD, Pemerintah Daerah, atau Kantor SAR Daerah), salin potongan kode di bawah ini dan letakkan sebelum tag penutup <code className="text-slate-800 font-mono font-bold">&lt;/body&gt;</code> pada halaman web yang bersangkutan.
             </p>
-            <div className="bg-slate-50 text-orange-650 p-4 rounded-2xl font-mono text-xs overflow-x-auto relative group shadow-inner border border-slate-200/60">
+            <div className="bg-slate-900 text-slate-100 p-4 rounded-2xl font-mono text-xs overflow-x-auto relative group shadow-inner border border-slate-800">
               <pre>{`<script
   src="${getBackendUrl()}/uploads/widget.js"
   data-api-key="sar_MASUKKAN_API_KEY_DI_SINI"

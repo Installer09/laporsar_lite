@@ -151,12 +151,12 @@ DEV_ADMIN_USERNAME=admin
 DEV_ADMIN_PASSWORD=ganti_password_admin_yang_kuat
 
 # 3. Kunci API AI Cloud (Gunakan kunci yang didapat pada Langkah 0)
-AI_STT_PROVIDER=groq
-AI_STT_MODEL=whisper-large-v3
+AI_STT_PROVIDER=gemini
+AI_STT_MODEL=gemini-3.8-flash
 AI_STT_API_KEY=gsk_MASUKKAN_API_KEY_GROQ_ANDA
 
 AI_LLM_PROVIDER=gemini
-AI_LLM_MODEL=gemini-1.5-flash
+AI_LLM_MODEL=gemini-3.8-flash
 AI_LLM_API_KEY=AIzaSy_MASUKKAN_API_KEY_GEMINI_ANDA
 
 AI_EMBED_PROVIDER=gemini

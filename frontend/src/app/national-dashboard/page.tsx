@@ -111,8 +111,8 @@ export default function NationalDashboardPage() {
       label: 'Validasi Pending (Grup Chat)', 
       value: stats?.status_breakdown?.PENDING ?? 0, 
       icon: AlertTriangle, 
-      color: 'text-orange-600', 
-      bg: 'bg-orange-50' 
+      color: 'text-slate-800', 
+      bg: 'bg-amber-50' 
     },
     { 
       label: 'Operasi Selesai', 
@@ -126,7 +126,7 @@ export default function NationalDashboardPage() {
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
       </div>
     );
   }
@@ -141,7 +141,7 @@ export default function NationalDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-            <Globe className="w-8 h-8 text-orange-600" />
+            <Globe className="w-8 h-8 text-slate-800" />
             Dashboard Monitoring Nasional
           </h1>
           <p className="text-gray-500 mt-1">
@@ -188,7 +188,7 @@ export default function NationalDashboardPage() {
       {/* FILTER PANEL */}
       <div className="bg-white rounded-3xl border border-gray-155 p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-          <Filter className="w-5 h-5 text-orange-500" />
+          <Filter className="w-5 h-5 text-slate-500" />
           <h3 className="font-bold text-gray-800 text-sm">Filter Pemantauan Nasional</h3>
         </div>
         
@@ -203,7 +203,7 @@ export default function NationalDashboardPage() {
                 placeholder="No Laporan / Pelapor..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-250 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all outline-none font-semibold text-gray-700"
+                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-250 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white transition-all outline-none font-semibold text-gray-700"
               />
             </div>
           </div>
@@ -214,7 +214,7 @@ export default function NationalDashboardPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-250 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:bg-white outline-none font-semibold text-gray-700"
+              className="w-full px-3 py-2 bg-gray-50 border border-gray-250 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:bg-white outline-none font-semibold text-gray-700"
             >
               <option value="">Semua Status</option>
               <option value="PENDING">Pending (Validasi)</option>
@@ -230,7 +230,7 @@ export default function NationalDashboardPage() {
             <select
               value={jenisFilter}
               onChange={(e) => setJenisFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-250 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:bg-white outline-none font-semibold text-gray-700"
+              className="w-full px-3 py-2 bg-gray-50 border border-gray-250 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:bg-white outline-none font-semibold text-gray-700"
             >
               <option value="">Semua Jenis</option>
               {stats?.incident_breakdown && Object.keys(stats.incident_breakdown).map((inc) => (
@@ -249,7 +249,7 @@ export default function NationalDashboardPage() {
             <select
               value={tenantFilter}
               onChange={(e) => setTenantFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-250 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:bg-white outline-none font-semibold text-gray-700"
+              className="w-full px-3 py-2 bg-gray-50 border border-gray-250 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:bg-white outline-none font-semibold text-gray-700"
             >
               <option value="">Semua Wilayah UPT</option>
               {stats?.tenant_names && Object.entries(stats.tenant_names).map(([slug, name]) => (
@@ -276,7 +276,7 @@ export default function NationalDashboardPage() {
               <span className="text-gray-600">Laporan Aktif</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-orange-500 block animate-pulse" />
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-1000 block animate-pulse" />
               <span className="text-gray-600">Pending Validasi</span>
             </div>
           </div>
@@ -285,7 +285,7 @@ export default function NationalDashboardPage() {
         <div className="h-[480px] w-full rounded-2xl overflow-hidden relative border border-gray-100 z-0">
           {isLoadingReports ? (
             <div className="h-full w-full bg-gray-50 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+              <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
               <p className="text-sm font-medium text-gray-400 animate-pulse">Memetakan Insiden Nasional...</p>
             </div>
           ) : isErrorReports ? (
@@ -305,7 +305,7 @@ export default function NationalDashboardPage() {
               <h3 className="font-bold text-gray-900 text-base">Aliran Laporan Musibah Nasional</h3>
               <p className="text-xs text-gray-500 mt-0.5">Daftar laporan masuk yang te-mirror secara real-time dari seluruh UPT daerah.</p>
             </div>
-            <span className="px-2.5 py-1 bg-orange-50 text-orange-700 text-xs font-bold rounded-xl border border-orange-100 shadow-sm shrink-0">
+            <span className="px-2.5 py-1 bg-slate-100 text-slate-800 text-xs font-bold rounded-xl border border-slate-200 shadow-sm shrink-0">
               Total Feed: {mappedReports.length}
             </span>
           </div>
@@ -323,7 +323,7 @@ export default function NationalDashboardPage() {
                   iconColor = "text-blue-600 bg-blue-50 border-blue-200";
                 } else if (lowerJenis.includes("manusia") || lowerJenis.includes("hilang") || lowerJenis.includes("kmm")) {
                   CategoryIcon = User;
-                  iconColor = "text-orange-600 bg-orange-50 border-orange-200";
+                  iconColor = "text-slate-800 bg-slate-100 border-slate-200";
                 } else if (lowerJenis.includes("pesawat") || lowerJenis.includes("udara")) {
                   CategoryIcon = Plane;
                   iconColor = "text-sky-600 bg-sky-50 border-sky-200";
@@ -372,7 +372,7 @@ export default function NationalDashboardPage() {
                       </div>
 
                       <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border shadow-sm ${
-                        report.status === 'PENDING' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                        report.status === 'PENDING' ? 'bg-slate-100 text-slate-800 border-slate-200' :
                         report.status === 'AKTIF' ? 'bg-blue-50 text-blue-700 border-blue-100' :
                         report.status === 'TIDAK_AKTIF' ? 'bg-green-50 text-green-700 border-green-100' :
                         'bg-gray-50 text-gray-500 border-gray-150'
@@ -411,7 +411,7 @@ export default function NationalDashboardPage() {
                 return (
                   <div key={slug} className="p-3 bg-gray-50/50 border border-gray-100 rounded-xl flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center font-bold text-xs shrink-0">
                         {slug.substring(0, 2).toUpperCase()}
                       </div>
                       <div className="min-w-0">

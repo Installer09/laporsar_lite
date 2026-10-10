@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
     const subdomain = parts[0];
     
     // Ignore internal next.js or dev domains
-    const ignoredSubdomains = ['www', 'admin', 'localhost', '127', 'api'];
+    const ignoredSubdomains = ['www', 'admin', 'localhost', '127', 'api', 'laporsar'];
     
     // Skip checking if it is a numeric IP or ignored subdomain
     if (!ignoredSubdomains.includes(subdomain) && !subdomain.match(/^\d+$/)) {

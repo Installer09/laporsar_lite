@@ -87,6 +87,20 @@ services:
     networks:
       - laporsar_lite_network
 
+  nginx:
+    image: nginx:alpine
+    container_name: laporsar_lite_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - laporsar_lite_network
+
 volumes:
   postgres_lite_data:
   redis_lite_data:

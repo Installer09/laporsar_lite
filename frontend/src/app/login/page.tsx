@@ -44,8 +44,10 @@ export default function LoginPage() {
           const currentSlug = slug ? slug.toLowerCase().trim() : 'pusat';
           const normalizedCurrentTenant = (currentSlug === 'pusat' || currentSlug === '') ? 'pusat' : currentSlug;
           
-          if (normalizedTokenTenant !== normalizedCurrentTenant) {
-            const redirectUrl = getTenantRedirectUrl(payload.tenant_slug);
+          const currentOrigin = window.location.origin;
+          const redirectUrl = getTenantRedirectUrl(payload.tenant_slug);
+
+          if (redirectUrl && !redirectUrl.startsWith(currentOrigin) && normalizedTokenTenant !== normalizedCurrentTenant) {
             window.location.href = `${redirectUrl}/?token=${encodeURIComponent(data.access_token)}`;
             return;
           }
@@ -84,7 +86,7 @@ export default function LoginPage() {
             Badan Nasional Pencarian dan Pertolongan
           </span>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Portal Petugas <span className="text-orange-600">Lapor SAR</span>
+            Portal Petugas <span className="text-slate-900 font-extrabold">Lapor SAR</span>
           </h1>
         </div>
 
@@ -124,7 +126,7 @@ export default function LoginPage() {
                     setEmail(e.target.value);
                     setError('');
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500/50 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/5 transition-all font-semibold focus:bg-white"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none  transition-all font-semibold focus:bg-white"
                 />
               </div>
             </div>
@@ -147,7 +149,7 @@ export default function LoginPage() {
                     setPassword(e.target.value);
                     setError('');
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500/50 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/5 transition-all font-semibold focus:bg-white"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none  transition-all font-semibold focus:bg-white"
                 />
               </div>
             </div>
@@ -168,7 +170,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>

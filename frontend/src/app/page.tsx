@@ -20,7 +20,7 @@ const NationalDashboardPage = dynamic(() => import('./national-dashboard/page'),
   ssr: false,
   loading: () => (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#090d1a]">
-      <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+      <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
     </div>
   ),
 });
@@ -85,7 +85,7 @@ function SaasPortalLandingPage() {
             </span>
             <h1 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5 mt-0.5">
               <span>Portal Terpadu</span>
-              <span className="text-orange-600">Lapor SAR</span>
+              <span className="text-slate-900 font-extrabold">Lapor SAR</span>
             </h1>
           </div>
         </div>
@@ -112,13 +112,13 @@ function SaasPortalLandingPage() {
           {/* Left Column: Mission Statement, Emergency Action & Key Pillars */}
           <div className="lg:col-span-6 space-y-6 text-left flex flex-col justify-center">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-xs font-semibold text-orange-700">
-                <ShieldAlert className="w-3.5 h-3.5 text-orange-600" /> Pusat Pengendalian & Komando Operasi SAR
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
+                <ShieldAlert className="w-3.5 h-3.5 text-slate-700" /> Pusat Pengendalian & Komando Operasi SAR
               </div>
               
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-tight">
                 Sistem Pelaporan Terpadu <br />
-                <span className="text-orange-600">
+                <span className="text-slate-900">
                   Pencarian & Pertolongan
                 </span>
               </h2>
@@ -132,7 +132,7 @@ function SaasPortalLandingPage() {
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <button
                 onClick={() => setIsEmergencyModalOpen(true)}
-                className="px-6 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                className="px-6 py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
               >
                 <AlertTriangle className="w-4 h-4 text-white" />
                 <span>Laporkan Musibah (SOS)</span>
@@ -149,7 +149,7 @@ function SaasPortalLandingPage() {
             {/* Service Pillars Card */}
             <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3 max-w-xl">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <Activity className="w-4 h-4 text-orange-600" /> Kapabilitas Sistem Lapor SAR
+                <Activity className="w-4 h-4 text-slate-700" /> Kapabilitas Sistem Lapor SAR
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -197,7 +197,7 @@ function SaasPortalLandingPage() {
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  <Activity className="w-3.5 h-3.5 text-orange-600" /> Laporan Aktif ({publicReports.length})
+                  <Activity className="w-3.5 h-3.5 text-slate-700" /> Laporan Aktif ({publicReports.length})
                 </button>
                 <button
                   onClick={() => setActiveTab('tenants')}
@@ -241,7 +241,7 @@ function SaasPortalLandingPage() {
                                 <MapPin className="w-3 h-3 text-slate-400" /> {report.lokasi_teks || 'Lokasi tidak diketahui'}
                               </span>
                               <span>•</span>
-                              <span className="text-orange-600 font-semibold">
+                              <span className="text-slate-700 font-semibold">
                                 {report.tenant_name}
                               </span>
                             </div>
@@ -328,11 +328,11 @@ function SaasPortalLandingPage() {
       {/* 3. Footer */}
       <footer className="w-full z-10 bg-slate-50 border-t border-slate-200/60 py-6 px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4 text-[10px] font-bold text-slate-450">
-          <a href="/widget-registration" className="hover:text-orange-550 transition-colors flex items-center gap-1">
+          <a href="/widget-registration" className="hover:text-slate-900 transition-colors flex items-center gap-1">
             <Globe className="w-3.5 h-3.5 text-slate-400" /> Pendaftaran Widget
           </a>
           <span>•</span>
-          <a href="/help-center" className="hover:text-orange-550 transition-colors">
+          <a href="/help-center" className="hover:text-slate-900 transition-colors">
             Pusat Bantuan
           </a>
         </div>
@@ -370,9 +370,9 @@ function SaasPortalLandingPage() {
                   setIsAuthModalOpen(false);
                   window.open('/login', '_blank');
                 }}
-                className="p-4 border border-slate-200 rounded-xl bg-slate-50 hover:border-orange-300 hover:bg-orange-50/40 text-center flex flex-col items-center justify-center gap-2.5 transition-colors group cursor-pointer shadow-xs"
+                className="p-4 border border-slate-200 rounded-xl bg-slate-50 hover:border-slate-300 hover:bg-slate-100/60 text-center flex flex-col items-center justify-center gap-2.5 transition-colors group cursor-pointer shadow-xs"
               >
-                <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 text-orange-600 flex items-center justify-center group-hover:border-orange-300 group-hover:bg-orange-50 transition-colors">
+                <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 text-slate-750 flex items-center justify-center group-hover:border-slate-300 group-hover:bg-slate-50 transition-colors">
                   <LogIn className="w-5 h-5" />
                 </div>
                 <span className="font-bold text-slate-800 text-xs">Masuk Akun</span>
@@ -431,7 +431,7 @@ function SaasPortalLandingPage() {
             {/* Emergency Hotline 115 Card */}
             <a
               href="tel:115"
-              className="w-full p-4 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white flex items-center justify-between shadow-md hover:from-red-700 hover:to-orange-700 transition-all group cursor-pointer"
+              className="w-full p-4 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 text-white flex items-center justify-between shadow-md hover:from-rose-700 hover:to-red-700 transition-all group cursor-pointer"
             >
               <div className="flex items-center gap-3.5">
                 <div className="p-3 bg-white/20 rounded-xl">
@@ -487,7 +487,7 @@ function CommandCenterDashboard() {
 
   const stats = [
     { label: 'Total Laporan Hari Ini', value: statsData?.total_today ?? '0', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { label: 'Kejadian Menunggu Validasi', value: statsData?.pending_validation ?? '0', icon: AlertTriangle, color: 'text-orange-500', bg: 'bg-orange-50' },
+    { label: 'Kejadian Menunggu Validasi', value: statsData?.pending_validation ?? '0', icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
     { label: 'Laporan Aktif', value: statsData?.laporan_aktif ?? '0', icon: FileText, color: 'text-red-500', bg: 'bg-red-50' },
     { label: 'Laporan tidak aktif/salah lapor', value: statsData?.inactive_or_false_reports ?? '0', icon: FileX, color: 'text-slate-500', bg: 'bg-slate-50' },
   ];
@@ -591,7 +591,7 @@ function CommandCenterDashboard() {
                     </div>
                     <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-bold tracking-wider ${
                       report.status === 'PENDING'
-                        ? 'bg-orange-50 text-orange-700 border border-orange-100'
+                        ? 'bg-amber-50 text-amber-800 border border-amber-200'
                         : report.status === 'AKTIF'
                         ? 'bg-red-50 text-red-700 border border-red-100'
                         : 'bg-green-50 text-green-700 border border-green-100'
@@ -620,6 +620,17 @@ export default function Home() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+      if (tokenFromUrl) {
+        localStorage.setItem('token', tokenFromUrl);
+        sessionStorage.removeItem('logging_out');
+        const params = new URLSearchParams(window.location.search);
+        params.delete('token');
+        const searchStr = params.toString();
+        const newUrl = window.location.pathname + (searchStr ? `?${searchStr}` : '');
+        window.history.replaceState({}, document.title, newUrl);
+      }
+
       const isLogout = urlParams.get('logout') === 'true';
       if (isLogout) {
         localStorage.removeItem('token');
@@ -659,7 +670,7 @@ export default function Home() {
   if (isTenant === null) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#090d1a]">
-        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
       </div>
     );
   }
@@ -672,7 +683,7 @@ export default function Home() {
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#090d1a]">
-        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
       </div>
     );
   }

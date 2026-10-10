@@ -79,7 +79,7 @@ async def verify_jwt(request: Request, credentials: Optional[HTTPAuthorizationCr
             req_tenant_slug = request.path_params.get("tenant_slug")
             
         if not req_tenant_slug:
-            req_tenant_slug = "pusat"
+            req_tenant_slug = token_tenant_slug or "pusat"
             
         if req_tenant_slug and token_tenant_slug:
             if token_tenant_slug.lower().strip() != req_tenant_slug.lower().strip():

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { getWsUrl } from '@/lib/api';
 
 type SocketMessage = {
   type: string;
@@ -15,23 +16,7 @@ export function useSocket() {
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-    const getWsUrl = () => {
-      if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000/api` : 'http://localhost:8000/api');
-      let wsUrl = '';
-      if (apiUrl.startsWith('http')) {
-        // e.g. http://localhost:8000/api -> ws://localhost:8000/api/ws
-        wsUrl = apiUrl.replace(/^http/, 'ws').replace(/\/api\/?$/, '/api/ws');
-      } else {
-        // fallback
-        wsUrl = typeof window !== 'undefined' ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:8000/api/ws` : 'ws://localhost:8000/api/ws';
-      }
-
-      return token ? `${wsUrl}?token=${token}` : wsUrl;
-    };
-
-    const wsUrl = getWsUrl();
+    const wsUrl = getWsUrl(token);
     console.log(`Connecting to WebSocket: ${wsUrl.split('?')[0]}`);
     const socket = new WebSocket(wsUrl);
 
