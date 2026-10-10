@@ -1,13 +1,52 @@
 'use client';
 
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import { Loader2, Navigation } from 'lucide-react';
+import { Loader2, Navigation, AlertCircle } from 'lucide-react';
 
 interface DashboardMapProps {
   reports?: any[];
   locations?: any[];
   kmlPath?: string;
   isPublic?: boolean;
+}
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class MapErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_: Error): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.warn('DashboardMap error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-full w-full bg-slate-100 flex flex-col items-center justify-center p-6 text-center">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-600 mb-2">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <p className="text-xs font-bold text-slate-700">Peta Pemantauan Sementara Tidak Tersedia</p>
+          <p className="text-[11px] text-slate-500 mt-1 max-w-xs">Gunakan daftar laporan aktif atau hubungi call center 115.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 // Dynamically import DashboardMapInner with SSR disabled
@@ -32,7 +71,9 @@ export default function DashboardMap(props: DashboardMapProps) {
         </span>
       </div>
 
-      <DashboardMapInner {...props} />
+      <MapErrorBoundary>
+        <DashboardMapInner {...props} />
+      </MapErrorBoundary>
     </div>
   );
 }

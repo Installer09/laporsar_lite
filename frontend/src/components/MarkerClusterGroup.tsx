@@ -179,7 +179,8 @@ const createReportPopupHtml = (report: any) => {
 
 export default function IncidentMarkerCluster({ reports = [], zoom = 3.5 }: IncidentMarkerClusterProps) {
   const map = useMap();
-  const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
+  const clusterGroupRef = useRef<any>(null);
+  const rawMarkersRef = useRef<L.Marker[]>([]);
   const circlesRef = useRef<L.Circle[]>([]);
 
   useEffect(() => {
@@ -187,33 +188,47 @@ export default function IncidentMarkerCluster({ reports = [], zoom = 3.5 }: Inci
 
     if (typeof window !== 'undefined') {
       (window as any).L = L;
-      require('leaflet.markercluster');
+      try {
+        require('leaflet.markercluster');
+      } catch (e) {
+        console.warn('Failed to load leaflet.markercluster:', e);
+      }
     }
 
-    // Initialize marker cluster group
-    const clusterGroup = (L as any).markerClusterGroup({
-      maxClusterRadius: 60,
-      disableClusteringAtZoom: 13,
-      spiderfyOnMaxZoom: true,
-      showCoverageOnHover: true,
-      chunkedLoading: true,
-      iconCreateFunction: createCustomClusterIcon,
-      polygonOptions: {
-        fillColor: '#f97316',
-        color: '#ea580c',
-        weight: 2,
-        opacity: 0.8,
-        fillOpacity: 0.15,
-        dashArray: '4, 4',
-      },
-    });
+    try {
+      if (typeof (L as any).markerClusterGroup === 'function') {
+        const clusterGroup = (L as any).markerClusterGroup({
+          maxClusterRadius: 60,
+          disableClusteringAtZoom: 13,
+          spiderfyOnMaxZoom: true,
+          showCoverageOnHover: true,
+          chunkedLoading: true,
+          iconCreateFunction: createCustomClusterIcon,
+          polygonOptions: {
+            fillColor: '#f97316',
+            color: '#ea580c',
+            weight: 2,
+            opacity: 0.8,
+            fillOpacity: 0.15,
+            dashArray: '4, 4',
+          },
+        });
 
-    clusterGroupRef.current = clusterGroup;
-    map.addLayer(clusterGroup);
+        clusterGroupRef.current = clusterGroup;
+        map.addLayer(clusterGroup);
+      } else {
+        clusterGroupRef.current = null;
+      }
+    } catch (e) {
+      console.warn('Failed to init markerClusterGroup:', e);
+      clusterGroupRef.current = null;
+    }
 
     return () => {
-      if (clusterGroupRef.current) {
-        map.removeLayer(clusterGroupRef.current);
+      if (clusterGroupRef.current && map) {
+        try {
+          map.removeLayer(clusterGroupRef.current);
+        } catch (_) {}
         clusterGroupRef.current = null;
       }
     };
@@ -221,17 +236,26 @@ export default function IncidentMarkerCluster({ reports = [], zoom = 3.5 }: Inci
 
   // Update markers and circles when reports or zoom change
   useEffect(() => {
+    if (!map) return;
     const clusterGroup = clusterGroupRef.current;
-    if (!clusterGroup || !map) return;
 
     // Clear existing markers & circles
-    clusterGroup.clearLayers();
-    circlesRef.current.forEach((circle) => map.removeLayer(circle));
+    if (clusterGroup) {
+      try { clusterGroup.clearLayers(); } catch (_) {}
+    }
+    rawMarkersRef.current.forEach((m) => {
+      try { map.removeLayer(m); } catch (_) {}
+    });
+    rawMarkersRef.current = [];
+
+    circlesRef.current.forEach((circle) => {
+      try { map.removeLayer(circle); } catch (_) {}
+    });
     circlesRef.current = [];
 
-    const validReports = reports.filter(
+    const validReports = Array.isArray(reports) ? reports.filter(
       (r) => r.koordinat_lat && r.koordinat_lng && r.status !== 'TIDAK_AKTIF' && r.status !== 'SALAH_LAPORAN'
-    );
+    ) : [];
 
     const newMarkers: L.Marker[] = [];
 
@@ -239,7 +263,6 @@ export default function IncidentMarkerCluster({ reports = [], zoom = 3.5 }: Inci
       const icon = createIncidentMarkerIcon(report.jenis_kejadian, report.status, zoom);
       const marker = L.marker([report.koordinat_lat, report.koordinat_lng], {
         icon,
-        // Attach reportData so cluster iconCreateFunction can read report.status
         reportData: report,
       } as any);
 
@@ -250,7 +273,7 @@ export default function IncidentMarkerCluster({ reports = [], zoom = 3.5 }: Inci
       // Render search radius circle if specified
       if (report.radius_pencarian) {
         const circle = L.circle([report.koordinat_lat, report.koordinat_lng], {
-          radius: report.radius_pencarian * 1000, // km to meters
+          radius: report.radius_pencarian * 1000,
           color: report.status === 'PENDING' ? '#f97316' : '#ef4444',
           fillColor: report.status === 'PENDING' ? '#fed7aa' : '#fca5a5',
           fillOpacity: 0.2,
@@ -262,10 +285,34 @@ export default function IncidentMarkerCluster({ reports = [], zoom = 3.5 }: Inci
       }
     });
 
-    clusterGroup.addLayers(newMarkers);
+    if (clusterGroup) {
+      try {
+        clusterGroup.addLayers(newMarkers);
+      } catch (e) {
+        console.warn('Failed to add layers to clusterGroup, fallback to map:', e);
+        newMarkers.forEach((m) => {
+          m.addTo(map);
+          rawMarkersRef.current.push(m);
+        });
+      }
+    } else {
+      newMarkers.forEach((m) => {
+        m.addTo(map);
+        rawMarkersRef.current.push(m);
+      });
+    }
 
     return () => {
-      circlesRef.current.forEach((circle) => map.removeLayer(circle));
+      if (clusterGroup) {
+        try { clusterGroup.clearLayers(); } catch (_) {}
+      }
+      rawMarkersRef.current.forEach((m) => {
+        try { map.removeLayer(m); } catch (_) {}
+      });
+      rawMarkersRef.current = [];
+      circlesRef.current.forEach((circle) => {
+        try { map.removeLayer(circle); } catch (_) {}
+      });
       circlesRef.current = [];
     };
   }, [reports, zoom, map]);

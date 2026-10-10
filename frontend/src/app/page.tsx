@@ -53,7 +53,9 @@ function SaasPortalLandingPage() {
     queryFn: getPublicTenants,
   });
 
-  const filteredTenants = publicTenants.filter((tenant: any) => tenant.slug !== 'pusat');
+  const filteredTenants = Array.isArray(publicTenants)
+    ? publicTenants.filter((tenant: any) => tenant.slug !== 'pusat')
+    : [];
 
   const mapLocations = filteredTenants
     .filter((t: any) => t.lat !== null && t.lng !== null && !isNaN(parseFloat(t.lat)) && !isNaN(parseFloat(t.lng)))

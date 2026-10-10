@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Fragment } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Shield, MapPin, AlertTriangle, Calendar, Users, Anchor, Navigation } from 'lucide-react';
 import { getBackendUrl } from '@/lib/api';
@@ -184,6 +184,16 @@ const createPosMarker = (type: string, customIcon: string | undefined, zoom: num
   });
 };
 
+function MapController({ onMapReady }: { onMapReady: (map: L.Map) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map) {
+      onMapReady(map);
+    }
+  }, [map, onMapReady]);
+  return null;
+}
+
 export default function DashboardMapInner({ reports = [], locations = [], kmlPath, isPublic = false }: DashboardMapInnerProps) {
   const [map, setMap] = useState<L.Map | null>(null);
   const [kmlPolygons, setKmlPolygons] = useState<[number, number][][]>([]);
@@ -191,15 +201,21 @@ export default function DashboardMapInner({ reports = [], locations = [], kmlPat
   const [zoom, setZoom] = useState(3.5);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map || typeof map.on !== 'function') return;
     const handleZoom = () => {
-      setZoom(map.getZoom());
+      if (typeof map.getZoom === 'function') {
+        setZoom(map.getZoom());
+      }
     };
     map.on('zoomend', handleZoom);
     // Get initial zoom
-    setZoom(map.getZoom());
+    if (typeof map.getZoom === 'function') {
+      setZoom(map.getZoom());
+    }
     return () => {
-      map.off('zoomend', handleZoom);
+      if (typeof map.off === 'function') {
+        map.off('zoomend', handleZoom);
+      }
     };
   }, [map]);
   
@@ -297,7 +313,7 @@ export default function DashboardMapInner({ reports = [], locations = [], kmlPat
 
   // Try to fit bounds dynamically if there are markers or KML boundary, otherwise center on default
   useEffect(() => {
-    if (!map) return;
+    if (!map || typeof map.setView !== 'function') return;
 
     // For public landing map, we want to center on the entire map of Indonesia and not fit bounds of individual UPTs/reports
     if (isPublic) {
@@ -308,17 +324,21 @@ export default function DashboardMapInner({ reports = [], locations = [], kmlPat
 
     const coords: [number, number][] = [];
     
-    reports.forEach((rep) => {
-      if (rep.koordinat_lat && rep.koordinat_lng) {
-        coords.push([rep.koordinat_lat, rep.koordinat_lng]);
-      }
-    });
+    if (Array.isArray(reports)) {
+      reports.forEach((rep) => {
+        if (rep.koordinat_lat && rep.koordinat_lng) {
+          coords.push([rep.koordinat_lat, rep.koordinat_lng]);
+        }
+      });
+    }
 
-    locations.forEach((loc) => {
-      if (loc.lat && loc.lng) {
-        coords.push([loc.lat, loc.lng]);
-      }
-    });
+    if (Array.isArray(locations)) {
+      locations.forEach((loc) => {
+        if (loc.lat && loc.lng) {
+          coords.push([loc.lat, loc.lng]);
+        }
+      });
+    }
 
     // Add KML coordinates to bounds calculation
     kmlPolygons.forEach((poly) => {
@@ -327,14 +347,19 @@ export default function DashboardMapInner({ reports = [], locations = [], kmlPat
       });
     });
 
-    if (coords.length > 0) {
-      const bounds = L.latLngBounds(coords);
-      // Fit bounds but cap at zoom 5.0 to allow regional zoom while keeping public map at 3.5
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 5.0 });
+    if (coords.length > 0 && typeof map.fitBounds === 'function') {
+      try {
+        const bounds = L.latLngBounds(coords);
+        // Fit bounds but cap at zoom 5.0 to allow regional zoom while keeping public map at 3.5
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 5.0 });
+      } catch (e) {
+        console.warn('Failed to fitBounds:', e);
+        map.setView(defaultCenter, 5.0);
+      }
     } else {
       map.setView(defaultCenter, 5.0);
     }
-  }, [reports, locations, kmlPolygons, map]);
+  }, [reports, locations, kmlPolygons, map, isPublic]);
 
   return (
     <div className="relative h-full w-full">
@@ -345,9 +370,10 @@ export default function DashboardMapInner({ reports = [], locations = [], kmlPat
         scrollWheelZoom={true}
         zoomControl={false}
         style={{ height: '100%', width: '100%' }}
-        ref={setMap}
         className="z-0"
       >
+        <MapController onMapReady={setMap} />
+
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -368,8 +394,8 @@ export default function DashboardMapInner({ reports = [], locations = [], kmlPat
           />
         ))}
         
-        {/* Render Spatial Hotspot Layer (PostGIS ST_ClusterDBSCAN) */}
-        <HotspotMapLayer epsKm={5.0} minSamples={2} />
+        {/* Render Spatial Hotspot Layer (PostGIS ST_ClusterDBSCAN) - Internal only */}
+        {!isPublic && <HotspotMapLayer epsKm={5.0} minSamples={2} />}
 
         {/* Render Clustered Incident Markers (Dynamic Radius Spatial Cluster) */}
         <IncidentMarkerCluster reports={reports} zoom={zoom} />
