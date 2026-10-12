@@ -42,18 +42,34 @@ async def lifespan(app: FastAPI):
     import app.models.attachment_model
     import app.models.audit_log
 
+    import asyncio
     from sqlalchemy import text
-    async with engine.begin() as conn:
+
+    # Resilient Database Connection with Retries (waits for Postgres init)
+    db_connected = False
+    for attempt in range(1, 16):
         try:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+            async with engine.begin() as conn:
+                try:
+                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+                except Exception as e:
+                    logger.warning(f"PostGIS extension enabling skipped: {e}")
+                    
+                tables_to_create = [
+                    t for name, t in Base.metadata.tables.items() 
+                    if name != "vector_memory"
+                ]
+                await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn, tables=tables_to_create))
+            db_connected = True
+            logger.info("Database connection and schema initialization successful.")
+            break
         except Exception as e:
-            logger.warning(f"PostGIS extension enabling skipped: {e}")
-            
-        tables_to_create = [
-            t for name, t in Base.metadata.tables.items() 
-            if name != "vector_memory"
-        ]
-        await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn, tables=tables_to_create))
+            logger.warning(f"Database not ready yet (attempt {attempt}/15): {e}. Retrying in 2 seconds...")
+            await asyncio.sleep(2)
+
+    if not db_connected:
+        logger.error("Failed to connect to PostgreSQL after 15 attempts. Exiting startup.")
+        raise RuntimeError("PostgreSQL database unavailable")
 
     # Seed Master Default Tenants if empty
     try:
