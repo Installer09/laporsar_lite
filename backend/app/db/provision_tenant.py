@@ -80,27 +80,39 @@ async def provision_tenant_db(
     tenant_sessionmaker = get_tenant_sessionmaker(tenant.db_url)
     engine = tenant_sessionmaker.kw.get('bind')
 
-    async with engine.begin() as conn:
-        try:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
-        except Exception as e:
-            logger.warning(f"PostGIS extension enabling note for {tenant.slug}: {e}")
-
-        has_vector = False
-        try:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+    # 1. Safely probe extension availability without opening transaction
+    has_vector = False
+    has_postgis = False
+    async with engine.connect() as check_conn:
+        res_pg = await check_conn.execute(text("SELECT 1 FROM pg_available_extensions WHERE name = 'postgis';"))
+        if res_pg.scalar():
+            has_postgis = True
+        res_vec = await check_conn.execute(text("SELECT 1 FROM pg_available_extensions WHERE name = 'vector';"))
+        if res_vec.scalar():
             has_vector = True
-        except Exception as e:
-            logger.warning(f"Vector extension enabling note for {tenant.slug}: {e}")
 
-        if not has_vector:
-            from app.models.knowledge_models import DictionaryWord
-            from app.models.vector_memory import VectorMemory
-            from sqlalchemy import Text
-            if "embedding" in DictionaryWord.__table__.columns:
-                DictionaryWord.__table__.columns["embedding"].type = Text()
-            if "embedding" in VectorMemory.__table__.columns:
-                VectorMemory.__table__.columns["embedding"].type = Text()
+    if not has_vector:
+        from app.models.knowledge_models import DictionaryWord
+        from app.models.vector_memory import VectorMemory
+        from sqlalchemy import Text
+        if "embedding" in DictionaryWord.__table__.columns:
+            DictionaryWord.__table__.columns["embedding"].type = Text()
+        if "embedding" in VectorMemory.__table__.columns:
+            VectorMemory.__table__.columns["embedding"].type = Text()
+
+    # 2. Run extensions and DDL in transaction
+    async with engine.begin() as conn:
+        if has_postgis:
+            try:
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+            except Exception as e:
+                logger.warning(f"PostGIS extension enabling note for {tenant.slug}: {e}")
+
+        if has_vector:
+            try:
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+            except Exception as e:
+                logger.warning(f"Vector extension enabling note for {tenant.slug}: {e}")
 
         # Exclude master-only tables from tenant databases if not master
         tables_to_create = [

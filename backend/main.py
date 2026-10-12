@@ -49,34 +49,48 @@ async def lifespan(app: FastAPI):
     db_connected = False
     for attempt in range(1, 16):
         try:
-            async with engine.begin() as conn:
-                try:
-                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
-                except Exception as e:
-                    logger.warning(f"PostGIS extension enabling skipped: {e}")
-                    
-                has_vector = False
-                try:
-                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+            # 1. Safely probe extension availability without opening a transaction
+            has_vector = False
+            has_postgis = False
+            async with engine.connect() as check_conn:
+                res_pg = await check_conn.execute(text("SELECT 1 FROM pg_available_extensions WHERE name = 'postgis';"))
+                if res_pg.scalar():
+                    has_postgis = True
+                res_vec = await check_conn.execute(text("SELECT 1 FROM pg_available_extensions WHERE name = 'vector';"))
+                if res_vec.scalar():
                     has_vector = True
-                    logger.info("Vector extension enabled successfully in PostgreSQL.")
-                except Exception as e:
-                    logger.warning(f"Vector extension not available, falling back to TEXT embedding: {e}")
 
-                if not has_vector:
-                    from app.models.knowledge_models import DictionaryWord
-                    from app.models.vector_memory import VectorMemory
-                    from sqlalchemy import Text
-                    if "embedding" in DictionaryWord.__table__.columns:
-                        DictionaryWord.__table__.columns["embedding"].type = Text()
-                    if "embedding" in VectorMemory.__table__.columns:
-                        VectorMemory.__table__.columns["embedding"].type = Text()
+            # 2. If vector extension is absent, fallback embedding columns to TEXT
+            if not has_vector:
+                from app.models.knowledge_models import DictionaryWord
+                from app.models.vector_memory import VectorMemory
+                from sqlalchemy import Text
+                if "embedding" in DictionaryWord.__table__.columns:
+                    DictionaryWord.__table__.columns["embedding"].type = Text()
+                if "embedding" in VectorMemory.__table__.columns:
+                    VectorMemory.__table__.columns["embedding"].type = Text()
+
+            # 3. Create extensions and tables in transaction
+            async with engine.begin() as conn:
+                if has_postgis:
+                    try:
+                        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+                    except Exception as e:
+                        logger.warning(f"PostGIS extension note: {e}")
+
+                if has_vector:
+                    try:
+                        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                        logger.info("Vector extension enabled successfully in PostgreSQL.")
+                    except Exception as e:
+                        logger.warning(f"Vector extension note: {e}")
 
                 tables_to_create = [
                     t for name, t in Base.metadata.tables.items() 
                     if has_vector or name != "vector_memory"
                 ]
                 await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn, tables=tables_to_create))
+
             db_connected = True
             logger.info("Database connection and schema initialization successful.")
             break
