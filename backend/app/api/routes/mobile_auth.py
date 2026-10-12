@@ -1,7 +1,7 @@
 import logging
-import random
+import secrets
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,8 +57,8 @@ async def request_otp(
             detail="Terlalu banyak permintaan OTP. Silakan tunggu beberapa menit sebelum mencoba kembali."
         )
 
-    # Generate 6-digit OTP code
-    otp_code = f"{random.randint(100000, 999999)}"
+    # Generate 6-digit OTP code using cryptographically secure random numbers (CWE-330 mitigation)
+    otp_code = f"{secrets.randbelow(900000) + 100000}"
     logger.info(f"Generated OTP {otp_code} for mobile user {phone} ({name})")
 
     # Store OTP and name in Redis
@@ -210,7 +210,7 @@ async def verify_otp(
         )
 
     # Generate JWT Token for mobile reporter
-    expire = datetime.utcnow() + timedelta(days=30)
+    expire = datetime.now(timezone.utc) + timedelta(days=30)
     payload = {
         "sub": phone,
         "role": "reporter",

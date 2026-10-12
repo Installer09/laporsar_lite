@@ -22,10 +22,14 @@ from app.core.websocket import manager
 async def lifespan(app: FastAPI):
     # Security check for default secret key
     from app.core.config import settings as config_settings
-    if config_settings.SECRET_KEY == "sarbot-dev-secret-key-change-in-production":
+    default_dev_keys = (
+        "sarbot-dev-secret-key-change-in-production",
+        "laporsar-dev-secret-key-change-in-production",
+    )
+    if config_settings.SECRET_KEY in default_dev_keys:
         logger.warning("=" * 60)
         logger.warning("SECURITY WARNING: Using default SECRET_KEY in production is unsafe!")
-        logger.warning("Please change it via environment variables immediately.")
+        logger.warning("Please set SECRET_KEY to a strong random value via .env immediately.")
         logger.warning("=" * 60)
 
     # Initialize Master DB schema (creates all operational tables automatically)

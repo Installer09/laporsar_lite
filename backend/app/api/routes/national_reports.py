@@ -3,11 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
 from typing import List, Optional
+import json
 import logging
 
 logger = logging.getLogger(__name__)
 
-from app.db.session import get_db, MasterSessionLocal
+from app.db.session import get_db, MasterSessionLocal, get_redis
 from app.models.master_models import GlobalReport, Tenant
 from app.core.security import verify_jwt
 
@@ -43,10 +44,10 @@ async def get_national_reports(
     search: Optional[str] = Query(None, description="Search by No Laporan or Pelapor Name"),
     jenis_kejadian: Optional[str] = Query(None, description="Filter by incident type"),
     tenant_slug: Optional[str] = Query(None, description="Filter by specific regional office (tenant slug)"),
-    skip: int = Query(0, description="Offset for pagination"),
-    limit: int = Query(50, description="Limit for pagination")
+    skip: int = Query(0, ge=0, description="Offset for pagination"),
+    limit: int = Query(50, ge=1, le=200, description="Limit for pagination (maksimal 200)")
 ):
-    """Retrieve mirrored reports from all regions (Master DB)."""
+    """Retrieve mirrored reports from all regions (Master DB). Capped at 200 per page to prevent DoS."""
     async with MasterSessionLocal() as master_db:
         query = select(GlobalReport)
         
@@ -75,8 +76,21 @@ async def get_national_reports(
         return reports
 
 @router.get("/national/stats", dependencies=[Depends(verify_national_admin)])
-async def get_national_stats():
-    """Get aggregated statistics across all tenants from the master database."""
+async def get_national_stats(redis = Depends(get_redis)):
+    """
+    Get aggregated statistics across all tenants from the master database.
+    Cached in Redis for 30s to minimize database load across national command center clients.
+    """
+    cache_key = "cache:national_stats"
+
+    try:
+        if redis and hasattr(redis, "get"):
+            cached = await redis.get(cache_key)
+            if cached:
+                return json.loads(cached)
+    except Exception as e:
+        logger.warning(f"Failed to read national stats from Redis cache: {e}")
+
     async with MasterSessionLocal() as master_db:
         # 1. Total reports count
         total_count = await master_db.scalar(select(func.count(GlobalReport.id)))
@@ -130,7 +144,7 @@ async def get_national_stats():
         for row in tenants_res.all():
             tenant_names[row.slug] = row.name
             
-        return {
+        result_data = {
             "total_reports": total_count or 0,
             "status_breakdown": status_counts,
             "victim_stats": victim_stats,
@@ -138,3 +152,11 @@ async def get_national_stats():
             "tenant_breakdown": tenant_counts,
             "tenant_names": tenant_names
         }
+
+        try:
+            if redis and hasattr(redis, "setex"):
+                await redis.setex(cache_key, 30, json.dumps(result_data))
+        except Exception as e:
+            logger.warning(f"Failed to write national stats to Redis cache: {e}")
+
+        return result_data

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 import jwt
 import uuid
 import logging
@@ -55,7 +55,7 @@ async def login(
     ):
         payload = {
             "sub": superadmin_user,
-            "exp": datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
             "role": "Super Admin",
             "name": "Super Admin Sistem",
             "tenant_slug": None,
@@ -71,7 +71,7 @@ async def login(
     ):
         payload = {
             "sub": settings.DEV_ADMIN_USERNAME,
-            "exp": datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
             "role": "Admin",
             "name": "Admin Command Center",
             "tenant_slug": "pusat",
@@ -131,7 +131,7 @@ async def login(
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
             
             # Generate token
-            expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
             payload = {
                 "sub": user.email,
                 "name": user.name or "Petugas SAR",
@@ -153,7 +153,7 @@ async def login(
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
 
-    expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": user.email,
         "name": user.name or "Petugas SAR",

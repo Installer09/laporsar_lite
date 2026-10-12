@@ -32,7 +32,11 @@ async def verify_jwt(request: Request, credentials: Optional[HTTPAuthorizationCr
     """
     if not credentials or not credentials.credentials:
         if settings.DEV_ADMIN_ENABLED:
-            if settings.SECRET_KEY != "sarbot-dev-secret-key-change-in-production" and settings.DEV_ADMIN_PASSWORD == "admin":
+            default_dev_keys = {
+                "sarbot-dev-secret-key-change-in-production",
+                "laporsar-dev-secret-key-change-in-production"
+            }
+            if settings.SECRET_KEY not in default_dev_keys and settings.DEV_ADMIN_PASSWORD == "admin":
                 logger.error("CRITICAL SECURITY VIOLATION: Default DEV_ADMIN credentials used with a production SECRET_KEY. Bypassing fallback auth!")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
