@@ -4,10 +4,11 @@ from sqlalchemy.future import select
 from typing import List
 import uuid
 
-from app.db.session import get_db
+from app.db.session import get_db, get_redis
 from app.models.report import Report, ReportStatus
 from app.schemas.report import ReportCreate, ReportResponse, ReportUpdate, BroadcastPayload
 from app.core.security import verify_jwt, verify_admin, verify_operator_or_admin
+from app.core.rate_limiter import check_rate_limit
 import logging
 from typing import Dict, List, Optional
 from app.services.geo_service import parse_coordinates, find_nearest_location
@@ -350,11 +351,26 @@ async def background_kml_and_evidence(report_id: int, db_url: str):
             logger.error(f"Failed to send evidence attachments: {e}")
 
 @router.post("/{report_id}/send-broadcast", dependencies=[Depends(verify_operator_or_admin)])
-async def send_broadcast(report_id: int, payload: BroadcastPayload, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+async def send_broadcast(
+    report_id: int, 
+    payload: BroadcastPayload, 
+    background_tasks: BackgroundTasks, 
+    db: AsyncSession = Depends(get_db),
+    redis = Depends(get_redis)
+):
     """
     Directly broadcast a generated Info Awal text to SAR command groups (Telegram/WhatsApp).
     KML generation and evidence fetching are sent to background tasks to prevent timeouts.
+    Protected with rate limiter / idempotency lock to prevent rapid double-clicks.
     """
+    # Prevent rapid double-clicks or duplicate broadcast requests within 10 seconds
+    is_allowed = await check_rate_limit(redis, f"broadcast_report:{report_id}", max_requests=1, window_seconds=10)
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Penyiaran laporan sedang diproses. Mohon tunggu beberapa saat sebelum mencoba lagi."
+        )
+
     result = await db.execute(select(Report).where(Report.id == report_id))
     report = result.scalar_one_or_none()
     

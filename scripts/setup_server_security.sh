@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # SKRIP OTOMATIS KONFIGURASI SERVER, USER & KEAMANAN LAPOR SAR LITE
-# Target OS: Debian 12 (Bookworm) / Ubuntu 22.04 LTS Server
+# Target OS: Debian 13 (Trixie) / Debian 12 (Bookworm) / Ubuntu 24.04/22.04 LTS
 # ==============================================================================
 set -euo pipefail
 
@@ -116,9 +116,16 @@ fi
 OS_ID=$(. /etc/os-release && echo "$ID")
 OS_CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
 
+# Debian 13 (Trixie) & Forward-Compatibility Suite Detection
+DOCKER_CODENAME="${OS_CODENAME}"
+if ! curl -fsSL -o /dev/null "https://download.docker.com/linux/${OS_ID}/dists/${DOCKER_CODENAME}/Release"; then
+    echo -e "${YELLOW}[INFO] Repositori Docker resmi untuk '${DOCKER_CODENAME}' belum aktif, menggunakan fallback binary kompatibel 'bookworm'...${NC}"
+    DOCKER_CODENAME="bookworm"
+fi
+
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/${OS_ID} \
-  ${OS_CODENAME} stable" | \
+  ${DOCKER_CODENAME} stable" | \
   tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 apt update

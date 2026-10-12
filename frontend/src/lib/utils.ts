@@ -126,3 +126,16 @@ export function resolveTenantFromCity(cityInput: string, tenantsList: any[]): st
   return 'pusat';
 }
 
+/**
+ * Sanitize cell values for CSV export to prevent CSV Formula Injection (CWE-1236).
+ * Prepends a single quote if the string begins with =, +, -, @, \t, or \r.
+ */
+export function sanitizeCsvCell(val: any): string {
+  if (val === null || val === undefined) return '';
+  const str = String(val).replace(/\r\n|\r|\n/g, ' ').trim();
+  if (str.length > 0 && ['=', '+', '-', '@', '\t', '\r'].includes(str[0])) {
+    return `'${str}`;
+  }
+  return str;
+}
+

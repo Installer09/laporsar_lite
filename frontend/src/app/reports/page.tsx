@@ -38,6 +38,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLaporSar } from '@/providers/LaporSarProvider';
+import { sanitizeCsvCell } from '@/lib/utils';
 
 const playSirenSound = () => {
   if (typeof window === 'undefined') return;
@@ -710,19 +711,19 @@ function ReportsPageContent() {
 
     const headers = ["No Laporan", "Jenis Kejadian", "Waktu", "Lokasi", "Pelapor", "Nomor Pelapor", "Korban", "Kronologi", "Status"];
     const rows = filteredReports.map((r: any) => [
-      r.no_laporan || '',
-      r.jenis_kejadian || '',
-      r.waktu || '',
-      r.lokasi_teks || '',
-      r.pelapor_nama || '',
-      r.pelapor_nomor || '',
-      r.korban || '',
-      (r.kronologi || '').replace(/\n/g, ' '),
-      r.status || ''
+      sanitizeCsvCell(r.no_laporan),
+      sanitizeCsvCell(r.jenis_kejadian),
+      sanitizeCsvCell(r.waktu),
+      sanitizeCsvCell(r.lokasi_teks),
+      sanitizeCsvCell(r.pelapor_nama),
+      sanitizeCsvCell(r.pelapor_nomor),
+      sanitizeCsvCell(r.korban),
+      sanitizeCsvCell(r.kronologi),
+      sanitizeCsvCell(r.status)
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(","), ...rows.map((row: any[]) => row.map((val: any) => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const csvContent = "data:text/csv;charset=utf-8,\ufeff" 
+      + [headers.join(";"), ...rows.map((row: any[]) => row.map((val: any) => `"${String(val).replace(/"/g, '""')}"`).join(";"))].join("\n");
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");

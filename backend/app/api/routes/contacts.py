@@ -167,8 +167,13 @@ async def import_contacts(file: UploadFile = File(...), db: AsyncSession = Depen
             failed_rows.append({"row": row_idx, "reason": "Nomor telepon kosong"})
             continue
             
-        phone_cleaned = re.sub(r"[^\+0-9\-\s]", "", phone_number)
-        if len(phone_cleaned) < 5:
+        phone_cleaned = re.sub(r"[^\+0-9]", "", phone_number)
+        if phone_cleaned.startswith("+"):
+            phone_cleaned = phone_cleaned[1:]
+        if phone_cleaned.startswith("08"):
+            phone_cleaned = "628" + phone_cleaned[2:]
+
+        if len(phone_cleaned) < 8:
             failed_rows.append({"row": row_idx, "reason": f"Nomor telepon tidak valid: '{phone_number}'"})
             continue
             
