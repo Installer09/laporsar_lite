@@ -41,6 +41,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - NODE_ENV=production
       - HOSTNAME=0.0.0.0
       - PORT=3000
       - NEXT_PUBLIC_API_URL=/api
@@ -49,9 +50,6 @@ services:
       - .env
     depends_on:
       - backend
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
     networks:
       - laporsar_lite_network
 

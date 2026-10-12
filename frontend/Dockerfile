@@ -9,12 +9,17 @@ RUN npm install
 # Copy application files
 COPY . .
 
-# Set environment variables for host binding
+# Set environment variables for production build
+ENV NODE_ENV=production
 ENV HOSTNAME="0.0.0.0"
 ENV PORT=3000
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Expose port for Next.js dev server
+# Build production bundle with Webpack
+RUN npm run build
+
+# Expose port for Next.js server
 EXPOSE 3000
 
-# Run Next.js
-CMD ["npm", "run", "dev"]
+# Run production Next.js
+CMD ["npm", "run", "start"]

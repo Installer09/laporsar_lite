@@ -61,12 +61,6 @@ const DashboardMapInner = dynamic(() => import('./DashboardMapInner'), {
 });
 
 export default function DashboardMap(props: DashboardMapProps) {
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
   return (
     <div className="h-full w-full rounded-2xl overflow-hidden border border-gray-100 shadow-sm relative">
       {/* Decorative Absolute Header Accent */}
@@ -78,14 +72,7 @@ export default function DashboardMap(props: DashboardMapProps) {
       </div>
 
       <MapErrorBoundary>
-        {mounted ? (
-          <DashboardMapInner {...props} />
-        ) : (
-          <div className="h-full w-full bg-gray-50 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
-            <p className="text-sm font-medium text-gray-400 animate-pulse">Menyiapkan Peta Pemantauan SAR...</p>
-          </div>
-        )}
+        <DashboardMapInner {...props} />
       </MapErrorBoundary>
     </div>
   );

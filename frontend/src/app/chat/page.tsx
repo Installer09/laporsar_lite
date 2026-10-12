@@ -67,6 +67,7 @@ export default function ChatPage() {
   const { 
     data: sessions = [], 
     isLoading: isLoadingSessions,
+    isError: isErrorSessions,
     refetch: refetchSessions
   } = useQuery({
     queryKey: ['chatSessions'],
@@ -258,6 +259,17 @@ export default function ChatPage() {
             <div className="h-40 flex items-center justify-center flex-col gap-2 text-gray-400">
               <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
               <p className="text-xs">Memuat sesi chat...</p>
+            </div>
+          ) : isErrorSessions ? (
+            <div className="h-40 flex flex-col items-center justify-center text-center p-4 text-slate-500 space-y-2">
+              <HelpCircle className="w-8 h-8 text-slate-300" />
+              <p className="text-xs font-semibold text-slate-700">Gagal memuat sesi chat</p>
+              <button 
+                onClick={() => refetchSessions()}
+                className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs rounded-lg transition-colors cursor-pointer"
+              >
+                Coba lagi
+              </button>
             </div>
           ) : filteredSessions.length === 0 ? (
             <div className="h-40 flex flex-col items-center justify-center text-center p-4 text-gray-400 space-y-2">

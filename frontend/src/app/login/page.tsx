@@ -91,12 +91,7 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="bg-white border border-slate-200 p-7 rounded-2xl shadow-xs flex flex-col relative"
-        >
+        <div className="bg-white border border-slate-200 p-7 rounded-2xl shadow-xs flex flex-col relative">
 
           {/* Close button */}
           <button
@@ -156,14 +151,10 @@ export default function LoginPage() {
 
             {/* Error Message */}
             {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl text-xs text-red-600 font-semibold flex items-center gap-2"
-              >
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl text-xs text-red-600 font-semibold flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 shrink-0" />
                 <span>{error}</span>
-              </motion.div>
+              </div>
             )}
 
             {/* Submit Button */}
@@ -185,7 +176,7 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-        </motion.div>
+        </div>
         
         {/* Copyright Footer */}
         <p className="text-[10px] text-slate-400 font-semibold text-center mt-8">

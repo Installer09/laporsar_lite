@@ -16,12 +16,12 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const [isAuthorized, setIsAuthorized] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  const isStaticPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/help-center' || pathname === '/widget-registration' || pathname === '/chat' || pathname === '/location-picker';
+  const isStaticPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/help-center' || pathname === '/widget-registration' || pathname === '/location-picker';
   const isPublicPage = isStaticPublicPage;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const isStaticPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/help-center' || pathname === '/widget-registration' || pathname === '/chat' || pathname === '/location-picker';
+      const isStaticPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/help-center' || pathname === '/widget-registration' || pathname === '/location-picker';
       
       const urlParams = new URLSearchParams(window.location.search);
       const isLogout = urlParams.get('logout') === 'true';
