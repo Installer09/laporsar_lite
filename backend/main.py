@@ -328,6 +328,19 @@ async def health_check():
         "storage": "available" if storage_service.is_available() else "unavailable",
     }
 
+@app.get("/api/v1/system/info")
+@app.get("/api/system/info")
+async def system_info():
+    """System info endpoint for monitoring."""
+    return {
+        "project": "Lapor SAR Lite",
+        "version": "3.1.0-lite",
+        "status": "operational",
+        "ai_engine": "cloud_multi_provider",
+        "storage": "available" if storage_service.is_available() else "unavailable",
+        "tenants": ["pusat", "natuna", "jakarta", "surabaya"]
+    }
+
 @app.get("/health/live")
 @app.get("/api/health/live")
 async def liveness_check():
