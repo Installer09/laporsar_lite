@@ -12,7 +12,7 @@ import { getLocations, getIdentity, getPublicMapReports, getTenantSlug, getPubli
 import { decodeJwt } from '@/lib/utils';
 import DashboardMap from '@/components/DashboardMap';
 import { useLaporSar } from '@/providers/LaporSarProvider';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 
 // Code-splitting heavy dashboard and drawer components for low-end devices
@@ -53,21 +53,25 @@ function SaasPortalLandingPage() {
     queryFn: getPublicTenants,
   });
 
-  const filteredTenants = Array.isArray(publicTenants)
-    ? publicTenants.filter((tenant: any) => tenant.slug !== 'pusat')
-    : [];
+  const filteredTenants = useMemo(() => {
+    return Array.isArray(publicTenants)
+      ? publicTenants.filter((tenant: any) => tenant.slug !== 'pusat')
+      : [];
+  }, [publicTenants]);
 
-  const mapLocations = filteredTenants
-    .filter((t: any) => t.lat !== null && t.lng !== null && !isNaN(parseFloat(t.lat)) && !isNaN(parseFloat(t.lng)))
-    .map((t: any, index: number) => ({
-      id: t.slug || index,
-      name: t.name,
-      type: 'Kantor SAR',
-      lat: parseFloat(t.lat),
-      lng: parseFloat(t.lng),
-      address: t.address,
-      icon: t.logo_path || '🏢'
-    }));
+  const mapLocations = useMemo(() => {
+    return filteredTenants
+      .filter((t: any) => t.lat !== null && t.lng !== null && !isNaN(parseFloat(t.lat)) && !isNaN(parseFloat(t.lng)))
+      .map((t: any, index: number) => ({
+        id: t.slug || index,
+        name: t.name,
+        type: 'Kantor SAR',
+        lat: parseFloat(t.lat),
+        lng: parseFloat(t.lng),
+        address: t.address,
+        icon: t.logo_path || '🏢'
+      }));
+  }, [filteredTenants]);
 
   return (
     <div className="min-h-screen w-screen relative overflow-x-hidden bg-slate-50/60 font-sans flex flex-col justify-between">

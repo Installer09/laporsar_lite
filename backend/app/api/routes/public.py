@@ -28,10 +28,11 @@ async def get_public_map_reports(
     """
     # 1. Try reading from cache
     try:
-        cached_data = await redis.get(CACHE_KEY)
-        if cached_data:
-            logger.info("Serving aggregated public map reports from Redis cache")
-            return json.loads(cached_data)
+        if redis and hasattr(redis, "get"):
+            cached_data = await redis.get(CACHE_KEY)
+            if cached_data:
+                logger.info("Serving aggregated public map reports from Redis cache")
+                return json.loads(cached_data)
     except Exception as cache_err:
         logger.warning(f"Failed to read from Redis cache: {cache_err}")
 
@@ -46,7 +47,7 @@ async def get_public_map_reports(
         tenants = result.scalars().all()
     except Exception as e:
         logger.error(f"Failed to query tenants from master DB: {e}")
-        raise HTTPException(status_code=500, detail="Gagal mengambil data instansi master.")
+        return []
 
     async def fetch_tenant_reports(tenant) -> list:
         reports = []
@@ -93,11 +94,18 @@ async def get_public_map_reports(
                         "tenant_slug": tenant.slug
                     })
         except Exception as tenant_err:
-            logger.error(f"Failed to fetch reports from tenant {tenant.slug}: {tenant_err}")
+            logger.warning(f"Failed to fetch reports from tenant {tenant.slug}: {tenant_err}")
         return reports
 
     import asyncio
-    results = await asyncio.gather(*[fetch_tenant_reports(tenant) for tenant in tenants])
+    async def safe_fetch_reports(tenant) -> list:
+        try:
+            return await asyncio.wait_for(fetch_tenant_reports(tenant), timeout=2.5)
+        except Exception as err:
+            logger.warning(f"Tenant report fetch timeout/error ({tenant.slug}): {err}")
+            return []
+
+    results = await asyncio.gather(*[safe_fetch_reports(tenant) for tenant in tenants])
     
     aggregated_reports = []
     for r in results:
@@ -105,8 +113,9 @@ async def get_public_map_reports(
 
     # 3. Write to cache
     try:
-        await redis.setex(CACHE_KEY, CACHE_TTL, json.dumps(aggregated_reports))
-        logger.info("Successfully wrote aggregated reports to Redis cache")
+        if redis and hasattr(redis, "setex"):
+            await redis.setex(CACHE_KEY, CACHE_TTL, json.dumps(aggregated_reports))
+            logger.info("Successfully wrote aggregated reports to Redis cache")
     except Exception as cache_write_err:
         logger.warning(f"Failed to write to Redis cache: {cache_write_err}")
 
@@ -213,7 +222,24 @@ async def get_active_tenants(
             }
 
         import asyncio
-        results = await asyncio.gather(*[fetch_tenant_details(t) for t in tenants])
+        async def safe_fetch_details(t) -> dict:
+            try:
+                return await asyncio.wait_for(fetch_tenant_details(t), timeout=2.5)
+            except Exception as err:
+                logger.warning(f"Tenant details fetch timeout/error ({t.slug}): {err}")
+                return {
+                    "name": t.name,
+                    "slug": t.slug,
+                    "logo_path": "",
+                    "address": "Wilayah Operasional",
+                    "wa_phone": "",
+                    "wa_link": "",
+                    "fallback_phone": t.admin_phone or "115",
+                    "lat": None,
+                    "lng": None
+                }
+
+        results = await asyncio.gather(*[safe_fetch_details(t) for t in tenants])
         
         try:
             if redis and hasattr(redis, "setex"):
@@ -224,4 +250,4 @@ async def get_active_tenants(
         return results
     except Exception as e:
         logger.error(f"Failed to fetch active tenants: {e}")
-        raise HTTPException(status_code=500, detail="Gagal mengambil data instansi.")
+        return []

@@ -222,7 +222,12 @@ def get_tenant_sessionmaker(db_url: str) -> sessionmaker:
         db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
     
     if db_url not in tenant_sessionmakers:
-        engine = create_async_engine(db_url, pool_pre_ping=True, echo=False)
+        engine = create_async_engine(
+            db_url,
+            pool_pre_ping=True,
+            echo=False,
+            connect_args={"timeout": 3.0}
+        )
         tenant_engines[db_url] = engine
         tenant_sessionmakers[db_url] = sessionmaker(
             autocommit=False,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Shield, MapPin, AlertTriangle, Calendar, Users, Anchor, Navigation } from 'lucide-react';
@@ -189,6 +189,12 @@ function MapController({ onMapReady }: { onMapReady: (map: L.Map) => void }) {
   useEffect(() => {
     if (map) {
       onMapReady(map);
+      const timer = setTimeout(() => {
+        try {
+          map.invalidateSize();
+        } catch (_) {}
+      }, 250);
+      return () => clearTimeout(timer);
     }
   }, [map, onMapReady]);
   return null;
@@ -199,18 +205,20 @@ export default function DashboardMapInner({ reports = [], locations = [], kmlPat
   const [kmlPolygons, setKmlPolygons] = useState<[number, number][][]>([]);
   const [kmlLoading, setKmlLoading] = useState(false);
   const [zoom, setZoom] = useState(3.5);
+  const hasInitializedPublicViewRef = useRef(false);
 
   useEffect(() => {
     if (!map || typeof map.on !== 'function') return;
     const handleZoom = () => {
       if (typeof map.getZoom === 'function') {
-        setZoom(map.getZoom());
+        const currentZoom = map.getZoom();
+        setZoom((prev) => (Math.abs(prev - currentZoom) > 0.1 ? currentZoom : prev));
       }
     };
     map.on('zoomend', handleZoom);
-    // Get initial zoom
     if (typeof map.getZoom === 'function') {
-      setZoom(map.getZoom());
+      const initialZoom = map.getZoom();
+      setZoom((prev) => (Math.abs(prev - initialZoom) > 0.1 ? initialZoom : prev));
     }
     return () => {
       if (typeof map.off === 'function') {
@@ -315,10 +323,12 @@ export default function DashboardMapInner({ reports = [], locations = [], kmlPat
   useEffect(() => {
     if (!map || typeof map.setView !== 'function') return;
 
-    // For public landing map, we want to center on the entire map of Indonesia and not fit bounds of individual UPTs/reports
+    // For public landing map, center once on Indonesia without recurring setView or setZoom
     if (isPublic) {
-      map.setView(defaultCenter, 3.5);
-      setZoom(3.5);
+      if (!hasInitializedPublicViewRef.current) {
+        map.setView(defaultCenter, 3.5);
+        hasInitializedPublicViewRef.current = true;
+      }
       return;
     }
 
