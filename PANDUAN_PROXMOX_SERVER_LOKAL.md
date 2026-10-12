@@ -173,7 +173,7 @@ docker compose version
 
 ---
 
-## Langkah 5: Transfer / Kloning Proyek Lapor SAR Lite
+## Langkah 5: Transfer / Kloning Proyek & Konfigurasi File Environment (.env) Wajib
 
 Letakkan folder proyek di `/opt/laporsar_lite`:
 
@@ -189,28 +189,142 @@ git clone https://github.com/Installer09/laporsar_lite.git /opt/laporsar_lite
 cd /opt/laporsar_lite
 ```
 
-Pastikan berkas `.env` telah disesuaikan:
+> [!IMPORTANT]
+> **PENTING: File `.env` sengaja di-ignore oleh Git demi keamanan kunci rahasia.**
+> Karena itu, saat Anda melakukan `git clone` atau `git pull`, file `.env` **TIDAK AKAN DIBUAT OTOMATIS**. Anda wajib membuat/menyalinnya dari file template `.env.example` seperti langkah di bawah ini.
+
+---
+
+### ⚙️ Konfigurasi Wajib 1: File `.env` di Folder Utama (`/opt/laporsar_lite/.env`)
+
+File ini adalah **Single Source of Truth** untuk seluruh orkestrasi Docker Compose.
+
+1. Salin template `.env.example` ke `.env`:
+   ```bash
+   cd /opt/laporsar_lite
+   cp .env.example .env
+   nano .env
+   ```
+
+2. Pastikan isi file `.env` memiliki konfigurasi lengkap sebagai berikut:
+   ```env
+   # =====================================================================
+   # LAPOR SAR LITE — ENVIRONMENT CONFIGURATION (ROOT)
+   # =====================================================================
+   PROJECT_NAME="Lapor SAR API"
+   VERSION="3.1.0-lite"
+
+   # 1. KEAMANAN & AUTENTIKASI
+   # [PRODUKSI] Ganti SECRET_KEY dengan string acak aman: openssl rand -hex 32
+   SECRET_KEY=laporsar-lite-secret-key-change-for-production-demo
+   ALGORITHM=HS256
+   ACCESS_TOKEN_EXPIRE_MINUTES=10080
+
+   # Akun Fallback Super Admin Global (Akses semua sistem, tidak terikat tenant)
+   DEV_SUPERADMIN_ENABLED=true
+   DEV_SUPERADMIN_USERNAME=superadmin
+   DEV_SUPERADMIN_PASSWORD=superadmin
+
+   # Akun Fallback Admin Command Center Pusat
+   DEV_ADMIN_ENABLED=true
+   DEV_ADMIN_USERNAME=admin
+   DEV_ADMIN_PASSWORD=admin
+
+   # 2. DATABASE & CACHE (Docker Internal Network)
+   DATABASE_URL=postgresql+asyncpg://laporsar_admin:laporsar_admin@db:5432/laporsar_master
+   REDIS_URL=redis://redis:6379/0
+
+   # 3. URL FRONTEND & BACKEND ROUTING (KUNCI UTAMA DASHBOARD)
+   # - Untuk Server Lokal saat ini: http://laporsar.lan (atau http://192.168.70.20)
+   # - Untuk Migrasi Domain Resmi nanti: https://laporsar.basarnas.go.id
+   FRONTEND_URL=http://laporsar.lan
+   NEXT_PUBLIC_API_URL=/api
+   INTERNAL_BACKEND_URL=http://backend:8000
+
+   # 4. PENYIMPANAN BERKAS LOKAL
+   STORAGE_TYPE=local
+   LOCAL_STORAGE_DIR=/app/uploads
+
+   # 5. PRESET AI MULTI-PROVIDER CLOUD
+   AI_STT_PROVIDER=groq
+   AI_STT_MODEL=whisper-large-v3
+   AI_STT_API_KEY=gsk_your_groq_api_key_here
+
+   AI_LLM_PROVIDER=gemini
+   AI_LLM_MODEL=gemini-1.5-flash
+   AI_LLM_API_KEY=AIzaSy_your_gemini_api_key_here
+
+   AI_EMBED_PROVIDER=gemini
+   AI_EMBED_MODEL=text-embedding-004
+   AI_EMBED_API_KEY=AIzaSy_your_gemini_api_key_here
+
+   # 6. INTEGRASI BOT TELEGRAM & WHATSAPP (OPSIONAL)
+   TELEGRAM_BOT_TOKEN=
+   TELEGRAM_SAR_GROUP_ID=
+   TELEGRAM_SECRET_TOKEN=
+
+   WHATSAPP_API_TOKEN=
+   WHATSAPP_PHONE_NUMBER_ID=
+   WHATSAPP_VERIFY_TOKEN=SARBOT_VERIFY_TOKEN
+   WHATSAPP_SAR_GROUP_ID=
+   ```
+   *(Simpan berkas: Tekan `Ctrl + O`, lalu `Enter`, kemudian keluar dengan `Ctrl + X`)*.
+
+---
+
+### ⚙️ Konfigurasi Wajib 2: File `.env` di Folder Backend (`/opt/laporsar_lite/backend/.env`)
+
+Folder `./backend` di-mount ke dalam kontainer FastAPI. Untuk memastikan worker Python backend membaca koneksi database internal Docker dengan tepat:
+
 ```bash
-cd /opt/laporsar_lite
+cd /opt/laporsar_lite/backend
+cp .env.example .env
 nano .env
 ```
-Pastikan variabel `FRONTEND_URL` berisi:
+Pastikan variabel koneksinya menggunakan nama service Docker:
 ```env
+DATABASE_URL=postgresql+asyncpg://laporsar_admin:laporsar_admin@db:5432/laporsar_master
+REDIS_URL=redis://redis:6379/0
 FRONTEND_URL=http://laporsar.lan
+```
+*(Simpan: `Ctrl + O` $\rightarrow$ `Enter` $\rightarrow$ `Ctrl + X`)*.
+
+---
+
+### ⚙️ Konfigurasi Wajib 3: File `.env` di Folder Frontend (`/opt/laporsar_lite/frontend`)
+
+Frontend Next.js telah dikonfigurasi untuk menggunakan relative path (`/api`) secara otomatis. Untuk memastikan mode produksi berjalan optimal:
+
+```bash
+cd /opt/laporsar_lite/frontend
+cp .env.example .env.production
+```
+Isi file `.env.production`:
+```env
+NEXT_PUBLIC_API_URL=/api
+INTERNAL_BACKEND_URL=http://backend:8000
 ```
 
 ---
 
-## Langkah 6: Menjalankan Kontainer Lapor SAR & Nginx
+## Langkah 6: Menjalankan & Membangun Ulang Kontainer Docker
 
-Di dalam folder `/opt/laporsar_lite` pada VM, jalankan seluruh kontainer:
+> [!WARNING]
+> **PENTING: Setiap kali mengubah file `.env` atau menarik pembaruan kode via `git pull`, kontainer HARUS di-build dan di-restart ulang** agar variabel lingkungan baru diterapkan dan Nginx memuat konfigurasi routing terbaru.
+
+Di dalam folder `/opt/laporsar_lite` pada VM, jalankan:
 
 ```bash
 cd /opt/laporsar_lite
+
+# 1. Hentikan kontainer lama jika sedang berjalan
+docker compose down
+
+# 2. Bangun ulang (rebuild) dan jalankan seluruh kontainer di background
 docker compose up -d --build
 ```
 
-Periksa apakah seluruh kontainer aktif:
+### Memeriksa Status Kontainer:
 ```bash
 docker compose ps
 ```
@@ -220,6 +334,18 @@ Output harus menunjukkan kelima kontainer berstatus **Up / healthy**:
 - `laporsar_lite_backend` (Port 8000) $\rightarrow$ FastAPI Engine & WebSocket
 - `laporsar_lite_db` (Port 5432) $\rightarrow$ PostgreSQL 16 + PostGIS
 - `laporsar_lite_redis` (Port 6379) $\rightarrow$ Redis Caching
+
+### Memeriksa Log Jika Ada Kendala:
+```bash
+# Log backend FastAPI
+docker compose logs -f backend
+
+# Log Nginx
+docker compose logs -f nginx
+
+# Log frontend Next.js
+docker compose logs -f frontend
+```
 
 ---
 
