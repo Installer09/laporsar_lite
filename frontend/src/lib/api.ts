@@ -2,16 +2,22 @@ import axios from 'axios';
 import { decodeJwt } from './utils';
 
 const getApiUrl = () => {
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
   if (typeof window !== 'undefined') {
-    return '/api';
+    return process.env.NEXT_PUBLIC_API_URL || '/api';
   }
-  return 'http://localhost:8000/api';
+  // Server-side (Node.js SSR inside Docker container):
+  if (process.env.INTERNAL_BACKEND_URL) {
+    return `${process.env.INTERNAL_BACKEND_URL}/api`;
+  }
+  return 'http://backend:8000/api';
 };
 const API_URL = getApiUrl();
 
 export const getBackendUrl = () => {
-  return API_URL.replace(/\/api$/, '');
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return process.env.INTERNAL_BACKEND_URL || 'http://backend:8000';
 };
 
 export const getWsUrl = (token?: string | null): string => {
@@ -23,14 +29,14 @@ export const getWsUrl = (token?: string | null): string => {
   } else if (typeof window !== 'undefined') {
     const isHttps = window.location.protocol === 'https:';
     const proto = isHttps ? 'wss:' : 'ws:';
-    const isDevPort = window.location.port === '3000';
+    const isDevPort = window.location.port === '3000' && window.location.hostname === 'localhost';
     if (isDevPort) {
       wsUrl = `${proto}//${window.location.hostname}:8000/api/ws`;
     } else {
       wsUrl = `${proto}//${window.location.host}/api/ws`;
     }
   } else {
-    wsUrl = 'ws://localhost:8000/api/ws';
+    wsUrl = 'ws://backend:8000/api/ws';
   }
 
   if (token) {

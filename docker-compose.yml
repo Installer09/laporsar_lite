@@ -41,8 +41,12 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
       - NEXT_PUBLIC_API_URL=/api
       - INTERNAL_BACKEND_URL=http://backend:8000
+    env_file:
+      - .env
     depends_on:
       - backend
     volumes:

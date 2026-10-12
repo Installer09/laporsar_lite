@@ -35,7 +35,7 @@ export function getTenantRedirectUrl(targetTenant: string | null): string {
   const protocol = window.location.protocol;
   const port = window.location.port;
 
-  // For local development, IPs, tunnels, and preview platforms, keep origin intact
+  // For local development, IPs, tunnels, and LAN environments, keep origin intact
   if (
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
@@ -43,7 +43,9 @@ export function getTenantRedirectUrl(targetTenant: string | null): string {
     hostname.includes('trycloudflare.com') ||
     hostname.includes('pages.dev') ||
     hostname.includes('vercel.app') ||
-    hostname.includes('ngrok')
+    hostname.includes('ngrok') ||
+    hostname.endsWith('.lan') ||
+    hostname === 'laporsar.lan'
   ) {
     return `${protocol}//${host}`;
   }
