@@ -55,9 +55,26 @@ async def lifespan(app: FastAPI):
                 except Exception as e:
                     logger.warning(f"PostGIS extension enabling skipped: {e}")
                     
+                has_vector = False
+                try:
+                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                    has_vector = True
+                    logger.info("Vector extension enabled successfully in PostgreSQL.")
+                except Exception as e:
+                    logger.warning(f"Vector extension not available, falling back to TEXT embedding: {e}")
+
+                if not has_vector:
+                    from app.models.knowledge_models import DictionaryWord
+                    from app.models.vector_memory import VectorMemory
+                    from sqlalchemy import Text
+                    if "embedding" in DictionaryWord.__table__.columns:
+                        DictionaryWord.__table__.columns["embedding"].type = Text()
+                    if "embedding" in VectorMemory.__table__.columns:
+                        VectorMemory.__table__.columns["embedding"].type = Text()
+
                 tables_to_create = [
                     t for name, t in Base.metadata.tables.items() 
-                    if name != "vector_memory"
+                    if has_vector or name != "vector_memory"
                 ]
                 await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn, tables=tables_to_create))
             db_connected = True
