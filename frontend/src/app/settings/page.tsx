@@ -266,6 +266,9 @@ export default function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
       showSuccessToast('Pengaturan sistem berhasil disimpan!');
     },
+    onError: (err: any) => {
+      alert(`Gagal menyimpan pengaturan: ${err.response?.data?.detail || err.message || 'Error server'}`);
+    }
   });
 
   const updateIdentityMutation = useMutation({
@@ -1909,13 +1912,7 @@ export default function SettingsPage() {
                             </div>
                           ) : (
                             <select
-                              value={
-                                (formData.ai_llm_provider === 'ollama'
-                                  ? (ollamaModelsData?.models?.includes(formData.ai_llm_model || '') || LLM_PRESETS['ollama']?.includes(formData.ai_llm_model || ''))
-                                  : ((cloudLlmModels && cloudLlmModels.includes(formData.ai_llm_model || '')) || (LLM_PRESETS[formData.ai_llm_provider || '']?.includes(formData.ai_llm_model || ''))))
-                                  ? (formData.ai_llm_model || '')
-                                  : (formData.ai_llm_model ? '__custom__' : '')
-                              }
+                              value={formData.ai_llm_model || ''}
                               onChange={(e) => {
                                 const val = e.target.value;
                                 if (val === '__manual__') {
@@ -1954,12 +1951,12 @@ export default function SettingsPage() {
                                 </optgroup>
                               )}
 
-                              {/* Jika saat ini tersimpan model kustom di DB */}
+                              {/* Jika saat ini tersimpan model kustom di DB / formData yang belum ada di daftar di atas */}
                               {formData.ai_llm_model && 
                                 !(formData.ai_llm_provider === 'ollama' ? ollamaModelsData?.models?.includes(formData.ai_llm_model) : cloudLlmModels?.includes(formData.ai_llm_model)) &&
                                 !LLM_PRESETS[formData.ai_llm_provider || '']?.includes(formData.ai_llm_model) && (
-                                <optgroup label="Model Kustom Saat Ini">
-                                  <option value={formData.ai_llm_model}>{formData.ai_llm_model} (Kustom)</option>
+                                <optgroup label="Model Kustom / Tersimpan">
+                                  <option value={formData.ai_llm_model}>{formData.ai_llm_model} (Tersimpan)</option>
                                 </optgroup>
                               )}
 
@@ -2055,13 +2052,7 @@ export default function SettingsPage() {
                             </div>
                           ) : (
                             <select
-                              value={
-                                (formData.ai_embed_provider === 'ollama'
-                                  ? (ollamaModelsData?.models?.includes(formData.ai_embed_model || '') || EMBED_PRESETS['ollama']?.includes(formData.ai_embed_model || ''))
-                                  : ((cloudEmbedModels && cloudEmbedModels.includes(formData.ai_embed_model || '')) || (EMBED_PRESETS[formData.ai_embed_provider || '']?.includes(formData.ai_embed_model || ''))))
-                                  ? (formData.ai_embed_model || '')
-                                  : (formData.ai_embed_model ? '__custom__' : '')
-                              }
+                              value={formData.ai_embed_model || ''}
                               onChange={(e) => {
                                 const val = e.target.value;
                                 if (val === '__manual__') {
@@ -2100,12 +2091,12 @@ export default function SettingsPage() {
                                 </optgroup>
                               )}
 
-                              {/* Jika saat ini tersimpan model kustom di DB */}
+                              {/* Jika saat ini tersimpan model kustom di DB / formData yang belum ada di daftar di atas */}
                               {formData.ai_embed_model && 
                                 !(formData.ai_embed_provider === 'ollama' ? ollamaModelsData?.models?.includes(formData.ai_embed_model) : cloudEmbedModels?.includes(formData.ai_embed_model)) &&
                                 !EMBED_PRESETS[formData.ai_embed_provider || '']?.includes(formData.ai_embed_model) && (
-                                <optgroup label="Model Kustom Saat Ini">
-                                  <option value={formData.ai_embed_model}>{formData.ai_embed_model} (Kustom)</option>
+                                <optgroup label="Model Kustom / Tersimpan">
+                                  <option value={formData.ai_embed_model}>{formData.ai_embed_model} (Tersimpan)</option>
                                 </optgroup>
                               )}
 
@@ -2191,13 +2182,7 @@ export default function SettingsPage() {
                             </div>
                           ) : (
                             <select
-                              value={
-                                (formData.ai_stt_provider === 'ollama'
-                                  ? (ollamaModelsData?.models?.includes(formData.ai_stt_model || '') || STT_PRESETS['ollama']?.includes(formData.ai_stt_model || ''))
-                                  : ((cloudSttModels && cloudSttModels.includes(formData.ai_stt_model || '')) || (STT_PRESETS[formData.ai_stt_provider || '']?.includes(formData.ai_stt_model || ''))))
-                                  ? (formData.ai_stt_model || '')
-                                  : (formData.ai_stt_model ? '__custom__' : '')
-                              }
+                              value={formData.ai_stt_model || ''}
                               onChange={(e) => {
                                 const val = e.target.value;
                                 if (val === '__manual__') {
@@ -2236,12 +2221,12 @@ export default function SettingsPage() {
                                 </optgroup>
                               )}
 
-                              {/* Jika saat ini tersimpan model kustom di DB */}
+                              {/* Jika saat ini tersimpan model kustom di DB / formData yang belum ada di daftar di atas */}
                               {formData.ai_stt_model && 
                                 !(formData.ai_stt_provider === 'ollama' ? ollamaModelsData?.models?.includes(formData.ai_stt_model) : cloudSttModels?.includes(formData.ai_stt_model)) &&
                                 !STT_PRESETS[formData.ai_stt_provider || '']?.includes(formData.ai_stt_model) && (
-                                <optgroup label="Model Kustom Saat Ini">
-                                  <option value={formData.ai_stt_model}>{formData.ai_stt_model} (Kustom)</option>
+                                <optgroup label="Model Kustom / Tersimpan">
+                                  <option value={formData.ai_stt_model}>{formData.ai_stt_model} (Tersimpan)</option>
                                 </optgroup>
                               )}
 
