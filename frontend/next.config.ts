@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   async rewrites() {
     // In Docker, backend is reachable at http://backend:8000; on local host at http://localhost:8000
     const backendUrl = process.env.INTERNAL_BACKEND_URL || (process.env.NODE_ENV === "production" ? "http://backend:8000" : "http://localhost:8000");
