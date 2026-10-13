@@ -1098,8 +1098,8 @@ async def delete_sop_document(
                 logger.error(f"Failed to delete global SOP document: {e}")
                 raise HTTPException(status_code=500, detail="Database transaction failed")
 
-    # Block direct deletion on global SOPs if they exist in Master DB
-    if tenant_slug != "global":
+    # Block direct deletion on global SOPs if they exist in Master DB and caller is a regional tenant
+    if tenant_slug not in ("pusat", "global"):
         try:
             from app.db.session import MasterSessionLocal
             async with MasterSessionLocal() as master_db:
@@ -1109,7 +1109,7 @@ async def delete_sop_document(
                 if m_res.scalar_one_or_none():
                     raise HTTPException(
                         status_code=403, 
-                        detail="Dokumen SOP pusat bersifat Read-Only dan tidak dapat dihapus."
+                        detail="Dokumen SOP pusat bersifat Read-Only dan tidak dapat dihapus oleh UPT cabang."
                     )
         except HTTPException:
             raise
@@ -1292,23 +1292,29 @@ async def vectorize_sop_document(
                 logger.error(f"Failed to save global document status: {e}")
                 raise HTTPException(status_code=500, detail="Gagal memperbarui status dokumen di database master")
 
-    # Block vectorization of global SOPs if they exist in Master DB
-    if tenant_slug != "global":
-        try:
-            from app.db.session import MasterSessionLocal
-            async with MasterSessionLocal() as master_db:
-                m_res = await master_db.execute(
-                    select(SOPDocument).where(SOPDocument.id == doc_id)
-                )
-                if m_res.scalar_one_or_none():
-                    raise HTTPException(
-                        status_code=403, 
-                        detail="Dokumen SOP pusat bersifat Read-Only."
-                    )
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.warning(f"Error checking global SOP document: {e}")
+    # Auto-detect if document exists in Master DB
+    from app.db.session import MasterSessionLocal
+    is_in_master = False
+    try:
+        async with MasterSessionLocal() as master_db:
+            m_res = await master_db.execute(
+                select(SOPDocument).where(SOPDocument.id == doc_id)
+            )
+            is_in_master = m_res.scalar_one_or_none() is not None
+    except Exception as e:
+        logger.warning(f"Error checking Master DB for SOP {doc_id}: {e}")
+
+    # If document exists in Master DB:
+    # 1. If caller is a regional branch tenant, block editing
+    # 2. If caller is Pusat/Global, route to vectorize in Master DB
+    if is_in_master:
+        if tenant_slug not in ("pusat", "global"):
+            raise HTTPException(
+                status_code=403, 
+                detail="Dokumen SOP pusat bersifat Read-Only bagi UPT cabang."
+            )
+        # Re-invoke global vectorization logic
+        return await vectorize_sop_document(doc_id=doc_id, is_global=True, db=db)
     from app.core.config import settings as app_settings
     import logging
     logger = logging.getLogger(__name__)

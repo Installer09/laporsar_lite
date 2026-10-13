@@ -75,6 +75,10 @@ export default function SettingsPage() {
     }
   }, []);
 
+  const cleanRole = userRole ? String(userRole).toLowerCase().replace(/[\s_-]/g, '') : '';
+  const isSuperAdmin = cleanRole === 'superadmin' || userRole === 'Super Admin';
+  const isPusatOrGlobal = !tenantSlug || tenantSlug === 'pusat' || tenantSlug === 'global' || isSuperAdmin;
+
   useEffect(() => {
     if (userRole && userRole !== 'Super Admin' && (activeTab === 'ai' || activeTab === 'backup')) {
       setActiveTab('identity');
@@ -1403,7 +1407,7 @@ export default function SettingsPage() {
                               </select>
                             </div>
 
-                            {(tenantSlug === 'pusat' || tenantSlug === 'global') && (
+                            {isPusatOrGlobal && (
                               <div className="p-2.5 bg-blue-50/50 border border-blue-100 rounded-2xl">
                                 <label className="block text-[10px] font-bold text-gray-700 flex items-center gap-1.5 cursor-pointer">
                                   <input
@@ -1596,7 +1600,7 @@ export default function SettingsPage() {
                                       </td>
                                       <td className="py-2.5 px-4">
                                         <div className="flex items-center justify-end gap-1">
-                                          {item.is_global && tenantSlug !== 'pusat' && tenantSlug !== 'global' ? (
+                                          {item.is_global && !isPusatOrGlobal ? (
                                             <span className="text-gray-400 flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 bg-gray-50 border border-gray-100 rounded-lg animate-fade-in" title="SOP pusat bersifat Read-Only">
                                               <Lock className="w-2.5 h-2.5 text-gray-400" /> Terkunci (Pusat)
                                             </span>
