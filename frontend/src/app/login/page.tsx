@@ -37,6 +37,17 @@ export default function LoginPage() {
         
         const payload = decodeJwt(data.access_token);
         if (payload) {
+          const cleanRole = payload.role ? String(payload.role).toLowerCase().replace(/[\s_-]/g, '') : '';
+          const isSuperAdmin = cleanRole === 'superadmin';
+          const tokenTenant = payload.tenant_slug ? payload.tenant_slug.toLowerCase().trim() : null;
+          const isPusatOrGlobal = !tokenTenant || tokenTenant === 'pusat';
+
+          // Direct Super Admin to Administrator Panel
+          if (isSuperAdmin && isPusatOrGlobal) {
+            window.location.href = '/admin';
+            return;
+          }
+
           const tokenSlug = payload.tenant_slug ? payload.tenant_slug.toLowerCase().trim() : 'pusat';
           const normalizedTokenTenant = (tokenSlug === 'pusat' || tokenSlug === '') ? 'pusat' : tokenSlug;
           

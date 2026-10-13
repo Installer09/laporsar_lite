@@ -162,7 +162,8 @@ export default function AdminDashboardPage() {
       }
 
         const payload = decodeJwt(token);
-        const isSuperAdmin = payload && (payload.role === 'Super Admin' || payload.role === 'super_admin' || payload.role === 'SuperAdmin');
+        const cleanRole = payload?.role ? String(payload.role).toLowerCase().replace(/[\s_-]/g, '') : '';
+        const isSuperAdmin = cleanRole === 'superadmin' || payload?.role === 'Super Admin';
         const tokenTenant = payload?.tenant_slug ? payload.tenant_slug.toLowerCase().trim() : null;
         const isPusatOrGlobal = !tokenTenant || tokenTenant === 'pusat';
 

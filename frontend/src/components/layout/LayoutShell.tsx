@@ -79,9 +79,10 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
             let authorized = true;
             
             if (!isPublicPageLocal) {
-              const isSuperAdmin = role === 'Super Admin' || role === 'super_admin' || role === 'SuperAdmin';
-              const isOperator = role === 'Operator' || role === 'operator';
-              const isUser = role === 'User' || role === 'user';
+              const cleanRole = role ? String(role).toLowerCase().replace(/[\s_-]/g, '') : '';
+              const isSuperAdmin = cleanRole === 'superadmin' || role === 'Super Admin';
+              const isOperator = cleanRole === 'operator';
+              const isUser = cleanRole === 'user';
               const tokenTenant = payload.tenant_slug ? payload.tenant_slug.toLowerCase().trim() : null;
               const isPusatOrGlobal = !tokenTenant || tokenTenant === 'pusat';
 

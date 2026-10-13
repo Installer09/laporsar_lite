@@ -621,6 +621,7 @@ export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isTenant, setIsTenant] = useState<boolean | null>(null);
   const [tenantSlug, setTenantSlug] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -657,6 +658,7 @@ export default function Home() {
         try {
             const payload = decodeJwt(token);
             if (payload) {
+              setUserRole(payload.role || null);
               setTenantSlug(tenant || payload.tenant_slug || null);
             }
         } catch (e) {
@@ -690,7 +692,22 @@ export default function Home() {
     return null; // Will redirect via useEffect if isTenant is true
   }
 
-  // 3. Authenticated state: determine which dashboard to show
+  // 3. Authenticated state:
+  const cleanRole = userRole ? String(userRole).toLowerCase().replace(/[\s_-]/g, '') : '';
+  const isSuperAdmin = cleanRole === 'superadmin';
+  const isPusatOrGlobal = !tenantSlug || tenantSlug === 'pusat';
+
+  // If Super Admin visits root path, automatically redirect to Administrator Panel (/admin)
+  if (isSuperAdmin && isPusatOrGlobal) {
+    router.replace('/admin');
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
+      </div>
+    );
+  }
+
+  // If Pusat Command Center, show National Monitoring Dashboard
   if (tenantSlug === 'pusat' || tenantSlug === null) {
     return <NationalDashboardPage />;
   }
