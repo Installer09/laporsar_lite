@@ -46,7 +46,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
       }
 
       const token = localStorage.getItem('token');
-      const isPublicPageLocal = isStaticPublicPage || (pathname === '/' && !currentTenant);
+      const isPublicPageLocal = isStaticPublicPage || (pathname === '/' && !currentTenant && !token);
 
       if (token) {
         try {
@@ -156,16 +156,8 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Root domain landing page when not logged in: render children (Landing Page) directly without sidebar/header
-  if (pathname === '/' && !currentTenant && !isAuthenticated) {
-    return (
-      <div className="flex-1 overflow-y-auto h-full w-full">
-        {children}
-      </div>
-    );
-  }
-
-  if (isAuthenticated === null || !isAuthorized) {
+  // 1. Wait until authentication state is resolved from client/localStorage
+  if (isAuthenticated === null) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-slate-600"></div>
@@ -173,8 +165,23 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // Will redirect via useEffect
+  // 2. Root domain landing page strictly when verified unauthenticated:
+  // render children directly without sidebar/header
+  if (pathname === '/' && !currentTenant && isAuthenticated === false) {
+    return (
+      <div className="flex-1 overflow-y-auto h-full w-full">
+        {children}
+      </div>
+    );
+  }
+
+  // 3. Unauthorized or unauthenticated
+  if (!isAuthenticated || !isAuthorized) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-slate-600"></div>
+      </div>
+    );
   }
 
   return (

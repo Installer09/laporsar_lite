@@ -53,9 +53,8 @@ export default function LoginPage() {
           }
         }
 
-        // Refresh router and redirect to dashboard
-        router.refresh();
-        router.push('/');
+        // Full page transition to ensure clean state hydration with new token
+        window.location.href = '/';
       } else {
         setError('Gagal mendapatkan token autentikasi.');
       }

@@ -657,7 +657,7 @@ export default function Home() {
         try {
             const payload = decodeJwt(token);
             if (payload) {
-              setTenantSlug(payload.tenant_slug || null);
+              setTenantSlug(tenant || payload.tenant_slug || null);
             }
         } catch (e) {
           console.error('Failed to parse token in Home component:', e);
@@ -673,12 +673,8 @@ export default function Home() {
     }
   }, [router]);
 
-  // Root domain (SaaS Landing Page) when not logged in
-  if (!isTenant && !isAuthenticated) {
-    return <SaasPortalLandingPage />;
-  }
-
-  if (isTenant === null || isAuthenticated === null) {
+  // 1. Wait until authentication and tenant status are resolved from client/localStorage
+  if (isAuthenticated === null || isTenant === null) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
         <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
@@ -686,11 +682,15 @@ export default function Home() {
     );
   }
 
+  // 2. Unauthenticated state
   if (!isAuthenticated) {
+    if (!isTenant) {
+      return <SaasPortalLandingPage />;
+    }
     return null; // Will redirect via useEffect if isTenant is true
   }
 
-  // If authenticated, determine which dashboard to show
+  // 3. Authenticated state: determine which dashboard to show
   if (tenantSlug === 'pusat' || tenantSlug === null) {
     return <NationalDashboardPage />;
   }
