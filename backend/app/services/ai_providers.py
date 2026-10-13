@@ -246,9 +246,9 @@ async def _claude_llm_generate(
 async def _ollama_get_embedding(text: str, model: str, base_url: str = None) -> list[float]:
     """Get embedding via Ollama /api/embeddings."""
     final_base_url = _resolve_internal_url(base_url or settings.AI_LLM_BASE_URL or settings.OLLAMA_HOST or "http://localhost:11434")
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
-            f"{base_url}/api/embeddings",
+            f"{final_base_url.rstrip('/')}/api/embeddings",
             json={"model": model, "prompt": text},
         )
         response.raise_for_status()
@@ -257,11 +257,13 @@ async def _ollama_get_embedding(text: str, model: str, base_url: str = None) -> 
 
 async def _openai_get_embedding(text: str, model: str, api_key: str, base_url: str = "https://api.openai.com/v1/embeddings") -> list[float]:
     """Get embedding via OpenAI-compatible endpoint."""
+    if not api_key:
+        raise ValueError("API Key OpenAI/Groq belum dikonfigurasi untuk Embedding")
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
             base_url,
             json={"model": model, "input": text},
@@ -274,15 +276,18 @@ async def _openai_get_embedding(text: str, model: str, api_key: str, base_url: s
 
 async def _gemini_get_embedding(text: str, model: str, api_key: str) -> list[float]:
     """Get embedding via Gemini embedContent REST API."""
+    if not api_key:
+        raise ValueError("API Key Google Gemini belum dikonfigurasi untuk Embedding")
+    clean_model = model.replace("models/", "") if model else "text-embedding-004"
     url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model}"
+        f"https://generativelanguage.googleapis.com/v1beta/models/{clean_model}"
         f":embedContent?key={api_key}"
     )
     payload = {
-        "model": f"models/{model}",
+        "model": f"models/{clean_model}",
         "content": {"parts": [{"text": text}]},
     }
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(url, json=payload)
         response.raise_for_status()
         data = response.json()
@@ -531,10 +536,10 @@ class AIProviderManager:
     # Embedding — Vector Embedding for RAG
     # =================================================================
 
-    async def get_embedding(self, text: str, tenant_settings = None) -> list[float]:
+    async def get_embedding(self, text: str, tenant_settings = None, raise_on_error: bool = False) -> list[float]:
         """
         Get text embedding using the configured embedding provider.
-        Falls back to returning empty list on error.
+        Falls back to returning empty list on error unless raise_on_error=True.
         """
         cfg = tenant_settings if tenant_settings is not None else settings
         provider = cfg.AI_EMBED_PROVIDER or "ollama"
@@ -543,7 +548,7 @@ class AIProviderManager:
         
         # Resolve key
         api_key = cfg.AI_EMBED_API_KEY
-        if not api_key and cfg.AI_EMBED_PROVIDER == cfg.AI_LLM_PROVIDER:
+        if not api_key and (cfg.AI_EMBED_PROVIDER == cfg.AI_LLM_PROVIDER or cfg.AI_EMBED_PROVIDER in ("gemini", "openai", "groq")):
             api_key = cfg.AI_LLM_API_KEY
         api_key = api_key or ""
 
@@ -557,11 +562,16 @@ class AIProviderManager:
             elif provider == "gemini":
                 return await _gemini_get_embedding(text, model, api_key)
             else:
-                logger.error(f"[AIProvider] Unknown embedding provider: {provider}")
+                err_msg = f"Unknown embedding provider: {provider}"
+                logger.error(f"[AIProvider] {err_msg}")
+                if raise_on_error:
+                    raise ValueError(err_msg)
                 return []
 
         except Exception as e:
             logger.error(f"[AIProvider] Embedding failed (provider={provider}, model={model}): {e}")
+            if raise_on_error:
+                raise
             return []
 
     # =================================================================

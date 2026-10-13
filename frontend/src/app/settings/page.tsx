@@ -144,6 +144,11 @@ export default function SettingsPage() {
   const [cloudEmbedModels, setCloudEmbedModels] = useState<string[]>([]);
   const [cloudSttModels, setCloudSttModels] = useState<string[]>([]);
 
+  // Manual Model Input Toggles (allow user to freely type custom model name)
+  const [isManualLlmModel, setIsManualLlmModel] = useState(false);
+  const [isManualEmbedModel, setIsManualEmbedModel] = useState(false);
+  const [isManualSttModel, setIsManualSttModel] = useState(false);
+
   // Query settings config
   const { data: settingsData, isLoading: isLoadingSettings } = useQuery({
     queryKey: ['settings'],
@@ -229,6 +234,30 @@ export default function SettingsPage() {
     queryFn: () => getOllamaModels(currentLlmBaseUrl),
     enabled: currentLlmProvider === 'ollama' || currentEmbedProvider === 'ollama',
   });
+
+  // Default recommended presets per provider for fallback / quick selection
+  const LLM_PRESETS: Record<string, string[]> = {
+    gemini: ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash', 'gemini-2.5-pro'],
+    openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+    claude: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
+    groq: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'],
+    ollama: ['llama3', 'llama3.1', 'mistral', 'qwen2.5:7b', 'phi3']
+  };
+
+  const EMBED_PRESETS: Record<string, string[]> = {
+    gemini: ['text-embedding-004', 'embedding-001'],
+    openai: ['text-embedding-3-small', 'text-embedding-3-large', 'text-embedding-ada-002'],
+    groq: ['bge-large-en-v1.5'],
+    ollama: ['nomic-embed-text', 'mxbai-embed-large', 'all-minilm', 'bge-m3']
+  };
+
+  const STT_PRESETS: Record<string, string[]> = {
+    groq: ['whisper-large-v3', 'whisper-large-v3-turbo'],
+    openai: ['whisper-1'],
+    gemini: ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'],
+    local_whisper: ['medium', 'large-v3', 'small', 'base'],
+    ollama: ['whisper', 'whisper:medium', 'whisper:small']
+  };
 
   // Mutations
   const updateSettingsMutation = useMutation({
@@ -626,12 +655,15 @@ export default function SettingsPage() {
     setFormData((prev) => ({ ...prev, [key]: value }));
     if (key === 'ai_llm_provider') {
       setCloudLlmModels([]);
+      setIsManualLlmModel(false);
       setFormData((prev) => ({ ...prev, ai_llm_model: '' }));
     } else if (key === 'ai_embed_provider') {
       setCloudEmbedModels([]);
+      setIsManualEmbedModel(false);
       setFormData((prev) => ({ ...prev, ai_embed_model: '' }));
     } else if (key === 'ai_stt_provider') {
       setCloudSttModels([]);
+      setIsManualSttModel(false);
       setFormData((prev) => ({ ...prev, ai_stt_model: '' }));
     }
   };
@@ -1850,47 +1882,89 @@ export default function SettingsPage() {
                         </div>
 
                         <div>
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Model LLM</label>
-                          {formData.ai_llm_provider === 'ollama' ? (
-                            ollamaModelsData?.models && ollamaModelsData.models.length > 0 ? (
-                              <select
-                                value={formData.ai_llm_model || ''}
-                                onChange={(e) => handleConfigChange('ai_llm_model', e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                              >
-                                <option value="">-- Pilih Model Ollama Lokal --</option>
-                                {ollamaModelsData.models.map((m: string) => (
-                                  <option key={m} value={m}>{m}</option>
-                                ))}
-                              </select>
-                            ) : (
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-bold text-gray-700">Model LLM</label>
+                            <button
+                              type="button"
+                              onClick={() => setIsManualLlmModel(!isManualLlmModel)}
+                              className="text-[11px] text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1 transition-colors"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              {isManualLlmModel ? 'Pilih dari Dropdown' : 'Ketik Manual'}
+                            </button>
+                          </div>
+
+                          {isManualLlmModel ? (
+                            <div className="relative">
                               <input
                                 type="text"
                                 value={formData.ai_llm_model || ''}
                                 onChange={(e) => handleConfigChange('ai_llm_model', e.target.value)}
-                                placeholder="Ketik manual model Ollama (misal: llama3)..."
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                                placeholder="Ketik nama model kustom (misal: gemini-2.5-flash, llama3:8b)..."
+                                className="w-full px-4 py-3 bg-white border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
                               />
-                            )
-                          ) : cloudLlmModels && cloudLlmModels.length > 0 ? (
+                              <span className="block text-[10px] text-blue-500 mt-1 font-medium">
+                                Mode input manual aktif. Anda bebas mengetik nama model apa saja.
+                              </span>
+                            </div>
+                          ) : (
                             <select
-                              value={formData.ai_llm_model || ''}
-                              onChange={(e) => handleConfigChange('ai_llm_model', e.target.value)}
+                              value={
+                                (formData.ai_llm_provider === 'ollama'
+                                  ? (ollamaModelsData?.models?.includes(formData.ai_llm_model || '') || LLM_PRESETS['ollama']?.includes(formData.ai_llm_model || ''))
+                                  : ((cloudLlmModels && cloudLlmModels.includes(formData.ai_llm_model || '')) || (LLM_PRESETS[formData.ai_llm_provider || '']?.includes(formData.ai_llm_model || ''))))
+                                  ? (formData.ai_llm_model || '')
+                                  : (formData.ai_llm_model ? '__custom__' : '')
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '__manual__') {
+                                  setIsManualLlmModel(true);
+                                } else {
+                                  handleConfigChange('ai_llm_model', val);
+                                }
+                              }}
                               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
-                              <option value="">-- Pilih Model dari Provider --</option>
-                              {cloudLlmModels.map((m: string) => (
-                                <option key={m} value={m}>{m}</option>
-                              ))}
+                              <option value="">-- Pilih Model {formData.ai_llm_provider?.toUpperCase()} --</option>
+
+                              {/* 1. Model dari Deteksi Provider / Ollama */}
+                              {formData.ai_llm_provider === 'ollama' && ollamaModelsData?.models && ollamaModelsData.models.length > 0 && (
+                                <optgroup label="Model Terdeteksi di Ollama Lokal">
+                                  {ollamaModelsData.models.map((m: string) => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </optgroup>
+                              )}
+
+                              {formData.ai_llm_provider !== 'ollama' && cloudLlmModels && cloudLlmModels.length > 0 && (
+                                <optgroup label="Model Terdeteksi dari API Provider">
+                                  {cloudLlmModels.map((m: string) => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </optgroup>
+                              )}
+
+                              {/* 2. Preset Rekomendasi Bawaan */}
+                              {LLM_PRESETS[formData.ai_llm_provider || ''] && (
+                                <optgroup label="Rekomendasi Populer">
+                                  {LLM_PRESETS[formData.ai_llm_provider || ''].map((m: string) => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </optgroup>
+                              )}
+
+                              {/* Jika saat ini tersimpan model kustom di DB */}
+                              {formData.ai_llm_model && 
+                                !(formData.ai_llm_provider === 'ollama' ? ollamaModelsData?.models?.includes(formData.ai_llm_model) : cloudLlmModels?.includes(formData.ai_llm_model)) &&
+                                !LLM_PRESETS[formData.ai_llm_provider || '']?.includes(formData.ai_llm_model) && (
+                                <optgroup label="Model Kustom Saat Ini">
+                                  <option value={formData.ai_llm_model}>{formData.ai_llm_model} (Kustom)</option>
+                                </optgroup>
+                              )}
+
+                              <option value="__manual__">✏️ -- Ketik Manual Model Lain --</option>
                             </select>
-                          ) : (
-                            <input
-                              type="text"
-                              value={formData.ai_llm_model || ''}
-                              onChange={(e) => handleConfigChange('ai_llm_model', e.target.value)}
-                              placeholder="Ketik manual, atau tekan 'Uji Koneksi' untuk memuat model..."
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            />
                           )}
                         </div>
 
@@ -1954,74 +2028,89 @@ export default function SettingsPage() {
                         </div>
 
                         <div>
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Model Embedding</label>
-                          {formData.ai_embed_provider === 'ollama' ? (
-                            ollamaModelsData?.models && ollamaModelsData.models.length > 0 ? (
-                              <select
-                                value={formData.ai_embed_model || ''}
-                                onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                              >
-                                <option value="">-- Pilih Model Ollama Lokal --</option>
-                                {ollamaModelsData.models.map((m: string) => (
-                                  <option key={m} value={m}>{m}</option>
-                                ))}
-                              </select>
-                            ) : (
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-bold text-gray-700">Model Embedding</label>
+                            <button
+                              type="button"
+                              onClick={() => setIsManualEmbedModel(!isManualEmbedModel)}
+                              className="text-[11px] text-violet-600 hover:text-violet-700 font-semibold flex items-center gap-1 transition-colors"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              {isManualEmbedModel ? 'Pilih dari Dropdown' : 'Ketik Manual'}
+                            </button>
+                          </div>
+
+                          {isManualEmbedModel ? (
+                            <div className="relative">
                               <input
                                 type="text"
                                 value={formData.ai_embed_model || ''}
                                 onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                                placeholder="Ketik model Ollama (misal: nomic-embed-text)..."
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                                placeholder="Ketik model embedding (misal: text-embedding-004, bge-m3)..."
+                                className="w-full px-4 py-3 bg-white border border-violet-300 rounded-xl text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all outline-none"
                               />
-                            )
-                          ) : cloudEmbedModels && cloudEmbedModels.length > 0 ? (
-                            <select
-                              value={formData.ai_embed_model || ''}
-                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="">-- Pilih Model Embedding dari Provider --</option>
-                              {cloudEmbedModels.map((m: string) => (
-                                <option key={m} value={m}>{m}</option>
-                              ))}
-                            </select>
-                          ) : formData.ai_embed_provider === 'gemini' ? (
-                            <select
-                              value={formData.ai_embed_model || 'text-embedding-004'}
-                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="text-embedding-004">text-embedding-004 (Rekomendasi)</option>
-                              <option value="embedding-001">embedding-001</option>
-                            </select>
-                          ) : formData.ai_embed_provider === 'openai' ? (
-                            <select
-                              value={formData.ai_embed_model || 'text-embedding-3-small'}
-                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="text-embedding-3-small">text-embedding-3-small (Rekomendasi)</option>
-                              <option value="text-embedding-3-large">text-embedding-3-large</option>
-                              <option value="text-embedding-ada-002">text-embedding-ada-002 (Legacy)</option>
-                            </select>
-                          ) : formData.ai_embed_provider === 'groq' ? (
-                            <select
-                              value={formData.ai_embed_model || 'bge-large-en-v1.5'}
-                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="bge-large-en-v1.5">bge-large-en-v1.5 (Rekomendasi)</option>
-                            </select>
+                              <span className="block text-[10px] text-violet-500 mt-1 font-medium">
+                                Mode input manual aktif. Anda bebas mengetik nama model embedding apa saja.
+                              </span>
+                            </div>
                           ) : (
-                            <input
-                              type="text"
-                              value={formData.ai_embed_model || ''}
-                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              placeholder="Ketik manual atau klik 'Uji Koneksi Engine Embedding'..."
+                            <select
+                              value={
+                                (formData.ai_embed_provider === 'ollama'
+                                  ? (ollamaModelsData?.models?.includes(formData.ai_embed_model || '') || EMBED_PRESETS['ollama']?.includes(formData.ai_embed_model || ''))
+                                  : ((cloudEmbedModels && cloudEmbedModels.includes(formData.ai_embed_model || '')) || (EMBED_PRESETS[formData.ai_embed_provider || '']?.includes(formData.ai_embed_model || ''))))
+                                  ? (formData.ai_embed_model || '')
+                                  : (formData.ai_embed_model ? '__custom__' : '')
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '__manual__') {
+                                  setIsManualEmbedModel(true);
+                                } else {
+                                  handleConfigChange('ai_embed_model', val);
+                                }
+                              }}
                               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            />
+                            >
+                              <option value="">-- Pilih Model Embedding --</option>
+
+                              {/* 1. Model dari Deteksi Provider / Ollama */}
+                              {formData.ai_embed_provider === 'ollama' && ollamaModelsData?.models && ollamaModelsData.models.length > 0 && (
+                                <optgroup label="Model Terdeteksi di Ollama Lokal">
+                                  {ollamaModelsData.models.map((m: string) => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </optgroup>
+                              )}
+
+                              {formData.ai_embed_provider !== 'ollama' && cloudEmbedModels && cloudEmbedModels.length > 0 && (
+                                <optgroup label="Model Terdeteksi dari API Provider">
+                                  {cloudEmbedModels.map((m: string) => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </optgroup>
+                              )}
+
+                              {/* 2. Preset Rekomendasi Bawaan */}
+                              {EMBED_PRESETS[formData.ai_embed_provider || ''] && (
+                                <optgroup label="Rekomendasi Populer">
+                                  {EMBED_PRESETS[formData.ai_embed_provider || ''].map((m: string) => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </optgroup>
+                              )}
+
+                              {/* Jika saat ini tersimpan model kustom di DB */}
+                              {formData.ai_embed_model && 
+                                !(formData.ai_embed_provider === 'ollama' ? ollamaModelsData?.models?.includes(formData.ai_embed_model) : cloudEmbedModels?.includes(formData.ai_embed_model)) &&
+                                !EMBED_PRESETS[formData.ai_embed_provider || '']?.includes(formData.ai_embed_model) && (
+                                <optgroup label="Model Kustom Saat Ini">
+                                  <option value={formData.ai_embed_model}>{formData.ai_embed_model} (Kustom)</option>
+                                </optgroup>
+                              )}
+
+                              <option value="__manual__">✏️ -- Ketik Manual Model Lain --</option>
+                            </select>
                           )}
                         </div>
 
@@ -2075,85 +2164,89 @@ export default function SettingsPage() {
                         </div>
 
                         <div>
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Model STT</label>
-                          {formData.ai_stt_provider === 'ollama' ? (
-                            ollamaModelsData?.models && ollamaModelsData.models.length > 0 ? (
-                              <select
-                                value={formData.ai_stt_model || ''}
-                                onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                              >
-                                <option value="">-- Pilih Model Ollama Lokal --</option>
-                                {ollamaModelsData.models.map((m: string) => (
-                                  <option key={m} value={m}>{m}</option>
-                                ))}
-                              </select>
-                            ) : (
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-bold text-gray-700">Model STT</label>
+                            <button
+                              type="button"
+                              onClick={() => setIsManualSttModel(!isManualSttModel)}
+                              className="text-[11px] text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1 transition-colors"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              {isManualSttModel ? 'Pilih dari Dropdown' : 'Ketik Manual'}
+                            </button>
+                          </div>
+
+                          {isManualSttModel ? (
+                            <div className="relative">
                               <input
                                 type="text"
                                 value={formData.ai_stt_model || ''}
                                 onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                                placeholder="Ketik model STT Ollama..."
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                                placeholder="Ketik model STT (misal: whisper-large-v3, medium)..."
+                                className="w-full px-4 py-3 bg-white border border-indigo-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
                               />
-                            )
-                          ) : cloudSttModels && cloudSttModels.length > 0 ? (
-                            <select
-                              value={formData.ai_stt_model || ''}
-                              onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="">-- Pilih Model STT dari Provider --</option>
-                              {cloudSttModels.map((m: string) => (
-                                <option key={m} value={m}>{m}</option>
-                              ))}
-                            </select>
-                          ) : formData.ai_stt_provider === 'openai' ? (
-                            <select
-                              value={formData.ai_stt_model || 'whisper-1'}
-                              onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="whisper-1">whisper-1 (Rekomendasi)</option>
-                            </select>
-                          ) : formData.ai_stt_provider === 'groq' ? (
-                            <select
-                              value={formData.ai_stt_model || 'whisper-large-v3'}
-                              onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="whisper-large-v3">whisper-large-v3 (Tercepat & Akurat)</option>
-                              <option value="whisper-large-v3-turbo">whisper-large-v3-turbo (Super Cepat)</option>
-                            </select>
-                          ) : formData.ai_stt_provider === 'gemini' ? (
-                            <select
-                              value={formData.ai_stt_model || 'gemini-1.5-flash'}
-                              onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="gemini-1.5-flash">gemini-1.5-flash (Gratis/Murah Multimodal)</option>
-                              <option value="gemini-2.0-flash">gemini-2.0-flash (Generasi Baru)</option>
-                              <option value="gemini-1.5-pro">gemini-1.5-pro (Akurat Multimodal)</option>
-                            </select>
-                          ) : formData.ai_stt_provider === 'local_whisper' ? (
-                            <select
-                              value={formData.ai_stt_model || 'medium'}
-                              onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="medium">medium (Rekomendasi - Akurat & Cepat)</option>
-                              <option value="large-v3">large-v3 (Sangat Akurat - Butuh RAM Besar)</option>
-                              <option value="small">small (Cepat - Akurasi Standar)</option>
-                              <option value="base">base (Sangat Cepat - Uji Coba)</option>
-                            </select>
+                              <span className="block text-[10px] text-indigo-500 mt-1 font-medium">
+                                Mode input manual aktif. Anda bebas mengetik nama model STT apa saja.
+                              </span>
+                            </div>
                           ) : (
-                            <input
-                              type="text"
-                              value={formData.ai_stt_model || ''}
-                              onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                              placeholder="Ketik manual atau klik 'Uji Koneksi Engine STT'..."
+                            <select
+                              value={
+                                (formData.ai_stt_provider === 'ollama'
+                                  ? (ollamaModelsData?.models?.includes(formData.ai_stt_model || '') || STT_PRESETS['ollama']?.includes(formData.ai_stt_model || ''))
+                                  : ((cloudSttModels && cloudSttModels.includes(formData.ai_stt_model || '')) || (STT_PRESETS[formData.ai_stt_provider || '']?.includes(formData.ai_stt_model || ''))))
+                                  ? (formData.ai_stt_model || '')
+                                  : (formData.ai_stt_model ? '__custom__' : '')
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '__manual__') {
+                                  setIsManualSttModel(true);
+                                } else {
+                                  handleConfigChange('ai_stt_model', val);
+                                }
+                              }}
                               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            />
+                            >
+                              <option value="">-- Pilih Model STT --</option>
+
+                              {/* 1. Model dari Deteksi Provider / Ollama */}
+                              {formData.ai_stt_provider === 'ollama' && ollamaModelsData?.models && ollamaModelsData.models.length > 0 && (
+                                <optgroup label="Model Terdeteksi di Ollama Lokal">
+                                  {ollamaModelsData.models.map((m: string) => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </optgroup>
+                              )}
+
+                              {formData.ai_stt_provider !== 'ollama' && cloudSttModels && cloudSttModels.length > 0 && (
+                                <optgroup label="Model Terdeteksi dari API Provider">
+                                  {cloudSttModels.map((m: string) => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </optgroup>
+                              )}
+
+                              {/* 2. Preset Rekomendasi Bawaan */}
+                              {STT_PRESETS[formData.ai_stt_provider || ''] && (
+                                <optgroup label="Rekomendasi Populer">
+                                  {STT_PRESETS[formData.ai_stt_provider || ''].map((m: string) => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </optgroup>
+                              )}
+
+                              {/* Jika saat ini tersimpan model kustom di DB */}
+                              {formData.ai_stt_model && 
+                                !(formData.ai_stt_provider === 'ollama' ? ollamaModelsData?.models?.includes(formData.ai_stt_model) : cloudSttModels?.includes(formData.ai_stt_model)) &&
+                                !STT_PRESETS[formData.ai_stt_provider || '']?.includes(formData.ai_stt_model) && (
+                                <optgroup label="Model Kustom Saat Ini">
+                                  <option value={formData.ai_stt_model}>{formData.ai_stt_model} (Kustom)</option>
+                                </optgroup>
+                              )}
+
+                              <option value="__manual__">✏️ -- Ketik Manual Model Lain --</option>
+                            </select>
                           )}
                         </div>
 

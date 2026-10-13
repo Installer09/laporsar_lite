@@ -1234,6 +1234,7 @@ async def vectorize_sop_document(
             tenant_settings = await get_tenant_settings(db)
             
             vectorized_count = 0
+            last_embed_error = ""
             # Delete old chunks if any exist first
             try:
                 await master_db.execute(
@@ -1248,7 +1249,7 @@ async def vectorize_sop_document(
                 if not chunk.strip():
                     continue
                 try:
-                    embed = await ai_provider_manager.get_embedding(chunk, tenant_settings=tenant_settings)
+                    embed = await ai_provider_manager.get_embedding(chunk, tenant_settings=tenant_settings, raise_on_error=True)
                     if not embed:
                         continue
                     if len(embed) != 1024:
@@ -1271,12 +1272,14 @@ async def vectorize_sop_document(
                     master_db.add(new_vector)
                     vectorized_count += 1
                 except Exception as chunk_err:
+                    last_embed_error = str(chunk_err)
                     logger.error(f"Failed to vectorize chunk {idx} of global document {doc_id}: {chunk_err}")
                     
             if vectorized_count == 0:
                 db_doc.status = SOPDocStatus.FAILED
                 await master_db.commit()
-                raise HTTPException(status_code=500, detail="Gagal membuat embeddings untuk seluruh bagian dokumen.")
+                err_detail = f"Gagal membuat embeddings: {last_embed_error}" if last_embed_error else "Gagal membuat embeddings untuk seluruh bagian dokumen. Periksa API Key dan Model Embedding di Pengaturan."
+                raise HTTPException(status_code=500, detail=err_detail)
                 
             db_doc.status = SOPDocStatus.INDEXED
             try:
@@ -1394,12 +1397,13 @@ async def vectorize_sop_document(
     
     # Process each chunk
     vectorized_count = 0
+    last_embed_error = ""
     for idx, chunk in enumerate(chunks):
         if not chunk.strip():
             continue
             
         try:
-            embed = await ai_provider_manager.get_embedding(chunk, tenant_settings=tenant_settings)
+            embed = await ai_provider_manager.get_embedding(chunk, tenant_settings=tenant_settings, raise_on_error=True)
             if not embed:
                 continue
 
@@ -1430,12 +1434,14 @@ async def vectorize_sop_document(
                 logger.error(f"Failed to save chunk {idx} to pgvector: {pg_err}")
             
         except Exception as chunk_err:
+            last_embed_error = str(chunk_err)
             logger.error(f"Failed to vectorize chunk {idx} of document {doc_id}: {chunk_err}")
 
     if vectorized_count == 0:
         db_doc.status = SOPDocStatus.FAILED
         await db.commit()
-        raise HTTPException(status_code=500, detail="Gagal membuat embeddings untuk seluruh bagian dokumen.")
+        err_detail = f"Gagal membuat embeddings: {last_embed_error}" if last_embed_error else "Gagal membuat embeddings untuk seluruh bagian dokumen. Periksa API Key dan Model Embedding di Pengaturan."
+        raise HTTPException(status_code=500, detail=err_detail)
 
     # 6. Update document status to INDEXED
     db_doc.status = SOPDocStatus.INDEXED
