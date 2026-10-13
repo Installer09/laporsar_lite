@@ -595,12 +595,12 @@ class AIProviderManager:
             api_key = cfg.AI_LLM_API_KEY
         api_key = api_key or ""
 
-        # Resolve generic model names to provider-specific models
-        if provider == "groq" and model not in ("whisper-large-v3", "whisper-large-v3-turbo"):
+        # Resolve generic or empty model names to provider-specific models
+        if provider == "groq" and not (model and "whisper" in model.lower()):
             model = "whisper-large-v3"
-        elif provider == "openai" and model != "whisper-1":
+        elif provider == "openai" and not (model and "whisper" in model.lower()):
             model = "whisper-1"
-        elif provider == "gemini" and model not in ("gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"):
+        elif provider == "gemini" and not (model and any(kw in model.lower() for kw in ("flash", "pro"))):
             model = "gemini-1.5-flash"
 
         # Build dynamic prompt from RuleExtractor dictionary cache to guide Whisper spelling
@@ -656,9 +656,11 @@ class AIProviderManager:
         provider: str,
         api_key: str = "",
         base_url: str = "",
+        engine_type: str = "llm",
     ) -> dict:
         """
         Test connectivity to a specific provider.
+        engine_type: "llm" | "embed" | "stt"
         Returns {"connected": bool, "message": str, "models": list}
         """
         try:
@@ -671,7 +673,12 @@ class AIProviderManager:
                 async with httpx.AsyncClient(timeout=5.0) as client:
                     resp = await client.get(f"{url.rstrip('/')}/api/tags")
                     resp.raise_for_status()
-                    models = [m["name"] for m in resp.json().get("models", [])]
+                    all_models = [m["name"] for m in resp.json().get("models", [])]
+                    if engine_type == "embed":
+                        embed_models = [m for m in all_models if any(kw in m.lower() for kw in ("embed", "bge", "nomic", "minilm"))]
+                        models = embed_models if embed_models else all_models
+                    else:
+                        models = all_models
                     return {
                         "connected": True,
                         "message": f"Ollama terhubung, {len(models)} model tersedia",
@@ -685,8 +692,16 @@ class AIProviderManager:
                         headers={"Authorization": f"Bearer {api_key}"},
                     )
                     resp.raise_for_status()
-                    models = [m["id"] for m in resp.json().get("data", [])]
-                    models.sort()
+                    all_models = [m["id"] for m in resp.json().get("data", [])]
+                    all_models.sort()
+                    if engine_type == "embed":
+                        embed_models = [m for m in all_models if "embedding" in m.lower()]
+                        models = embed_models if embed_models else ["text-embedding-3-small", "text-embedding-3-large", "text-embedding-ada-002"]
+                    elif engine_type == "stt":
+                        stt_models = [m for m in all_models if "whisper" in m.lower()]
+                        models = stt_models if stt_models else ["whisper-1"]
+                    else:
+                        models = all_models
                     return {
                         "connected": True,
                         "message": f"OpenAI API terhubung, {len(models)} model tersedia",
@@ -699,7 +714,17 @@ class AIProviderManager:
                         f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}",
                     )
                     resp.raise_for_status()
-                    models = [m["name"].replace("models/", "") for m in resp.json().get("models", [])]
+                    all_models = [m["name"].replace("models/", "") for m in resp.json().get("models", [])]
+                    all_models.sort()
+                    if engine_type == "embed":
+                        embed_models = [m for m in all_models if "embed" in m.lower()]
+                        models = embed_models if embed_models else ["text-embedding-004", "embedding-001"]
+                    elif engine_type == "stt":
+                        # Gemini audio / multimodal capable models
+                        stt_models = [m for m in all_models if any(kw in m.lower() for kw in ("flash", "pro")) and not any(kw in m.lower() for kw in ("embed", "tts", "image", "imagen"))]
+                        models = stt_models if stt_models else ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
+                    else:
+                        models = all_models
                     return {
                         "connected": True,
                         "message": f"Gemini API terhubung, {len(models)} model tersedia",
@@ -727,7 +752,7 @@ class AIProviderManager:
                         return {
                             "connected": True,
                             "message": "Claude API terhubung",
-                            "models": [],
+                            "models": ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"] if engine_type == "llm" else [],
                         }
                     elif resp.status_code == 401:
                         return {
@@ -739,7 +764,7 @@ class AIProviderManager:
                         return {
                             "connected": True,
                             "message": f"Claude API terhubung (status {resp.status_code})",
-                            "models": [],
+                            "models": ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"] if engine_type == "llm" else [],
                         }
 
             elif provider == "groq":
@@ -749,8 +774,16 @@ class AIProviderManager:
                         headers={"Authorization": f"Bearer {api_key}"},
                     )
                     resp.raise_for_status()
-                    models = [m["id"] for m in resp.json().get("data", [])]
-                    models.sort()
+                    all_models = [m["id"] for m in resp.json().get("data", [])]
+                    all_models.sort()
+                    if engine_type == "stt":
+                        stt_models = [m for m in all_models if "whisper" in m.lower()]
+                        models = stt_models if stt_models else ["whisper-large-v3", "whisper-large-v3-turbo"]
+                    elif engine_type == "embed":
+                        embed_models = [m for m in all_models if any(kw in m.lower() for kw in ("embed", "bge"))]
+                        models = embed_models if embed_models else ["bge-large-en-v1.5"]
+                    else:
+                        models = all_models
                     return {
                         "connected": True,
                         "message": f"Groq API terhubung, {len(models)} model tersedia",

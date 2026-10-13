@@ -660,9 +660,17 @@ export default function SettingsPage() {
 
   // Test AI Connection logic
   const handleTestAiConnection = async (type: 'llm' | 'embed' | 'stt') => {
-    setTestResult({ status: 'testing', message: 'Mencoba terhubung ke server AI...' });
+    setTestResult({ status: 'testing', message: `Mencoba terhubung ke engine ${type.toUpperCase()}...` });
     const provider = formData[`ai_${type}_provider`] || 'ollama';
-    const apiKey = formData[`ai_${type}_api_key`] || '';
+    let apiKey = formData[`ai_${type}_api_key`] || '';
+
+    // Auto-fallback to LLM API key if provider matches and key is empty
+    if (!apiKey && (type === 'embed' || type === 'stt')) {
+      if (provider === formData.ai_llm_provider || ['gemini', 'openai', 'groq'].includes(provider)) {
+        apiKey = formData.ai_llm_api_key || '';
+      }
+    }
+
     const baseUrl = provider === 'ollama'
       ? (formData.ai_llm_base_url || 'http://localhost:11434')
       : type === 'stt'
@@ -670,11 +678,11 @@ export default function SettingsPage() {
       : '';
 
     try {
-      const res = await testAiConnection({ provider, api_key: apiKey, base_url: baseUrl });
+      const res = await testAiConnection({ provider, api_key: apiKey, base_url: baseUrl, engine_type: type });
       if (res.connected) {
         setTestResult({
           status: 'success',
-          message: `Koneksi Berhasil! Provider merespon dengan baik. Model terdeteksi: ${res.models?.join(', ') || 'N/A'}`
+          message: `Koneksi Berhasil! Provider ${provider.toUpperCase()} (${type.toUpperCase()}) merespon dengan baik. Model terdeteksi: ${res.models?.join(', ') || 'N/A'}`
         });
         if (res.models && res.models.length > 0) {
           if (type === 'llm') {
@@ -1943,47 +1951,27 @@ export default function SettingsPage() {
 
                         <div>
                           <label className="block text-xs font-bold text-gray-700 mb-1">Model Embedding</label>
-                          {formData.ai_embed_provider === 'ollama' && ollamaModelsData?.models ? (
-                            <select
-                              value={formData.ai_embed_model || ''}
-                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="">-- Pilih Model Ollama Lokal --</option>
-                              {ollamaModelsData.models.map((m: string) => (
-                                <option key={m} value={m}>{m}</option>
-                              ))}
-                            </select>
-                          ) : formData.ai_embed_provider === 'gemini' ? (
-                            <select
-                              value={formData.ai_embed_model || ''}
-                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="">-- Pilih Model Gemini Embedding --</option>
-                              <option value="text-embedding-004">text-embedding-004 (Rekomendasi)</option>
-                              <option value="embedding-001">embedding-001</option>
-                            </select>
-                          ) : formData.ai_embed_provider === 'openai' ? (
-                            <select
-                              value={formData.ai_embed_model || ''}
-                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="">-- Pilih Model OpenAI Embedding --</option>
-                              <option value="text-embedding-3-small">text-embedding-3-small (Rekomendasi)</option>
-                              <option value="text-embedding-3-large">text-embedding-3-large</option>
-                              <option value="text-embedding-ada-002">text-embedding-ada-002 (Legacy)</option>
-                            </select>
-                          ) : formData.ai_embed_provider === 'groq' ? (
-                            <select
-                              value={formData.ai_embed_model || ''}
-                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                            >
-                              <option value="">-- Pilih Model Groq Embedding --</option>
-                              <option value="bge-large-en-v1.5">bge-large-en-v1.5 (Rekomendasi)</option>
-                            </select>
+                          {formData.ai_embed_provider === 'ollama' ? (
+                            ollamaModelsData?.models && ollamaModelsData.models.length > 0 ? (
+                              <select
+                                value={formData.ai_embed_model || ''}
+                                onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                              >
+                                <option value="">-- Pilih Model Ollama Lokal --</option>
+                                {ollamaModelsData.models.map((m: string) => (
+                                  <option key={m} value={m}>{m}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                value={formData.ai_embed_model || ''}
+                                onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
+                                placeholder="Ketik model Ollama (misal: nomic-embed-text)..."
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                              />
+                            )
                           ) : cloudEmbedModels && cloudEmbedModels.length > 0 ? (
                             <select
                               value={formData.ai_embed_model || ''}
@@ -1995,18 +1983,68 @@ export default function SettingsPage() {
                                 <option key={m} value={m}>{m}</option>
                               ))}
                             </select>
+                          ) : formData.ai_embed_provider === 'gemini' ? (
+                            <select
+                              value={formData.ai_embed_model || 'text-embedding-004'}
+                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                            >
+                              <option value="text-embedding-004">text-embedding-004 (Rekomendasi)</option>
+                              <option value="embedding-001">embedding-001</option>
+                            </select>
+                          ) : formData.ai_embed_provider === 'openai' ? (
+                            <select
+                              value={formData.ai_embed_model || 'text-embedding-3-small'}
+                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                            >
+                              <option value="text-embedding-3-small">text-embedding-3-small (Rekomendasi)</option>
+                              <option value="text-embedding-3-large">text-embedding-3-large</option>
+                              <option value="text-embedding-ada-002">text-embedding-ada-002 (Legacy)</option>
+                            </select>
+                          ) : formData.ai_embed_provider === 'groq' ? (
+                            <select
+                              value={formData.ai_embed_model || 'bge-large-en-v1.5'}
+                              onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                            >
+                              <option value="bge-large-en-v1.5">bge-large-en-v1.5 (Rekomendasi)</option>
+                            </select>
                           ) : (
                             <input
                               type="text"
                               value={formData.ai_embed_model || ''}
                               onChange={(e) => handleConfigChange('ai_embed_model', e.target.value)}
-                              placeholder="Ketik manual model embedding..."
+                              placeholder="Ketik manual atau klik 'Uji Koneksi Engine Embedding'..."
                               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             />
                           )}
                         </div>
 
+                        {['openai', 'groq', 'gemini'].includes(formData.ai_embed_provider || '') && (
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-gray-700 mb-1">API Key Cloud Embedding (Kosongkan jika sama dengan LLM Key)</label>
+                            <input
+                              type="password"
+                              value={formData.ai_embed_api_key || ''}
+                              onChange={(e) => handleConfigChange('ai_embed_api_key', e.target.value)}
+                              placeholder="API Key khusus Embedding (opsional)"
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                            />
+                          </div>
+                        )}
+                      </div>
 
+                      <div className="flex justify-start">
+                        <button
+                          type="button"
+                          onClick={() => handleTestAiConnection('embed')}
+                          disabled={testResult.status === 'testing'}
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-extrabold rounded-xl border border-slate-200 flex items-center gap-2 transition-all shadow-sm"
+                        >
+                          {testResult.status === 'testing' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" /> : <CheckCircle2 className="w-3.5 h-3.5 text-slate-800" />}
+                          Uji Koneksi Engine Embedding
+                        </button>
                       </div>
                     </div>
 
@@ -2034,14 +2072,35 @@ export default function SettingsPage() {
 
                         <div>
                           <label className="block text-xs font-bold text-gray-700 mb-1">Model STT</label>
-                          {formData.ai_stt_provider === 'ollama' && ollamaModelsData?.models ? (
+                          {formData.ai_stt_provider === 'ollama' ? (
+                            ollamaModelsData?.models && ollamaModelsData.models.length > 0 ? (
+                              <select
+                                value={formData.ai_stt_model || ''}
+                                onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                              >
+                                <option value="">-- Pilih Model Ollama Lokal --</option>
+                                {ollamaModelsData.models.map((m: string) => (
+                                  <option key={m} value={m}>{m}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                value={formData.ai_stt_model || ''}
+                                onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
+                                placeholder="Ketik model STT Ollama..."
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                              />
+                            )
+                          ) : cloudSttModels && cloudSttModels.length > 0 ? (
                             <select
                               value={formData.ai_stt_model || ''}
                               onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
                               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
-                              <option value="">-- Pilih Model Ollama Lokal --</option>
-                              {ollamaModelsData.models.map((m: string) => (
+                              <option value="">-- Pilih Model STT dari Provider --</option>
+                              {cloudSttModels.map((m: string) => (
                                 <option key={m} value={m}>{m}</option>
                               ))}
                             </select>
@@ -2060,6 +2119,7 @@ export default function SettingsPage() {
                               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="whisper-large-v3">whisper-large-v3 (Tercepat & Akurat)</option>
+                              <option value="whisper-large-v3-turbo">whisper-large-v3-turbo (Super Cepat)</option>
                             </select>
                           ) : formData.ai_stt_provider === 'gemini' ? (
                             <select
@@ -2068,38 +2128,26 @@ export default function SettingsPage() {
                               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             >
                               <option value="gemini-1.5-flash">gemini-1.5-flash (Gratis/Murah Multimodal)</option>
+                              <option value="gemini-2.0-flash">gemini-2.0-flash (Generasi Baru)</option>
                               <option value="gemini-1.5-pro">gemini-1.5-pro (Akurat Multimodal)</option>
                             </select>
                           ) : formData.ai_stt_provider === 'local_whisper' ? (
-                            cloudSttModels && cloudSttModels.length > 0 ? (
-                              <select
-                                value={formData.ai_stt_model || ''}
-                                onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                              >
-                                <option value="">-- Pilih Model dari Server Whisper --</option>
-                                {cloudSttModels.map((m: string) => (
-                                  <option key={m} value={m}>{m}</option>
-                                ))}
-                              </select>
-                            ) : (
-                              <select
-                                value={formData.ai_stt_model || 'medium'}
-                                onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                              >
-                                <option value="medium">medium (Rekomendasi - Akurat & Cepat)</option>
-                                <option value="large-v3">large-v3 (Sangat Akurat - Butuh RAM Besar)</option>
-                                <option value="small">small (Cepat - Akurasi Standar)</option>
-                                <option value="base">base (Sangat Cepat - Uji Coba)</option>
-                              </select>
-                            )
+                            <select
+                              value={formData.ai_stt_model || 'medium'}
+                              onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
+                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                            >
+                              <option value="medium">medium (Rekomendasi - Akurat & Cepat)</option>
+                              <option value="large-v3">large-v3 (Sangat Akurat - Butuh RAM Besar)</option>
+                              <option value="small">small (Cepat - Akurasi Standar)</option>
+                              <option value="base">base (Sangat Cepat - Uji Coba)</option>
+                            </select>
                           ) : (
                             <input
                               type="text"
-                              value={formData.ai_stt_model || 'whisper'}
+                              value={formData.ai_stt_model || ''}
                               onChange={(e) => handleConfigChange('ai_stt_model', e.target.value)}
-                              placeholder="Ketik manual model STT..."
+                              placeholder="Ketik manual atau klik 'Uji Koneksi Engine STT'..."
                               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                             />
                           )}

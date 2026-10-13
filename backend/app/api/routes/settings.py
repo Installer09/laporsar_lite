@@ -323,11 +323,13 @@ async def test_ai_connection(payload: dict):
     provider = payload.get("provider", "ollama")
     api_key = payload.get("api_key", "")
     base_url = payload.get("base_url", "")
+    engine_type = payload.get("engine_type", "llm")
 
     result = await ai_provider_manager.test_connection(
         provider=provider,
         api_key=api_key,
         base_url=base_url,
+        engine_type=engine_type,
     )
     return result
 

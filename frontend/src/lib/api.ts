@@ -491,7 +491,7 @@ export const getOllamaModels = async (baseUrl?: string) => {
   return data;
 };
 
-export const testAiConnection = async (payload: { provider: string; api_key?: string; base_url?: string }) => {
+export const testAiConnection = async (payload: { provider: string; api_key?: string; base_url?: string; engine_type?: 'llm' | 'embed' | 'stt' }) => {
   const { data } = await api.post('/settings/ai-test-connection', payload);
   return data;
 };
