@@ -245,7 +245,7 @@ export default function SettingsPage() {
   };
 
   const EMBED_PRESETS: Record<string, string[]> = {
-    gemini: ['text-embedding-004', 'embedding-001'],
+    gemini: ['gemini-embedding-2', 'gemini-embedding-001', 'gemini-embedding-2-preview'],
     openai: ['text-embedding-3-small', 'text-embedding-3-large', 'text-embedding-ada-002'],
     groq: ['bge-large-en-v1.5'],
     ollama: ['nomic-embed-text', 'mxbai-embed-large', 'all-minilm', 'bge-m3']
@@ -354,7 +354,14 @@ export default function SettingsPage() {
     onError: (error: any) => {
       queryClient.invalidateQueries({ queryKey: ['sopDocuments'] });
       setVectorizingDocId(null);
-      const errMsg = error.response?.data?.detail || 'Gagal memvektorkan dokumen.';
+      let errMsg = 'Gagal memvektorkan dokumen.';
+      if (typeof error.response?.data?.detail === 'string') {
+        errMsg = error.response.data.detail;
+      } else if (error.response?.status === 504) {
+        errMsg = 'Waktu proses habis (Gateway Timeout). NGINX memutus koneksi karena proses terlalu lama.';
+      } else if (error.message) {
+        errMsg = error.message;
+      }
       alert(`Gagal Vektorasi: ${errMsg}`);
     }
   });
@@ -2119,7 +2126,7 @@ export default function SettingsPage() {
                         )}
                       </div>
 
-                      <div className="flex justify-start">
+                      <div className="flex flex-wrap items-center gap-3">
                         <button
                           type="button"
                           onClick={() => handleTestAiConnection('embed')}
@@ -2128,6 +2135,15 @@ export default function SettingsPage() {
                         >
                           {testResult.status === 'testing' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" /> : <CheckCircle2 className="w-3.5 h-3.5 text-slate-800" />}
                           Uji Koneksi Engine Embedding
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveMainConfigs}
+                          disabled={updateSettingsMutation.isPending}
+                          className="px-4 py-2 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-xs font-extrabold rounded-xl flex items-center gap-2 transition-all shadow-sm shadow-violet-200 disabled:opacity-50"
+                        >
+                          {updateSettingsMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : <Save className="w-3.5 h-3.5 text-white" />}
+                          Simpan Pengaturan AI
                         </button>
                       </div>
                     </div>

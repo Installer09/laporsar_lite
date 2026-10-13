@@ -278,7 +278,7 @@ async def _gemini_get_embedding(text: str, model: str, api_key: str) -> list[flo
     """Get embedding via Gemini embedContent REST API."""
     if not api_key:
         raise ValueError("API Key Google Gemini belum dikonfigurasi untuk Embedding")
-    clean_model = model.replace("models/", "") if model else "text-embedding-004"
+    clean_model = model.replace("models/", "") if model else "gemini-embedding-2"
     url = (
         f"https://generativelanguage.googleapis.com/v1beta/models/{clean_model}"
         f":embedContent?key={api_key}"
@@ -286,12 +286,41 @@ async def _gemini_get_embedding(text: str, model: str, api_key: str) -> list[flo
     payload = {
         "model": f"models/{clean_model}",
         "content": {"parts": [{"text": text}]},
+        "outputDimensionality": 1024,
     }
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(url, json=payload)
         response.raise_for_status()
         data = response.json()
         return data.get("embedding", {}).get("values", [])
+
+
+async def _gemini_get_embeddings_batch(texts: list[str], model: str, api_key: str) -> list[list[float]]:
+    """Get batch embeddings via Gemini batchEmbedContents REST API (up to 100 items per call)."""
+    if not api_key:
+        raise ValueError("API Key Google Gemini belum dikonfigurasi untuk Embedding")
+    if not texts:
+        return []
+    clean_model = model.replace("models/", "") if model else "gemini-embedding-2"
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/{clean_model}"
+        f":batchEmbedContents?key={api_key}"
+    )
+    requests = [
+        {
+            "model": f"models/{clean_model}",
+            "content": {"parts": [{"text": t}]},
+            "outputDimensionality": 1024,
+        }
+        for t in texts
+    ]
+    payload = {"requests": requests}
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(url, json=payload)
+        response.raise_for_status()
+        data = response.json()
+        embeddings = data.get("embeddings", [])
+        return [e.get("values", []) for e in embeddings]
 
 
 # =====================================================================
@@ -574,6 +603,73 @@ class AIProviderManager:
                 raise
             return []
 
+    async def get_embeddings_batch(
+        self,
+        texts: list[str],
+        tenant_settings = None,
+        raise_on_error: bool = False,
+    ) -> list[list[float]]:
+        """
+        Get batch embeddings for a list of texts.
+        Optimized for Gemini and OpenAI using their batch endpoints.
+        Falls back to sequential get_embedding for other providers.
+        """
+        if not texts:
+            return []
+
+        cfg = tenant_settings if tenant_settings is not None else settings
+        provider = cfg.AI_EMBED_PROVIDER or "ollama"
+        model = cfg.AI_EMBED_MODEL or "gemini-embedding-2"
+        api_key = cfg.AI_EMBED_API_KEY
+        if not api_key and (cfg.AI_EMBED_PROVIDER == cfg.AI_LLM_PROVIDER or cfg.AI_EMBED_PROVIDER in ("gemini", "openai", "groq")):
+            api_key = cfg.AI_LLM_API_KEY
+        api_key = api_key or ""
+
+        try:
+            if provider == "gemini":
+                all_results = []
+                batch_size = 50
+                for i in range(0, len(texts), batch_size):
+                    batch_texts = texts[i:i + batch_size]
+                    batch_embeds = await _gemini_get_embeddings_batch(batch_texts, model, api_key)
+                    all_results.extend(batch_embeds)
+                return all_results
+            elif provider == "openai":
+                # OpenAI /v1/embeddings accepts list of strings in input
+                if not api_key:
+                    raise ValueError("API Key OpenAI belum dikonfigurasi untuk Embedding")
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                }
+                all_results = []
+                batch_size = 50
+                for i in range(0, len(texts), batch_size):
+                    batch_texts = texts[i:i + batch_size]
+                    async with httpx.AsyncClient(timeout=60.0) as client:
+                        response = await client.post(
+                            "https://api.openai.com/v1/embeddings",
+                            json={"model": model or "text-embedding-3-small", "input": batch_texts},
+                            headers=headers,
+                        )
+                        response.raise_for_status()
+                        items = response.json().get("data", [])
+                        all_results.extend([item["embedding"] for item in items])
+                return all_results
+            else:
+                # Fallback to sequential for Ollama, Groq, etc.
+                results = []
+                for t in texts:
+                    emb = await self.get_embedding(t, tenant_settings=tenant_settings, raise_on_error=raise_on_error)
+                    results.append(emb)
+                return results
+
+        except Exception as e:
+            logger.error(f"[AIProvider] Batch embedding failed (provider={provider}, model={model}): {e}")
+            if raise_on_error:
+                raise
+            return []
+
     # =================================================================
     # STT — Speech-to-Text (Audio Whisper)
     # =================================================================
@@ -724,11 +820,17 @@ class AIProviderManager:
                         f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}",
                     )
                     resp.raise_for_status()
-                    all_models = [m["name"].replace("models/", "") for m in resp.json().get("models", [])]
+                    raw_models = resp.json().get("models", [])
+                    all_models = [m["name"].replace("models/", "") for m in raw_models]
                     all_models.sort()
                     if engine_type == "embed":
-                        embed_models = [m for m in all_models if "embed" in m.lower()]
-                        models = embed_models if embed_models else ["text-embedding-004", "embedding-001"]
+                        embed_models = [
+                            m["name"].replace("models/", "") 
+                            for m in raw_models 
+                            if "embedContent" in m.get("supportedGenerationMethods", []) or "embed" in m.get("name", "").lower()
+                        ]
+                        embed_models.sort()
+                        models = embed_models if embed_models else ["gemini-embedding-2", "gemini-embedding-001", "gemini-embedding-2-preview"]
                     elif engine_type == "stt":
                         # Gemini audio / multimodal capable models
                         stt_models = [m for m in all_models if any(kw in m.lower() for kw in ("flash", "pro")) and not any(kw in m.lower() for kw in ("embed", "tts", "image", "imagen"))]

@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 from app.db.session import get_db
 from app.models.knowledge_models import DictionaryWord, DictionaryStatus, SOPDocument, SOPDocStatus
+from app.models.vector_memory import VectorMemory
+from app.core.tenant_config import get_tenant_settings
 from app.schemas.knowledge_schemas import (
     DictionaryWordCreate, DictionaryWordUpdate, DictionaryWordResponse,
     DictionaryBulkAction, SOPDocumentResponse
@@ -1229,8 +1231,6 @@ async def vectorize_sop_document(
                 await master_db.commit()
                 raise HTTPException(status_code=400, detail="Gagal membagi dokumen menjadi potongan-potongan teks")
                 
-            from app.models.vector_memory import VectorMemory
-            from app.core.tenant_config import get_tenant_settings
             tenant_settings = await get_tenant_settings(db)
             
             vectorized_count = 0
@@ -1245,13 +1245,22 @@ async def vectorize_sop_document(
             except Exception as d_err:
                 logger.warning(f"Failed to delete old chunks for global SOP {doc_id}: {d_err}")
                 
-            for idx, chunk in enumerate(chunks):
-                if not chunk.strip():
+            non_empty_chunks = [(idx, c) for idx, c in enumerate(chunks) if c.strip()]
+            chunk_texts = [c[1] for c in non_empty_chunks]
+            
+            try:
+                embeddings = await ai_provider_manager.get_embeddings_batch(
+                    chunk_texts, tenant_settings=tenant_settings, raise_on_error=True
+                )
+            except Exception as b_err:
+                last_embed_error = str(b_err)
+                embeddings = []
+                logger.error(f"Failed to generate batch embeddings for global document {doc_id}: {b_err}")
+
+            for (idx, chunk), embed in zip(non_empty_chunks, embeddings):
+                if not embed:
                     continue
                 try:
-                    embed = await ai_provider_manager.get_embedding(chunk, tenant_settings=tenant_settings, raise_on_error=True)
-                    if not embed:
-                        continue
                     if len(embed) != 1024:
                         if len(embed) < 1024:
                             embed = embed + [0.0] * (1024 - len(embed))
@@ -1273,7 +1282,7 @@ async def vectorize_sop_document(
                     vectorized_count += 1
                 except Exception as chunk_err:
                     last_embed_error = str(chunk_err)
-                    logger.error(f"Failed to vectorize chunk {idx} of global document {doc_id}: {chunk_err}")
+                    logger.error(f"Failed to save chunk {idx} of global document {doc_id}: {chunk_err}")
                     
             if vectorized_count == 0:
                 db_doc.status = SOPDocStatus.FAILED
@@ -1319,8 +1328,6 @@ async def vectorize_sop_document(
         # Re-invoke global vectorization logic
         return await vectorize_sop_document(doc_id=doc_id, is_global=True, db=db)
     from app.core.config import settings as app_settings
-    import logging
-    logger = logging.getLogger(__name__)
 
     # 1. Fetch document from database
     result = await db.execute(select(SOPDocument).where(SOPDocument.id == doc_id))
@@ -1388,54 +1395,52 @@ async def vectorize_sop_document(
         raise HTTPException(status_code=400, detail="Gagal membagi dokumen menjadi potongan-potongan teks")
 
     # 5. Generate embeddings and save to VectorMemory (pgvector)
-    from app.services.ai_providers import ai_provider_manager
-    from app.models.vector_memory import VectorMemory
-    from app.core.tenant_config import get_tenant_settings
-    import json
-    
     tenant_settings = await get_tenant_settings(db)
     
-    # Process each chunk
+    # Process chunks in batch
     vectorized_count = 0
     last_embed_error = ""
-    for idx, chunk in enumerate(chunks):
-        if not chunk.strip():
+    non_empty_chunks = [(idx, c) for idx, c in enumerate(chunks) if c.strip()]
+    chunk_texts = [c[1] for c in non_empty_chunks]
+    
+    try:
+        embeddings = await ai_provider_manager.get_embeddings_batch(
+            chunk_texts, tenant_settings=tenant_settings, raise_on_error=True
+        )
+    except Exception as b_err:
+        last_embed_error = str(b_err)
+        embeddings = []
+        logger.error(f"Failed to generate batch embeddings for document {doc_id}: {b_err}")
+
+    for (idx, chunk), embed in zip(non_empty_chunks, embeddings):
+        if not embed:
             continue
-            
+
+        # Match the embedding size (1024)
+        if len(embed) != 1024:
+            logger.warning(f"Embedding size mismatch: expected 1024, got {len(embed)}.")
+            if len(embed) < 1024:
+                embed = embed + [0.0] * (1024 - len(embed))
+            elif len(embed) > 1024:
+                embed = embed[:1024]
+
+        # Save to PostgreSQL pgvector
         try:
-            embed = await ai_provider_manager.get_embedding(chunk, tenant_settings=tenant_settings, raise_on_error=True)
-            if not embed:
-                continue
-
-            # Match the embedding size (1024)
-            if len(embed) != 1024:
-                logger.warning(f"Embedding size mismatch: expected 1024, got {len(embed)}.")
-                if len(embed) < 1024:
-                    embed = embed + [0.0] * (1024 - len(embed))
-                elif len(embed) > 1024:
-                    embed = embed[:1024]
-
-            # Save to PostgreSQL pgvector
-            try:
-                new_vector = VectorMemory(
-                    report_id=None,
-                    content=chunk,
-                    embedding=embed,
-                    metadata_json=json.dumps({
-                        "doc_id": doc_id,
-                        "title": db_doc.title,
-                        "filename": db_doc.filename,
-                        "chunk_index": idx
-                    })
-                )
-                db.add(new_vector)
-                vectorized_count += 1
-            except Exception as pg_err:
-                logger.error(f"Failed to save chunk {idx} to pgvector: {pg_err}")
-            
-        except Exception as chunk_err:
-            last_embed_error = str(chunk_err)
-            logger.error(f"Failed to vectorize chunk {idx} of document {doc_id}: {chunk_err}")
+            new_vector = VectorMemory(
+                report_id=None,
+                content=chunk,
+                embedding=embed,
+                metadata_json=json.dumps({
+                    "doc_id": doc_id,
+                    "title": db_doc.title,
+                    "filename": db_doc.filename,
+                    "chunk_index": idx
+                })
+            )
+            db.add(new_vector)
+            vectorized_count += 1
+        except Exception as pg_err:
+            logger.error(f"Failed to save chunk {idx} to pgvector: {pg_err}")
 
     if vectorized_count == 0:
         db_doc.status = SOPDocStatus.FAILED
