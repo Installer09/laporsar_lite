@@ -47,7 +47,7 @@ class DefaultFieldProcessor(BaseFieldProcessor):
                 )
                 if not starts_valid:
                     reply = (
-                        "⚠️ *Nomor Telepon Tidak Valid*\n\n"
+                        "*Nomor Telepon Tidak Valid*\n\n"
                         "Mohon masukkan nomor telepon/WhatsApp yang aktif.\n"
                         "Contoh: _081234567890_"
                     )
@@ -57,7 +57,7 @@ class DefaultFieldProcessor(BaseFieldProcessor):
             # 3. Check digit count limits (between 10 and 15 digits)
             if len(digit_only) < 10 or len(digit_only) > 15:
                 reply = (
-                    "⚠️ *Nomor Telepon Kurang/Lebih Panjang*\n\n"
+                    "*Nomor Telepon Kurang/Lebih Panjang*\n\n"
                     "Mohon periksa kembali nomor telepon yang Anda masukkan."
                 )
                 buttons = ["Gunakan Nomor Aktif Ini"] if session.contact_phone else []
@@ -118,7 +118,7 @@ class DefaultFieldProcessor(BaseFieldProcessor):
         # If it is pelapor_hp and we have session.contact_phone, offer a one-tap button
         if self.field_name == "pelapor_hp" and session.contact_phone:
             q_text = (
-                f"📱 *Berapa nomor telepon/WhatsApp Anda yang aktif?*\n\n"
+                f"*Berapa nomor telepon/WhatsApp Anda yang aktif?*\n\n"
                 f"Kami mendeteksi nomor Anda: *{session.contact_phone}*.\n"
                 f"Apakah kami bisa menggunakan nomor ini untuk menghubungi Anda?"
             )

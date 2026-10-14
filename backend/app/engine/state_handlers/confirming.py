@@ -47,25 +47,29 @@ class ConfirmingStateHandler(BaseStateHandler):
                 widget_url = f"{base_url}/widget-registration"
 
             widget_info = (
-                f"\n\n🌐 *Integrasi Widget Lapor SAR:*\n"
+                f"\n\n*Integrasi Widget Lapor SAR:*\n"
                 f"Ingin memasang tombol Lapor SAR di website Anda? Dapatkan widget gratis secara mandiri untuk disematkan di website instansi atau portal berita Anda. [Daftar Widget Lapor SAR]({widget_url})"
             )
 
             if is_outside:
                 reply = (
-                    "✅ *Laporan Anda Telah Diterima secara Resmi.*\n\n"
-                    "⚠️ *Info Penting:* Lokasi kejadian berada di luar wilayah kerja Kantor SAR Natuna. "
-                    "Namun, laporan Anda tetap kami koordinasikan langsung dengan Kantor SAR terdekat yang berwenang.\n\n"
-                    "📞 *PENTING:* Mohon pastikan nomor telepon/WhatsApp Anda selalu aktif. Petugas rescue/SAR akan segera menghubungi Anda untuk memandu penyelamatan.\n\n"
-                    "Untuk membuat laporan baru, silakan ketik */start* atau ketuk tombol *Buat Laporan Baru* di bawah."
+                    "*Laporan Anda Telah Diterima secara Resmi*\n\n"
+                    "Info Penting: Lokasi kejadian berada di luar wilayah kerja operasional unit lokal. "
+                    "Laporan Anda dikoordinasikan langsung ke Kantor SAR terdekat yang berwenang.\n\n"
+                    "PENTING: Pastikan nomor telepon/WhatsApp Anda selalu aktif. Petugas rescue/SAR akan segera menghubungi Anda untuk memandu tindakan penyelamatan.\n\n"
+                    "Call Center BASARNAS: 115 (Bebas Pulsa 24 Jam)\n"
+                    "Website Resmi: https://basarnas.go.id\n\n"
+                    "Untuk membuat laporan baru, silakan ketik */start* atau pilih tombol di bawah."
                     f"{widget_info}"
                 )
             else:
                 reply = (
-                    "✅ *Laporan Anda Telah Diterima secara Resmi.*\n\n"
-                    "Kami telah meneruskan laporan ini langsung ke Kantor SAR.\n\n"
-                    "📞 *PENTING:* Mohon pastikan nomor telepon/WhatsApp Anda selalu aktif. Petugas rescue/SAR akan segera menghubungi Anda untuk memandu penyelamatan.\n\n"
-                    "Untuk membuat laporan baru, silakan ketik */start* atau ketuk tombol *Buat Laporan Baru* di bawah."
+                    "*Laporan Anda Telah Diterima secara Resmi*\n\n"
+                    "Laporan ini telah diteruskan langsung ke Command Center Kantor SAR.\n\n"
+                    "PENTING: Pastikan nomor telepon/WhatsApp Anda selalu aktif. Petugas rescue/SAR akan segera menghubungi Anda untuk memandu tindakan penyelamatan.\n\n"
+                    "Call Center BASARNAS: 115 (Bebas Pulsa 24 Jam)\n"
+                    "Website Resmi: https://basarnas.go.id\n\n"
+                    "Untuk membuat laporan baru, silakan ketik */start* atau pilih tombol di bawah."
                     f"{widget_info}"
                 )
                 

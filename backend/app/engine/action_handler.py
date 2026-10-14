@@ -304,7 +304,7 @@ class ActionHandler:
                         try:
                             file_bytes = await storage_service.download_file_bytes(att.file_key, bucket_name=att.bucket)
                             if file_bytes:
-                                caption = f"📎 *Lampiran Bukti Kejadian ({att.original_filename or 'Dokumen'})*\nLaporan No: {saved_report.no_laporan}"
+                                caption = f"*Lampiran Bukti Kejadian ({att.original_filename or 'Dokumen'})*\nLaporan No: {saved_report.no_laporan}"
                                 
                                 # Forward to Telegram SAR Group
                                 await reply_dispatcher.forward_file_to_telegram_sar_group(
@@ -377,7 +377,7 @@ class ActionHandler:
                         kml_bytes = f.read()
                     
                     kml_filename = os.path.basename(kml_path)
-                    caption = f"🗺️ Peta KML Terintegrasi untuk Laporan {saved_report.no_laporan}"
+                    caption = f"Peta KML Terintegrasi untuk Laporan {saved_report.no_laporan}"
                     
                     # Forward document to Telegram & WhatsApp
                     await reply_dispatcher.forward_file_to_telegram_sar_group(

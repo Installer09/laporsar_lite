@@ -33,8 +33,8 @@ class KoordinatFieldProcessor(BaseFieldProcessor):
         webview_url = f"{base_url}/location-picker?session_id={session.id}"
         
         q_text = (
-            "📐 *Apakah Anda memiliki koordinat GPS lokasi kejadian?*\n"
+            "*Apakah Anda memiliki koordinat GPS lokasi kejadian?*\n"
             f"Kirimkan koordinatnya, bagikan lokasi GPS Anda, atau gunakan [Peta Lapor SAR]({webview_url}) untuk menandai lokasi kejadian secara presisi."
         )
-        buttons = [{"text": "📍 Share Location", "request_location": True}, "Belum Tahu"]
+        buttons = [{"text": "Share Location", "request_location": True}, "Belum Tahu"]
         return q_text, buttons

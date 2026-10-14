@@ -56,7 +56,7 @@ class KorbanFieldProcessor(BaseFieldProcessor):
                 
         if not has_number:
             reply = (
-                "⚠️ *Format Jumlah Korban Tidak Valid*\n\n"
+                "*Format Jumlah Korban Tidak Valid*\n\n"
                 "Mohon ketik jumlah korban berupa angka secara langsung (contoh: _3_) atau ketuk tombol **Belum Tahu**."
             )
             buttons = ["Kurang dari 3 orang", "3 - 5 orang", "Lebih dari 5 orang", "Belum Tahu"]
@@ -69,7 +69,7 @@ class KorbanFieldProcessor(BaseFieldProcessor):
 
     def get_question(self, session: ChatSession, extracted_data: dict) -> tuple[str, list]:
         q_text = (
-            "👥 *Berapa perkiraan jumlah total korban?*\n"
+            "*Berapa perkiraan jumlah total korban?*\n"
             "Ketik jumlahnya secara langsung (contoh: _3 orang_) atau pilih tombol di bawah jika tidak tahu pasti."
         )
         buttons = ["Kurang dari 3 orang", "3 - 5 orang", "Lebih dari 5 orang", "Belum Tahu"]

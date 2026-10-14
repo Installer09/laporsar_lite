@@ -38,7 +38,7 @@ class DataKorbanFieldProcessor(BaseFieldProcessor):
         
         if is_unknown:
             q_text = (
-                "📋 *Siapa saja nama atau identitas korban?*\n\n"
+                "*Siapa saja nama atau identitas korban?*\n\n"
                 "Sebutkan nama, jenis kelamin, umur, atau ciri-cirinya seadanya jika Anda tahu.\n"
                 "Contoh: _Budi (Laki-laki, 40 thn)_ atau ketuk tombol **Belum Ada Data**."
             )
@@ -53,7 +53,7 @@ class DataKorbanFieldProcessor(BaseFieldProcessor):
             count_word = str(count)
             
         q_text = (
-            f"📋 *Siapa saja nama atau identitas {count} ({count_word}) orang korban tersebut?*\n\n"
+            f"*Siapa saja nama atau identitas {count} ({count_word}) orang korban tersebut?*\n\n"
             "Sebutkan nama, jenis kelamin, umur, atau ciri-cirinya seadanya yang Anda ketahui dalam satu pesan.\n"
             "*(Contoh: Korban 1 Andi 25th Laki, Korban 2 Ani 20th Perempuan)*\n\n"
             "Ketuk tombol **Belum Tahu** jika Anda tidak memiliki datanya."

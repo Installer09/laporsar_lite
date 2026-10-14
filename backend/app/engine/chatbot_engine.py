@@ -164,15 +164,26 @@ SKIP_WORDS = {
     "tidak ada data", "belum ada data", "n/a", "unknown", "nihil"
 }
 
-GREETING_MSG = (
-    "*LAYANAN DARURAT BASARNAS*\n\n"
-    "Mohon jelaskan secara singkat musibah yang terjadi, lokasi kejadian, dan kondisi yang membutuhkan pertolongan SAR saat ini.\n"
-    "_(Anda dapat mengetik pesan atau mengirimkan rekaman suara)_"
+MAIN_MENU_TEXT = (
+    "*LAYANAN SIAGA PENCARIAN DAN PERTOLONGAN (SAR)*\n"
+    "Badan Nasional Pencarian dan Pertolongan (BASARNAS)\n\n"
+    "Pilih jenis layanan yang Anda butuhkan:\n\n"
+    "1. *Lapor SAR Cepat*\n"
+    "   Pelaporan musibah untuk kondisi Anda berada langsung di lokasi kejadian.\n\n"
+    "2. *Lapor SAR Kejadian*\n"
+    "   Pelaporan musibah yang lokasinya terpisah atau jauh dari posisi Anda saat ini.\n\n"
+    "3. *Lapor SAR Info*\n"
+    "   Pusat informasi resmi SOP, regulasi, dan data kedaruratan SAR.\n\n"
+    "Pilih salah satu tombol di bawah atau ketik layanan yang Anda butuhkan."
 )
+
+MAIN_MENU_BUTTONS = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
+
+GREETING_MSG = MAIN_MENU_TEXT
 
 SHORT_REPORT_WARNING = (
     "*Informasi Perlu Dilengkapi*\n\n"
-    "Mohon berikan rincian tambahan: apa musibah yang dialami, perkiraan lokasi, dan berapa korban yang membutuhkan pertolongan."
+    "Mohon berikan rincian tambahan: apa musibah yang dialami, perkiraan lokasi kejadian, dan berapa estimasi korban yang membutuhkan pertolongan."
 )
 
 
@@ -332,89 +343,99 @@ class ChatbotEngine:
         self._update_history(session, "user", message_text)
         await db.commit()
         
-        # Reset / Mulai Baru command check
-        msg_clean = message_text.strip().lower()
-        if msg_clean in ("/start", "/reset", "/mulai", "reset", "laporan baru", "buat laporan baru", "mulai baru") or msg_clean.startswith("/start"):
-            # Check rate limit before starting a new report
+        # Determine intent using AI classification (with exact match fast-paths)
+        from app.services.llm_rag import llm_rag_service
+        intent = await llm_rag_service.classify_user_intent(message_text, current_state=session.state, db=db)
+
+        # Handle Reset / Mulai Baru
+        if intent == "RESET":
             is_limited, limit_msg = await self._is_rate_limited(session, extracted_data, db)
             if is_limited:
-                reply = f"⚠️ *Batas Pengiriman Laporan Terlampaui*\n\n{limit_msg}"
+                reply = f"*Batas Pengiriman Laporan Terlampaui*\n\n{limit_msg}"
                 self._update_history(session, "assistant", reply)
                 await db.commit()
                 await self._broadcast_session(session, autopilot, extracted_data, db=db)
                 return {"text": reply}
             return await self._reset_session(session, db, autopilot)
 
-        # Handle Combined Lapor Cepat / Saksi / Bantuan SAR Button clicks
-        if "lapor cepat" in msg_clean or "saya di lokasi" in msg_clean:
+        # Handle Cek Status
+        if intent == "CEK_STATUS":
+            return await self._handle_status_check(session, db, autopilot, extracted_data)
+
+        # Handle Lapor SAR Cepat
+        if intent == "LAPOR_CEPAT":
             from app.core.config import settings
             base_url = settings.FRONTEND_URL.rstrip('/')
             webview_url = f"{base_url}/location-picker?session_id={session.id}"
             
             reply = (
-                "📍 *Lapor Cepat (Saya di Lokasi)*\n\n"
-                "Untuk mengirimkan lokasi darurat Anda secara presisi:\n"
-                "1. Klik ikon 📎 *Lampiran (Klip Kertas)* di WhatsApp/Telegram ini, pilih *Lokasi / Location*, lalu bagikan *Lokasi Terkini / Current Location* Anda.\n"
-                f"2. Atau, klik link [Peta Lapor SAR]({webview_url}) ini untuk menandai posisi Anda di peta."
+                "*LAPOR SAR CEPAT*\n"
+                "Prioritas penanganan: Penentuan titik koordinat darurat pelapor.\n\n"
+                "Kirimkan titik koordinat GPS perangkat Anda saat ini:\n"
+                "1. Melalui fitur Lampiran (Klip Kertas) di aplikasi pesan ini, pilih Lokasi, lalu bagikan Lokasi Terkini (Current Location).\n"
+                f"2. Atau buka tautan peta darurat berikut untuk menandai posisi Anda:\n"
+                f"[Peta Titik Darurat SAR]({webview_url})\n\n"
+                "Setelah lokasi terkirim, sebutkan secara singkat musibah yang dialami."
             )
             session.state = "AWAITING_REPORT"
-            buttons = ["🚨 Lapor Cepat (SOS)", "📝 Laporkan Kejadian", "ℹ️ Bantuan SAR Lainnya"]
+            buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
             self._update_history(session, "assistant", reply, buttons=buttons)
             await db.commit()
             await self._broadcast_session(session, autopilot, extracted_data, db=db)
             return {"text": reply, "buttons": buttons}
 
-        if "laporkan kejadian" in msg_clean or "saya saksi" in msg_clean:
+        # Handle Lapor SAR Kejadian
+        if intent == "LAPOR_KEJADIAN":
             reply = (
-                "📝 *Laporkan Kejadian*\n\n"
-                "Baik, silakan ceritakan kejadian musibah tersebut. Ada keadaan darurat apa dan di mana lokasi perkiraan kejadian secara singkat?"
+                "*LAPOR SAR KEJADIAN*\n"
+                "Layanan pelaporan musibah di luar posisi pelapor.\n\n"
+                "Jelaskan rincian kejadian dengan menyertakan:\n"
+                "• Jenis musibah (contoh: kecelakaan kapal, kondisi orang tenggelam/hilang, bencana)\n"
+                "• Perkiraan lokasi kejadian\n"
+                "• Waktu kejadian\n"
+                "• Estimasi jumlah korban yang membutuhkan pertolongan\n\n"
+                "Ketik keterangan kejadian secara singkat atau kirimkan pesan suara."
             )
             session.state = "AWAITING_REPORT"
-            buttons = ["🚨 Lapor Cepat (SOS)", "ℹ️ Bantuan SAR Lainnya", "🤖 Cek Status Laporan"]
+            buttons = ["Lapor SAR Cepat", "Lapor SAR Info", "Cek Status Laporan"]
             self._update_history(session, "assistant", reply, buttons=buttons)
             await db.commit()
             await self._broadcast_session(session, autopilot, extracted_data, db=db)
             return {"text": reply, "buttons": buttons}
 
-        # 3. Handle Bantuan SAR Lainnya (RAG QA)
-        if "bantuan sar" in msg_clean or msg_clean in ("/bantuan", "info sar", "tanya sar", "bantuan sar lainnya"):
+        # Handle Lapor SAR Info
+        if intent == "LAPOR_INFO":
             session.state = "MODE_BANTUAN"
             reply = (
-                "*Pusat Informasi & Bantuan Standar Operasional Prosedur (SOP) SAR*\n\n"
-                "Silakan tanyakan hal-hal seputar informasi operasi SAR, Prosedur/SOP Penyelamatan, Kamus Istilah SAR, atau Kontak Darurat.\n"
-                "(Jawaban disusun resmi berdasarkan dokumen dan regulasi BASARNAS)\n\n"
-                "*Contoh pertanyaan:*\n"
-                "- Bagaimana SOP pertolongan orang tenggelam di laut?\n"
-                "- Apa ketentuan dan definisi Kondisi Membahayakan Manusia (KMM)?\n"
-                "- Berapa nomor darurat resmi Call Center BASARNAS?"
+                "*LAPOR SAR INFO*\n"
+                "Layanan Informasi dan Standar Operasional Prosedur SAR.\n\n"
+                "Ajukan pertanyaan Anda mengenai regulasi SAR, prosedur penyelamatan, istilah kedaruratan, atau kontak unit operasional BASARNAS.\n\n"
+                "Seluruh jawaban disusun secara faktual hanya berdasarkan basis data resmi yang terdaftar pada sistem.\n\n"
+                "Contoh pertanyaan:\n"
+                "• Bagaimana prosedur pelaporan orang hilang di laut?\n"
+                "• Apa kriteria musibah yang termasuk Kondisi Membahayakan Manusia?\n"
+                "• Berapa nomor kontak resmi siaga darurat BASARNAS?"
             )
-            buttons = ["🚨 Laporkan Kejadian", "🚨 Lapor Cepat (SOS)", "🤖 Cek Status Laporan"]
+            buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Cek Status Laporan"]
             self._update_history(session, "assistant", reply, buttons=buttons)
             await db.commit()
             await self._broadcast_session(session, autopilot, extracted_data, db=db)
             return {"text": reply, "buttons": buttons}
 
-        # If in MODE_BANTUAN state, answer user question via RAG QA
+        # If already in MODE_BANTUAN, answer user question via Grounded RAG QA
         if session.state == "MODE_BANTUAN":
-            from app.services.llm_rag import LLMRagService
-            rag_service = LLMRagService()
-            rag_answer = await rag_service.answer_bantuan_sar(message_text, db)
-            
-            buttons = ["🚨 Laporkan Kejadian", "🚨 Lapor Cepat (SOS)", "ℹ️ Bantuan SAR Lainnya"]
+            rag_answer = await llm_rag_service.answer_bantuan_sar(message_text, db)
+            buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
             self._update_history(session, "assistant", rag_answer, buttons=buttons)
             await db.commit()
             await self._broadcast_session(session, autopilot, extracted_data, db=db)
             return {"text": rag_answer, "buttons": buttons}
 
-        # Status / Cek Laporan command check
-        if msg_clean in ("/status", "/cek", "cek status", "cek status laporan", "status", "status laporan"):
-            return await self._handle_status_check(session, db, autopilot, extracted_data)
-
         # Check rate limit before entering report state machine for new chronology
         if session.state == "AWAITING_REPORT":
             is_limited, limit_msg = await self._is_rate_limited(session, extracted_data, db)
             if is_limited:
-                reply = f"⚠️ *Batas Pengiriman Laporan Terlampaui*\n\n{limit_msg}"
+                reply = f"*Batas Pengiriman Laporan Terlampaui*\n\n{limit_msg}"
                 self._update_history(session, "assistant", reply)
                 await db.commit()
                 await self._broadcast_session(session, autopilot, extracted_data, db=db)
@@ -652,7 +673,7 @@ class ChatbotEngine:
 
         if missing_critical:
             reply = (
-                f"⚠️ *Peringatan: Laporan Belum Lengkap* ⚠️\n\n"
+                f"*Peringatan: Laporan Belum Lengkap*\n\n"
                 f"Informasi penting berikut masih kosong: *{', '.join(missing_critical)}*.\n\n"
                 f"Mohon lengkapi terlebih dahulu demi kelancaran proses penyelamatan.\n"
                 f"Silakan ketuk *Lengkapi* untuk melengkapi data, atau *Batalkan* untuk menghapus draf."
@@ -812,21 +833,8 @@ class ChatbotEngine:
         session.conversation_history = "[]"
         await db.commit()
 
-        if session.channel in ("telegram", "whatsapp"):
-            reply = (
-                "🚨 *SISTEM DARURAT SAR*\n\n"
-                "Ada musibah/keadaan darurat apa? Silakan pilih jenis laporan Anda:\n"
-                "1️⃣ *Lapor Cepat (Saya di Lokasi / Korban)*\n"
-                "2️⃣ *Laporkan Kejadian (Saya Saksi / Di Luar Lokasi)*"
-            )
-            buttons = [
-                "🚨 Lapor Cepat (Saya di Lokasi)",
-                "📝 Laporkan Kejadian (Saya Saksi)",
-                "Cek Status Laporan"
-            ]
-        else:
-            reply = GREETING_MSG
-            buttons = ["Cek Status Laporan"]
+        reply = MAIN_MENU_TEXT
+        buttons = MAIN_MENU_BUTTONS
             
         self._update_history(session, "assistant", reply, buttons=buttons)
         await db.commit()

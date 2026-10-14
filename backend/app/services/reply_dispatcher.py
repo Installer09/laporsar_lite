@@ -176,7 +176,7 @@ class ReplyDispatcher:
                         "type": "list",
                         "header": {
                             "type": "text",
-                            "text": "📋 PILIHAN RESPONS"
+                            "text": "PILIHAN TINDAKAN"
                         },
                         "body": {"text": text},
                         "action": {

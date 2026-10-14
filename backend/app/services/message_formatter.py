@@ -9,221 +9,230 @@ logger = logging.getLogger(__name__)
 
 # 1. TEMPLATE LAKA KAPAL
 LAKA_KAPAL_TEMPLATE = """*INFO AWAL*
-*LAKA KAPAL {{JUMLAH_SARANA}} ({{JUMLAH_SARANA_HURUF}}) UNIT {{DETAIL_JUDUL}}*
+*LAKA KAPAL {{JUMLAH_SARANA}} ( {{JUMLAH_SARANA_HURUF}} ) UNIT {{DETAIL_JUDUL}}* 
 
 *{{NAMA_INSTANSI}}*
 {{HARI_TANGGAL}}
 
-{{MOTTO_INSTANSI}}
+*{{MOTTO_BARIS_1}}*
+_{{MOTTO_BARIS_2}}_
 
-Yth : Kabasarnas.
-Cc  : Deputi Bidang Operasi Pencarian dan Pertolongan, dan Kesiapsiagaan Basarnas.
-Bcc : Direktur Operasi Basarnas.
-
-Mhn izin melaporkan Info Awal LAKA KAPAL {{JUMLAH_SARANA}} ({{JUMLAH_SARANA_HURUF}}) UNIT {{DETAIL_JUDUL_INLINE}}.
+Mhn izin melaporkan informasi awal Laka Kapal {{JUMLAH_SARANA}} ({{JUMLAH_SARANA_HURUF_INLINE}}) unit {{DETAIL_JUDUL_INLINE}}.
 
 *INFO DITERIMA*
-> PDTW {{WAKTU_INFO_DITERIMA}} terima info dari {{PELAPOR}}
+> PDTW {{WAKTU_INFO_DITERIMA}}
 
+*PELAPOR*
+> {{PELAPOR}}
+ 
 *WAKTU KEJADIAN*
-> PDTW {{WAKTU_KEJADIAN}}
+> PDTW {{WAKTU_KEJADIAN}}  
 
 *LOKASI KEJADIAN*
 > {{LOKASI_KEJADIAN}}
 
 *KOORDINAT*
- {{KOORDINAT}}
+> {{KOORDINAT}}
 
-*HEADING & JARAK*
-> {{HEADING_JARAK}}
+*HEADING*
+> {{HEADING}}
+
+*JARAK*
+> {{JARAK}}
 
 *JUMLAH KORBAN = {{JUMLAH_KORBAN_TOTAL}} ORG*
-S : {{KORBAN_SELAMAT}} Org
-MD : {{KORBAN_MENINGGAL}} Org
-DP : {{KORBAN_HILANG}} Org
+- S : {{KORBAN_SELAMAT}} Org
+- MD : {{KORBAN_MENINGGAL}} Org
+- DP : {{KORBAN_HILANG}} Org
 
 *DATA KORBAN*
 {{DATA_KORBAN}}
-
+	
 *DATA KAPAL*
-{{DATA_KENDARAAN}}
-
+{{DATA_KAPAL}}
+	
 *KRONOLOGI :*
 {{KRONOLOGI}}
 
-*AKSI:*
+*Aksi:*
 {{AKSI}}
 
-*HASIL:*
-> {{HASIL}}
+*HASIL*
+{{HASIL}}
 
 *UNSUR*
 {{UNSUR_SAR}}
 
-*ALUT DAN PALSAR:*
+*ALUT DAN PALSAR STANDBY*
 {{ALUT_PALSAR}}
 
-*CUACA:*
+*CUACA*
 {{CUACA}}
 
 Demikian sebagai laporan.
-Mhn Ump.
+*Mhn Ump*
 
-TTD
-{{TTD_KEPALA}}"""
+Ttd
+*{{TTD_KEPALA}}*"""
 
 DEFAULT_TEMPLATE = LAKA_KAPAL_TEMPLATE
 
 # 2. TEMPLATE LAKA PESAWAT
 LAKA_PESAWAT_TEMPLATE = """*INFO AWAL*
-*LAKA PESAWAT {{JUMLAH_SARANA}} ({{JUMLAH_SARANA_HURUF}}) UNIT {{DETAIL_JUDUL}}*
+*LAKA PESAWAT {{JUMLAH_SARANA}} ( {{JUMLAH_SARANA_HURUF}} ) UNIT {{DETAIL_JUDUL}}* 
 
 *{{NAMA_INSTANSI}}*
 {{HARI_TANGGAL}}
 
-{{MOTTO_INSTANSI}}
+*{{MOTTO_BARIS_1}}*
+_{{MOTTO_BARIS_2}}_
 
-Yth : Kabasarnas.
-Cc  : Deputi Bidang Operasi Pencarian dan Pertolongan, dan Kesiapsiagaan Basarnas.
-Bcc : Direktur Operasi Basarnas.
-
-Mhn izin melaporkan Info Awal LAKA PESAWAT {{JUMLAH_SARANA}} ({{JUMLAH_SARANA_HURUF}}) UNIT {{DETAIL_JUDUL_INLINE}}.
+Mhn izin melaporkan informasi awal Laka Pesawat {{JUMLAH_SARANA}} ({{JUMLAH_SARANA_HURUF_INLINE}}) unit {{DETAIL_JUDUL_INLINE}}.
 
 *INFO DITERIMA*
-> PDTW {{WAKTU_INFO_DITERIMA}} terima info dari {{PELAPOR}}
+> PDTW {{WAKTU_INFO_DITERIMA}}
 
+*PELAPOR*
+> {{PELAPOR}}
+ 
 *WAKTU KEJADIAN*
-> PDTW {{WAKTU_KEJADIAN}}
+> PDTW {{WAKTU_KEJADIAN}}  
 
 *LOKASI KEJADIAN*
 > {{LOKASI_KEJADIAN}}
 
 *KOORDINAT*
- {{KOORDINAT}}
+> {{KOORDINAT}}
 
-*HEADING & JARAK*
-> {{HEADING_JARAK}}
+*HEADING*
+> {{HEADING}}
+
+*JARAK*
+> {{JARAK}}
 
 *JUMLAH KORBAN = {{JUMLAH_KORBAN_TOTAL}} ORG*
-S : {{KORBAN_SELAMAT}} Org
-MD : {{KORBAN_MENINGGAL}} Org
-DP : {{KORBAN_HILANG}} Org
+- S : {{KORBAN_SELAMAT}} Org
+- MD : {{KORBAN_MENINGGAL}} Org
+- DP : {{KORBAN_HILANG}} Org
 
 *DATA KORBAN*
 {{DATA_KORBAN}}
-
+	
 *DATA PESAWAT*
-{{DATA_KENDARAAN}}
-
+{{DATA_PESAWAT}}
+	
 *KRONOLOGI :*
 {{KRONOLOGI}}
 
-*AKSI:*
+*Aksi:*
 {{AKSI}}
 
-*HASIL:*
-> {{HASIL}}
+*HASIL*
+{{HASIL}}
 
 *UNSUR*
 {{UNSUR_SAR}}
 
-*ALUT DAN PALSAR:*
+*ALUT DAN PALSAR STANDBY*
 {{ALUT_PALSAR}}
 
-*CUACA:*
+*CUACA*
 {{CUACA}}
 
 Demikian sebagai laporan.
-Mhn Ump.
+*Mhn Ump*
 
-TTD
-{{TTD_KEPALA}}"""
+Ttd
+*{{TTD_KEPALA}}*"""
 
 # 3. TEMPLATE KPK
 LAKA_KPK_TEMPLATE = """*INFO AWAL*
-*KECELAKAAN DENGAN PENANGANAN KHUSUS {{JUMLAH_SARANA}} ({{JUMLAH_SARANA_HURUF}}) UNIT {{DETAIL_JUDUL}}*
+*KECELAKAAN DENGAN PENANGANAN KHUSUS {{JUMLAH_SARANA}} ( {{JUMLAH_SARANA_HURUF}} ) UNIT {{DETAIL_JUDUL}}* 
 
 *{{NAMA_INSTANSI}}*
 {{HARI_TANGGAL}}
 
-{{MOTTO_INSTANSI}}
+*{{MOTTO_BARIS_1}}*
+_{{MOTTO_BARIS_2}}_
 
-Yth : Kabasarnas.
-Cc  : Deputi Bidang Operasi Pencarian dan Pertolongan, dan Kesiapsiagaan Basarnas.
-Bcc : Direktur Operasi Basarnas.
-
-Mhn izin melaporkan Info Awal KECELAKAAN DENGAN PENANGANAN KHUSUS {{JUMLAH_SARANA}} ({{JUMLAH_SARANA_HURUF}}) UNIT {{DETAIL_JUDUL_INLINE}}.
+Mhn izin melaporkan informasi awal Kecelakaan Dengan Penanganan Khusus {{JUMLAH_SARANA}} ({{JUMLAH_SARANA_HURUF_INLINE}}) unit {{DETAIL_JUDUL_INLINE}}.
 
 *INFO DITERIMA*
-> PDTW {{WAKTU_INFO_DITERIMA}} terima info dari {{PELAPOR}}
+> PDTW {{WAKTU_INFO_DITERIMA}}
 
+*PELAPOR*
+> {{PELAPOR}}
+ 
 *WAKTU KEJADIAN*
-> PDTW {{WAKTU_KEJADIAN}}
+> PDTW {{WAKTU_KEJADIAN}}  
 
 *LOKASI KEJADIAN*
 > {{LOKASI_KEJADIAN}}
 
 *KOORDINAT*
- {{KOORDINAT}}
+> {{KOORDINAT}}
 
-*HEADING & JARAK*
-> {{HEADING_JARAK}}
+*HEADING*
+> {{HEADING}}
+
+*JARAK*
+> {{JARAK}}
 
 *JUMLAH KORBAN = {{JUMLAH_KORBAN_TOTAL}} ORG*
-S : {{KORBAN_SELAMAT}} Org
-MD : {{KORBAN_MENINGGAL}} Org
-DP : {{KORBAN_HILANG}} Org
+- S : {{KORBAN_SELAMAT}} Org
+- MD : {{KORBAN_MENINGGAL}} Org
+- DP : {{KORBAN_HILANG}} Org
 
 *DATA KORBAN*
 {{DATA_KORBAN}}
-
-*DATA SARANA / KENDARAAN*
+	
+*DATA KENDARAAN*
 {{DATA_KENDARAAN}}
-
+	
 *KRONOLOGI :*
 {{KRONOLOGI}}
 
-*AKSI:*
+*Aksi:*
 {{AKSI}}
 
-*HASIL:*
-> {{HASIL}}
+*HASIL*
+{{HASIL}}
 
 *UNSUR*
 {{UNSUR_SAR}}
 
-*ALUT DAN PALSAR:*
+*ALUT DAN PALSAR STANDBY*
 {{ALUT_PALSAR}}
 
-*CUACA:*
+*CUACA*
 {{CUACA}}
 
 Demikian sebagai laporan.
-Mhn Ump.
+*Mhn Ump*
 
-TTD
-{{TTD_KEPALA}}"""
+Ttd
+*{{TTD_KEPALA}}*"""
 
 # 4. TEMPLATE KMM
 KMM_TEMPLATE = """*INFO AWAL*
-*KMM {{JUMLAH_KORBAN_TOTAL}} ({{JUMLAH_KORBAN_HURUF}}) ORG {{DETAIL_JUDUL}}*
+*KMM {{JUMLAH_KORBAN_TOTAL}} ( {{JUMLAH_KORBAN_HURUF}} ) ORG {{DETAIL_JUDUL}}* 
 
 *{{NAMA_INSTANSI}}*
 {{HARI_TANGGAL}}
 
-{{MOTTO_INSTANSI}}
+*{{MOTTO_BARIS_1}}*
+_{{MOTTO_BARIS_2}}_
 
-Yth : Kabasarnas.
-Cc  : Deputi Bidang Operasi Pencarian dan Pertolongan, dan Kesiapsiagaan Basarnas.
-Bcc : Direktur Operasi Basarnas.
-
-Mhn izin melaporkan informasi KMM {{JUMLAH_KORBAN_TOTAL}} ({{JUMLAH_KORBAN_HURUF_INLINE}}) org {{DETAIL_JUDUL_INLINE}}.
+Mhn izin melaporkan informasi awal KMM {{JUMLAH_KORBAN_TOTAL}} ({{JUMLAH_KORBAN_HURUF_INLINE}}) org {{DETAIL_JUDUL_INLINE}}.
 
 *INFO DITERIMA*
-> PDTW {{WAKTU_INFO_DITERIMA}} terima info dari {{PELAPOR}}
+> PDTW {{WAKTU_INFO_DITERIMA}}
 
+*PELAPOR*
+> {{PELAPOR}}
+ 
 *WAKTU KEJADIAN*
-> PDTW {{WAKTU_KEJADIAN}}
+> PDTW {{WAKTU_KEJADIAN}}  
 
 *LOKASI KEJADIAN*
 > {{LOKASI_KEJADIAN}}
@@ -231,13 +240,16 @@ Mhn izin melaporkan informasi KMM {{JUMLAH_KORBAN_TOTAL}} ({{JUMLAH_KORBAN_HURUF
 *KOORDINAT*
 > {{KOORDINAT}}
 
-*HEADING & JARAK*
-> {{HEADING_JARAK}}
+*HEADING*
+> {{HEADING}}
+
+*JARAK*
+> {{JARAK}}
 
 *JUMLAH KORBAN = {{JUMLAH_KORBAN_TOTAL}} ORG*
-S : {{KORBAN_SELAMAT}} Org
-MD : {{KORBAN_MENINGGAL}} Org
-DP : {{KORBAN_HILANG}} Org
+- S : {{KORBAN_SELAMAT}} Org
+- MD : {{KORBAN_MENINGGAL}} Org
+- DP : {{KORBAN_HILANG}} Org
 
 *DATA KORBAN*
 {{DATA_KORBAN}}
@@ -245,47 +257,47 @@ DP : {{KORBAN_HILANG}} Org
 *KRONOLOGI :*
 {{KRONOLOGI}}
 
-*AKSI:*
+*Aksi:*
 {{AKSI}}
 
-*HASIL:*
-> {{HASIL}}
+*HASIL*
+{{HASIL}}
 
 *UNSUR*
 {{UNSUR_SAR}}
 
-*ALUT DAN PALSAR:*
+*ALUT DAN PALSAR STANDBY*
 {{ALUT_PALSAR}}
 
-*CUACA:*
+*CUACA*
 {{CUACA}}
 
 Demikian sebagai laporan.
-Mhn Ump.
+*Mhn Ump*
 
-TTD
-{{TTD_KEPALA}}"""
+Ttd
+*{{TTD_KEPALA}}*"""
 
 # 5. TEMPLATE BENCANA
 BENCANA_TEMPLATE = """*INFO AWAL*
-*BENCANA {{JUMLAH_KORBAN_TOTAL}} ({{JUMLAH_KORBAN_HURUF}}) ORG {{DETAIL_JUDUL}}*
+*BENCANA {{JUMLAH_KORBAN_TOTAL}} ( {{JUMLAH_KORBAN_HURUF}} ) ORG {{DETAIL_JUDUL}}* 
 
 *{{NAMA_INSTANSI}}*
 {{HARI_TANGGAL}}
 
-{{MOTTO_INSTANSI}}
+*{{MOTTO_BARIS_1}}*
+_{{MOTTO_BARIS_2}}_
 
-Yth : Kabasarnas.
-Cc  : Deputi Bidang Operasi Pencarian dan Pertolongan, dan Kesiapsiagaan Basarnas.
-Bcc : Direktur Operasi Basarnas.
-
-Mhn izin melaporkan informasi BENCANA {{JUMLAH_KORBAN_TOTAL}} ({{JUMLAH_KORBAN_HURUF_INLINE}}) org {{DETAIL_JUDUL_INLINE}}.
+Mhn izin melaporkan informasi awal Bencana {{JUMLAH_KORBAN_TOTAL}} ({{JUMLAH_KORBAN_HURUF_INLINE}}) org {{DETAIL_JUDUL_INLINE}}.
 
 *INFO DITERIMA*
-> PDTW {{WAKTU_INFO_DITERIMA}} terima info dari {{PELAPOR}}
+> PDTW {{WAKTU_INFO_DITERIMA}}
 
+*PELAPOR*
+> {{PELAPOR}}
+ 
 *WAKTU KEJADIAN*
-> PDTW {{WAKTU_KEJADIAN}}
+> PDTW {{WAKTU_KEJADIAN}}  
 
 *LOKASI KEJADIAN*
 > {{LOKASI_KEJADIAN}}
@@ -293,13 +305,16 @@ Mhn izin melaporkan informasi BENCANA {{JUMLAH_KORBAN_TOTAL}} ({{JUMLAH_KORBAN_H
 *KOORDINAT*
 > {{KOORDINAT}}
 
-*HEADING & JARAK*
-> {{HEADING_JARAK}}
+*HEADING*
+> {{HEADING}}
+
+*JARAK*
+> {{JARAK}}
 
 *JUMLAH KORBAN = {{JUMLAH_KORBAN_TOTAL}} ORG*
-S : {{KORBAN_SELAMAT}} Org
-MD : {{KORBAN_MENINGGAL}} Org
-DP : {{KORBAN_HILANG}} Org
+- S : {{KORBAN_SELAMAT}} Org
+- MD : {{KORBAN_MENINGGAL}} Org
+- DP : {{KORBAN_HILANG}} Org
 
 *DATA KORBAN*
 {{DATA_KORBAN}}
@@ -307,26 +322,26 @@ DP : {{KORBAN_HILANG}} Org
 *KRONOLOGI :*
 {{KRONOLOGI}}
 
-*AKSI:*
+*Aksi:*
 {{AKSI}}
 
-*HASIL:*
-> {{HASIL}}
+*HASIL*
+{{HASIL}}
 
 *UNSUR*
 {{UNSUR_SAR}}
 
-*ALUT DAN PALSAR:*
+*ALUT DAN PALSAR STANDBY*
 {{ALUT_PALSAR}}
 
-*CUACA:*
+*CUACA*
 {{CUACA}}
 
 Demikian sebagai laporan.
-Mhn Ump.
+*Mhn Ump*
 
-TTD
-{{TTD_KEPALA}}"""
+Ttd
+*{{TTD_KEPALA}}*"""
 
 # Fallback template
 
@@ -459,160 +474,167 @@ class MessageFormatterService:
     def format_data_kapal(self, data_kapal) -> str:
         """Memformat data kapal secara terperinci sesuai format formal Basarnas."""
         nama = "-"
-        jenis = "-"
-        warna = "-"
-        imo = "-"
-        call_sign = "-"
-        telp = "-"
-        gt = ""
-
-        if not data_kapal:
-            return (
-                "- NAMA KAPAL: \n"
-                "- JENIS KAPAL: \n"
-                "- WARNA KAPAL: \n"
-                "- IMO : \n"
-                "- Call Sign: \n"
-                "- Telepon Satelit: "
-            )
+        gt = "-"
+        flag = "Indonesia"
+        jenis = ""
+        rute = ""
+        imo = None
+        call_sign = None
+        telp = None
 
         if isinstance(data_kapal, str):
             lines = [line.strip() for line in data_kapal.split("\n") if line.strip()]
             for line in lines:
                 if ":" in line:
                     k, v = [part.strip() for part in line.split(":", 1)]
-                    k_upper = k.upper()
+                    k_upper = k.upper().replace("*", "").replace("-", "").strip()
                     if k_upper in ("NAMA", "NAMA KAPAL"):
-                        nama = v
-                    elif k_upper in ("JENIS", "JENIS KAPAL", "KAPAL"):
-                        jenis = v
-                    elif k_upper in ("WARNA", "WARNA KAPAL"):
-                        warna = v
-                    elif k_upper == "IMO":
-                        imo = v
-                    elif k_upper in ("CALL SIGN", "CALLSIGN"):
-                        call_sign = v
-                    elif k_upper in ("TELEPON SATELIT", "TELP"):
-                        telp = v
+                        nama = v or "-"
                     elif k_upper in ("GT", "KAPASITAS", "GROSS TONNAGE"):
-                        gt = v
+                        gt = v or "-"
+                    elif k_upper in ("FLAG", "BENDERA", "KEBANGSAAN"):
+                        flag = v or "Indonesia"
+                    elif k_upper in ("TYPE", "JENIS", "JENIS KAPAL", "KAPAL"):
+                        jenis = v or ""
+                    elif k_upper in ("RUTE", "TRAYEK", "ASAL", "TUJUAN"):
+                        rute = v or ""
+                    elif k_upper == "IMO":
+                        imo = v or None
+                    elif k_upper in ("CALL SIGN", "CALLSIGN"):
+                        call_sign = v or None
+                    elif k_upper in ("TELEPON SATELIT", "TELP"):
+                        telp = v or None
                 else:
                     line_lower = line.lower()
                     if any(term in line_lower for term in ("pompong", "speedboat", "perahu", "kapal", "yacht", "tugboat", "tongkang")):
                         jenis = line
-                    elif "warna" in line_lower:
-                        warna = line.replace("warna", "").strip(": ").title()
 
         elif isinstance(data_kapal, dict):
             nama = data_kapal.get("nama_kapal") or data_kapal.get("nama") or "-"
-            jenis = data_kapal.get("jenis_kapal") or data_kapal.get("jenis") or "-"
-            warna = data_kapal.get("warna_kapal") or data_kapal.get("warna") or "-"
-            imo = data_kapal.get("imo") or data_kapal.get("imo_kapal") or "-"
-            call_sign = data_kapal.get("call_sign") or data_kapal.get("callsign") or "-"
-            telp = data_kapal.get("telepon_satelit") or data_kapal.get("telp") or "-"
-            gt = data_kapal.get("gt") or data_kapal.get("kapasitas") or ""
+            gt = data_kapal.get("gt") or data_kapal.get("kapasitas") or "-"
+            flag = data_kapal.get("flag") or data_kapal.get("bendera") or "Indonesia"
+            jenis = data_kapal.get("type") or data_kapal.get("jenis_kapal") or data_kapal.get("jenis") or ""
+            rute = data_kapal.get("rute") or ""
+            imo = data_kapal.get("imo") or data_kapal.get("imo_kapal")
+            call_sign = data_kapal.get("call_sign") or data_kapal.get("callsign")
+            telp = data_kapal.get("telepon_satelit") or data_kapal.get("telp")
 
         # Normalize default "-"
-        if not nama or str(nama).strip() == "": nama = "-"
-        if not jenis or str(jenis).strip() == "": jenis = "-"
-        if not warna or str(warna).strip() == "": warna = "-"
-        if not imo or str(imo).strip() == "": imo = "-"
-        if not call_sign or str(call_sign).strip() == "": call_sign = "-"
-        if not telp or str(telp).strip() == "": telp = "-"
+        if not nama or str(nama).strip() in ("", "-"): nama = "-"
+        if not gt or str(gt).strip() in ("", "-"): gt = "-"
+        if not flag or str(flag).strip() in ("", "-"): flag = "Indonesia"
+        if str(jenis).strip() in ("-", "None"): jenis = ""
+        if str(rute).strip() in ("-", "None"): rute = ""
 
-        # If GT is present and not already inside jenis, format jenis with GT
-        if gt:
-            gt_str = str(gt).upper().replace("GT", "").strip()
-            if gt_str and gt_str not in jenis.upper():
-                jenis = f"{jenis} ({gt_str} GT)"
+        base_lines = [
+            f"* Nama: {nama}",
+            f"* GT : {gt}",
+            f"* Flag : {flag}",
+            f"* Type : {jenis}".rstrip(),
+            f"* Rute : {rute}".rstrip()
+        ]
+        if imo and str(imo).strip() not in ("", "-"):
+            base_lines.append(f"* IMO : {imo}")
+        if call_sign and str(call_sign).strip() not in ("", "-"):
+            base_lines.append(f"* Call Sign: {call_sign}")
+        if telp and str(telp).strip() not in ("", "-"):
+            base_lines.append(f"* Telepon Satelit: {telp}")
 
-        return (
-            f"- NAMA KAPAL: {nama}\n"
-            f"- JENIS KAPAL: {jenis}\n"
-            f"- WARNA KAPAL: {warna}\n"
-            f"- IMO : {imo}\n"
-            f"- Call Sign: {call_sign}\n"
-            f"- Telepon Satelit: {telp}"
-        )
+        return "\n".join(base_lines)
 
     def format_data_pesawat(self, data_pesawat) -> str:
-        """Memformat data pesawat secara terperinci."""
-        if not data_pesawat:
-            return (
-                "- NAMA PESAWAT: \n"
-                "- JENIS PESAWAT: \n"
-                "- WARNA PESAWAT: \n"
-                "- REGISTER / CALL SIGN: \n"
-                "- RUTE: \n"
-                "- OPERATOR: "
-            )
+        """Memformat data pesawat secara terperinci sesuai format formal Basarnas."""
+        nama = "-"
+        call_sign = "-"
+        flag = "Indonesia"
+        jenis = ""
+        rute = ""
+        operator = None
+
         if isinstance(data_pesawat, str):
             lines = [line.strip() for line in data_pesawat.split("\n") if line.strip()]
-            formatted_lines = []
             for line in lines:
                 if ":" in line:
-                    k, v = line.split(":", 1)
-                    formatted_lines.append(f"- {k.strip().upper()}: {v.strip()}")
-                else:
-                    formatted_lines.append(f"- {line}")
-            return "\n".join(formatted_lines)
+                    k, v = [part.strip() for part in line.split(":", 1)]
+                    k_upper = k.upper().replace("*", "").replace("-", "").strip()
+                    if k_upper in ("NAMA", "NAMA PESAWAT"):
+                        nama = v or "-"
+                    elif k_upper in ("REGISTER", "CALL SIGN", "CALLSIGN"):
+                        call_sign = v or "-"
+                    elif k_upper in ("FLAG", "BENDERA", "KEBANGSAAN"):
+                        flag = v or "Indonesia"
+                    elif k_upper in ("TYPE", "JENIS", "JENIS PESAWAT"):
+                        jenis = v or ""
+                    elif k_upper in ("RUTE", "TRAYEK"):
+                        rute = v or ""
+                    elif k_upper == "OPERATOR":
+                        operator = v or None
         elif isinstance(data_pesawat, dict):
             nama = data_pesawat.get("nama_pesawat") or data_pesawat.get("nama") or "-"
-            jenis = data_pesawat.get("jenis_pesawat") or data_pesawat.get("jenis") or "-"
-            warna = data_pesawat.get("warna_pesawat") or data_pesawat.get("warna") or "-"
             call_sign = data_pesawat.get("call_sign") or data_pesawat.get("register") or "-"
-            rute = data_pesawat.get("rute") or data_pesawat.get("rute_pesawat") or "-"
-            operator = data_pesawat.get("operator") or "-"
-            
-            return (
-                f"- NAMA PESAWAT: {nama}\n"
-                f"- JENIS PESAWAT: {jenis}\n"
-                f"- WARNA PESAWAT: {warna}\n"
-                f"- REGISTER / CALL SIGN: {call_sign}\n"
-                f"- RUTE: {rute}\n"
-                f"- OPERATOR: {operator}"
-            )
-        return "- "
+            flag = data_pesawat.get("flag") or data_pesawat.get("bendera") or "Indonesia"
+            jenis = data_pesawat.get("type") or data_pesawat.get("jenis_pesawat") or data_pesawat.get("jenis") or ""
+            rute = data_pesawat.get("rute") or data_pesawat.get("rute_pesawat") or ""
+            operator = data_pesawat.get("operator")
+
+        if not nama or str(nama).strip() in ("", "-"): nama = "-"
+        if not call_sign or str(call_sign).strip() in ("", "-"): call_sign = "-"
+        if not flag or str(flag).strip() in ("", "-"): flag = "Indonesia"
+        if str(jenis).strip() in ("-", "None"): jenis = ""
+        if str(rute).strip() in ("-", "None"): rute = ""
+
+        base_lines = [
+            f"* Nama: {nama}",
+            f"* Register / Call Sign: {call_sign}",
+            f"* Flag : {flag}",
+            f"* Type : {jenis}".rstrip(),
+            f"* Rute : {rute}".rstrip()
+        ]
+        if operator and str(operator).strip() not in ("", "-"):
+            base_lines.append(f"* Operator: {operator}")
+
+        return "\n".join(base_lines)
 
     def format_data_alat(self, data_alat) -> str:
         """Memformat data sarana / kendaraan KPK secara terperinci."""
-        if not data_alat:
-            return (
-                "- JENIS KENDARAAN: \n"
-                "- WARNA KENDARAAN: \n"
-                "- NOMOR POLISI: \n"
-                "- PEMILIK: "
-            )
+        nama = "-"
+        jenis = "-"
+        nopol = "-"
+        warna = "-"
+
         if isinstance(data_alat, str):
             lines = [line.strip() for line in data_alat.split("\n") if line.strip()]
-            formatted_lines = []
             for line in lines:
                 if ":" in line:
-                    k, v = line.split(":", 1)
-                    formatted_lines.append(f"- {k.strip().upper()}: {v.strip()}")
-                else:
-                    formatted_lines.append(f"- {line}")
-            return "\n".join(formatted_lines)
+                    k, v = [part.strip() for part in line.split(":", 1)]
+                    k_upper = k.upper().replace("*", "").replace("-", "").strip()
+                    if k_upper in ("JENIS", "JENIS KENDARAAN"):
+                        jenis = v or "-"
+                    elif k_upper in ("NOPOL", "NOMOR POLISI", "NO POLISI"):
+                        nopol = v or "-"
+                    elif k_upper in ("WARNA", "WARNA KENDARAAN"):
+                        warna = v or "-"
+                    elif k_upper in ("PEMILIK", "NAMA"):
+                        nama = v or "-"
         elif isinstance(data_alat, dict):
+            nama = data_alat.get("nama") or data_alat.get("pemilik") or "-"
             jenis = data_alat.get("jenis_kendaraan") or data_alat.get("jenis") or "-"
-            warna = data_alat.get("warna_kendaraan") or data_alat.get("warna") or "-"
             nopol = data_alat.get("nopol") or data_alat.get("no_polisi") or "-"
-            pemilik = data_alat.get("pemilik") or "-"
-            
-            return (
-                f"- JENIS KENDARAAN: {jenis}\n"
-                f"- WARNA KENDARAAN: {warna}\n"
-                f"- NOMOR POLISI: {nopol}\n"
-                f"- PEMILIK: {pemilik}"
-            )
-        return "- "
+            warna = data_alat.get("warna_kendaraan") or data_alat.get("warna") or "-"
+
+        return (
+            f"* Jenis Kendaraan : {jenis}\n"
+            f"* Nomor Polisi : {nopol}\n"
+            f"* Warna : {warna}\n"
+            f"* Pemilik : {nama}".rstrip()
+        )
 
     def format_korban(self, data_korban: list, total_korban: int = None) -> str:
         """Alias for format_data_korban for test backwards compatibility."""
         return self.format_data_korban(data_korban, total_korban=total_korban)
 
     def format_data_korban(self, data_korban: list, is_kmm_bencana: bool = True, total_korban: int = None) -> str:
-        """Memformat data korban secara dinamis dengan template blok terstruktur."""
+        """Memformat data korban secara dinamis dengan format berpenomoran resmi Basarnas."""
         # Determine if it's empty
         is_empty = False
         if not data_korban:
@@ -625,17 +647,13 @@ class MessageFormatterService:
             is_empty = True
 
         if is_empty:
-            # Tampilkan 1 saja skeleton kosong jika tidak ada data korban yang diketahui
             block = (
-                f"*Korban ke-1:*\n"
-                f"- Nama : \n"
-                f"- Alamat : \n"
-                f"- Ciri-ciri:"
+                "1. \tNama: Belum diketahui\n"
+                "\tJenis Kelamin : -"
             )
             return block
 
         if isinstance(data_korban, str):
-            # Try to parse from JSON string
             try:
                 parsed = json.loads(data_korban)
                 if isinstance(parsed, list):
@@ -646,12 +664,13 @@ class MessageFormatterService:
             # Non-JSON string
             lines = [line.strip() for line in data_korban.split("\n") if line.strip()]
             formatted_lines = []
-            for line in lines:
-                if not line.startswith("-"):
-                    formatted_lines.append(f"- {line}")
-                else:
+            for i, line in enumerate(lines, 1):
+                if re.match(r'^\d+\.', line):
                     formatted_lines.append(line)
-            return "\n".join(formatted_lines)
+                else:
+                    clean_line = line.lstrip("*- \t")
+                    formatted_lines.append(f"{i}. \tNama: {clean_line}\n\tJenis Kelamin : -")
+            return "\n\n".join(formatted_lines)
 
         # It's a list of parsed victims
         formatted_blocks = []
@@ -659,17 +678,14 @@ class MessageFormatterService:
         
         if parsed_count == 0:
             return (
-                f"*Korban ke-1:*\n"
-                f"- Nama : \n"
-                f"- Alamat : \n"
-                f"- Ciri-ciri:"
+                "1. \tNama: Belum diketahui\n"
+                "\tJenis Kelamin : -"
             )
             
         for idx in range(1, parsed_count + 1):
             victim_info = data_korban[idx - 1]
                 
             if isinstance(victim_info, dict):
-                block_lines = [f"*Korban ke-{idx}:*"]
                 nama = victim_info.get("nama") or victim_info.get("nama_korban") or ""
                 jk = victim_info.get("jenis_kelamin") or victim_info.get("jk") or ""
                 umur = victim_info.get("umur") or ""
@@ -677,62 +693,45 @@ class MessageFormatterService:
                 ciri = victim_info.get("ciri_ciri") or victim_info.get("ciri") or ""
                 
                 # Normalisasi nilai default "-" / empty
-                if nama == "-": nama = ""
+                if not nama or str(nama).strip() in ("", "-"):
+                    nama = "Belum diketahui"
                 if jk == "-": jk = ""
                 if umur == "-": umur = ""
                 if alamat == "-": alamat = ""
                 if ciri == "-": ciri = ""
                 
-                # Normalisasi Jenis Kelamin (L / P)
-                jk_norm = ""
+                # Normalisasi Jenis Kelamin (Laki - Laki / Perempuan)
+                jk_norm = "-"
                 if jk:
                     jk_upper = str(jk).strip().upper()
-                    if jk_upper in ("LAKI-LAKI", "LAKI LAKI", "PRIA", "COWOK", "L"):
-                        jk_norm = "L"
+                    if jk_upper in ("LAKI-LAKI", "LAKI LAKI", "PRIA", "COWOK", "L", "LAKI"):
+                        jk_norm = "Laki - Laki"
                     elif jk_upper in ("PEREMPUAN", "WANITA", "CEWEK", "P"):
-                        jk_norm = "P"
+                        jk_norm = "Perempuan"
                     else:
-                        jk_norm = jk
+                        jk_norm = str(jk).strip()
                         
-                # Normalisasi Umur (Thn)
-                umur_norm = ""
+                block_lines = [
+                    f"{idx}. \tNama: {nama}",
+                    f"\tJenis Kelamin : {jk_norm}"
+                ]
                 if umur:
                     umur_str = str(umur).strip()
                     if not re.search(r'\b(thn|tahun)\b', umur_str, re.IGNORECASE):
-                        umur_norm = f"{umur_str} Thn"
-                    else:
-                        # Ganti thn/tahun dengan Thn secara seragam
-                        umur_norm = re.sub(r'\b(?:thn|tahun)\b', 'Thn', umur_str, flags=re.IGNORECASE)
-                        
-                # Gabungkan JK dan Umur di samping Nama
-                jk_umur_parts = []
-                if jk_norm:
-                    jk_umur_parts.append(jk_norm)
-                if umur_norm:
-                    jk_umur_parts.append(umur_norm)
+                        umur_str = f"{umur_str} Thn"
+                    block_lines.append(f"\tUmur : {umur_str}")
+                if alamat:
+                    block_lines.append(f"\tAlamat : {alamat}")
+                if ciri:
+                    block_lines.append(f"\tCiri-ciri: {ciri}")
                     
-                if jk_umur_parts:
-                    jk_umur_str = f" ({'/'.join(jk_umur_parts)})"
-                else:
-                    jk_umur_str = ""
-                    
-                block_lines.append(f"- Nama : {nama}{jk_umur_str}")
-                block_lines.append(f"- Alamat : {alamat}")
-                block_lines.append(f"- Ciri-ciri: {ciri}")
                 formatted_blocks.append("\n".join(block_lines))
                 
             elif isinstance(victim_info, str) and victim_info.strip() not in ("", "-"):
-                # Simply format simple string like the old way
-                formatted_blocks.append(f"- {victim_info.strip()}")
+                clean_v = victim_info.strip().lstrip("*- ")
+                formatted_blocks.append(f"{idx}. \tNama: {clean_v}\n\tJenis Kelamin : -")
             else:
-                # Blank skeleton block
-                block_lines = [
-                    f"*Korban ke-{idx}:*",
-                    f"- Nama : ",
-                    f"- Alamat : ",
-                    f"- Ciri-ciri:"
-                ]
-                formatted_blocks.append("\n".join(block_lines))
+                formatted_blocks.append(f"{idx}. \tNama: Belum diketahui\n\tJenis Kelamin : -")
             
         return "\n\n".join(formatted_blocks)
 
@@ -1154,11 +1153,26 @@ class MessageFormatterService:
             # Dynamic identity placeholders
             if key == "NAMA_INSTANSI":
                 return data.get("NAMA_INSTANSI") or "Kantor Pencarian dan Pertolongan Natuna"
+            if key == "MOTTO_BARIS_1":
+                motto = data.get("MOTTO_INSTANSI") or "We Are Family\nProfesional -  Modern - Teruji"
+                lines = [line.strip().strip("*_ ") for line in motto.split("\n") if line.strip()]
+                return lines[0] if lines else "We Are Family"
+            if key == "MOTTO_BARIS_2":
+                motto = data.get("MOTTO_INSTANSI") or "We Are Family\nProfesional -  Modern - Teruji"
+                lines = [line.strip().strip("*_ ") for line in motto.split("\n") if line.strip()]
+                return lines[1] if len(lines) > 1 else "Profesional -  Modern - Teruji"
             if key == "MOTTO_INSTANSI":
-                motto = data.get("MOTTO_INSTANSI") or "We Are Family\nProfesional - Modern - Teruji"
-                return "\n".join(f"*{line.strip()}*" for line in motto.split("\n") if line.strip())
+                motto = data.get("MOTTO_INSTANSI") or "We Are Family\nProfesional -  Modern - Teruji"
+                lines = [line.strip().strip("*_ ") for line in motto.split("\n") if line.strip()]
+                if len(lines) >= 2:
+                    return f"*{lines[0]}*\n_{lines[1]}_"
+                return "\n".join(f"*{line}*" for line in lines)
             if key == "TTD_KEPALA":
-                return data.get("TTD_KEPALA") or "NATUNA 01"
+                ttd = data.get("TTD_KEPALA") or "KPP NATUNA 01"
+                ttd_str = str(ttd).strip()
+                if "01" in ttd_str and not ttd_str.upper().startswith("KPP "):
+                    ttd_str = f"KPP {ttd_str}"
+                return ttd_str
             
             # 1. Penanganan Tanggal
             if key == "HARI_TANGGAL":
@@ -1172,6 +1186,18 @@ class MessageFormatterService:
                 wi_str = data.get("WAKTU_INFO_DITERIMA") or data.get("waktu_info_diterima") or ""
                 return self.to_basarnas_pdtw(wi_str, dt_obj, koordinat_lng=lng_val)
                 
+            if key == "PELAPOR":
+                p_val = data.get("PELAPOR") or data.get("pelapor")
+                if not p_val or str(p_val).strip() in ("", "-", "None"):
+                    nama_p = data.get("pelapor_nama") or "Belum Diketahui"
+                    telp_p = data.get("pelapor_nomor") or "-"
+                    return f"{nama_p} ( {telp_p} )"
+                p_str = str(p_val).strip()
+                match_p = re.match(r'^(.*?)\s*\((.*?)\)$', p_str)
+                if match_p:
+                    return f"{match_p.group(1).strip()} ( {match_p.group(2).strip()} )"
+                return p_str
+
             if key == "KOORDINAT":
                 lat = data.get("koordinat_lat") or data.get("latitude")
                 lng = data.get("koordinat_lng") or data.get("longitude")
@@ -1194,10 +1220,14 @@ class MessageFormatterService:
                 return detail_judul
             if key == "DETAIL_JUDUL_INLINE":
                 return detail_judul.title()
+            if key == "KLASIFIKASI_INLINE":
+                return active_klasifikasi.title()
             if key == "JUMLAH_SARANA":
                 return str(jumlah_sarana)
             if key == "JUMLAH_SARANA_HURUF":
                 return jumlah_sarana_huruf
+            if key == "JUMLAH_SARANA_HURUF_INLINE":
+                return jumlah_sarana_huruf.title()
             if key == "JUMLAH_KORBAN_HURUF":
                 return jumlah_korban_huruf
             if key == "JUMLAH_KORBAN_HURUF_INLINE":
@@ -1209,7 +1239,6 @@ class MessageFormatterService:
             if key in ("DATA_KORBAN", "RINCIAN_KORBAN"):
                 korban_list = data.get("data_korban")
                 if korban_list is None:
-                    # check metadata
                     korban_list = data.get("metadata_kejadian", {}).get("data_korban")
                 if korban_list is None:
                     korban_list = []
@@ -1239,32 +1268,70 @@ class MessageFormatterService:
                 return "-"
 
             # 5. Penanganan Data Sarana/Kendaraan
-            if key == "DATA_KENDARAAN":
-                if active_klasifikasi == "LAKA KAPAL":
-                    val = data.get("data_kapal") or data.get("metadata_kejadian", {}).get("data_kapal")
+            if key in ("DATA_KAPAL", "DATA_PESAWAT", "DATA_KENDARAAN", "DATA_SARANA"):
+                if key == "DATA_KAPAL" or active_klasifikasi == "LAKA KAPAL":
+                    val = data.get("data_kapal") or data.get("metadata_kejadian", {}).get("data_kapal") or data.get("DATA_KAPAL")
                     return self.format_data_kapal(val)
-                elif active_klasifikasi == "LAKA PESAWAT":
-                    val = data.get("data_pesawat") or data.get("metadata_kejadian", {}).get("data_pesawat")
+                elif key == "DATA_PESAWAT" or active_klasifikasi == "LAKA PESAWAT":
+                    val = data.get("data_pesawat") or data.get("metadata_kejadian", {}).get("data_pesawat") or data.get("DATA_PESAWAT")
                     return self.format_data_pesawat(val)
-                elif active_klasifikasi == "KPK":
-                    val = data.get("data_alat") or data.get("metadata_kejadian", {}).get("data_alat")
+                elif key in ("DATA_KENDARAAN", "DATA_SARANA") or active_klasifikasi == "KPK":
+                    val = data.get("data_alat") or data.get("metadata_kejadian", {}).get("data_alat") or data.get("DATA_KENDARAAN")
                     return self.format_data_alat(val)
                 return "- "
 
-            # 6. Heading dan Jarak Terintegrasi
+            # 6. Heading dan Jarak Terpisah & Terintegrasi
+            pos_sar = data.get("pos_sar_terdekat") or "Pos SAR Terdekat"
+            
+            if key == "HEADING":
+                heading = data.get("HEADING") or data.get("heading") or data.get("heading_ke_lokasi")
+                if heading and str(heading).strip() not in ("", "-", "None", "Tidak terdeteksi"):
+                    h_str = str(heading).strip()
+                    if "dari" in h_str.lower():
+                        return f"{h_str}." if not h_str.endswith(".") else h_str
+                    h_clean = h_str.replace("°", "").strip()
+                    return f"{h_clean}° dari {pos_sar}."
+                hj = data.get("HEADING_JARAK") or data.get("heading_jarak")
+                if hj:
+                    hj_match = re.search(r'Heading\s+([0-9.,]+°?)\s+dan\s+Jarak\s+([0-9.,]+(?:\s*NM)?)\s+dari\s+(.+)', str(hj), re.IGNORECASE)
+                    if hj_match:
+                        h_val = hj_match.group(1).replace("°", "").strip()
+                        return f"{h_val}° dari {hj_match.group(3).strip()}."
+                    if "/" in str(hj):
+                        h_part = hj.split("/")[0].strip()
+                        if h_part and h_part != "-":
+                            return f"{h_part.replace('°', '')}° dari {pos_sar}."
+                return f"- dari {pos_sar}."
+
+            if key == "JARAK":
+                jarak = data.get("JARAK") or data.get("jarak") or data.get("jarak_ke_lokasi")
+                if jarak and str(jarak).strip() not in ("", "-", "None", "Tidak terdeteksi"):
+                    j_str = str(jarak).strip()
+                    if "dari" in j_str.lower():
+                        return j_str
+                    j_clean = re.sub(r'(?i)\s*nm', '', j_str).strip()
+                    return f"{j_clean} Nm dari {pos_sar}"
+                hj = data.get("HEADING_JARAK") or data.get("heading_jarak")
+                if hj:
+                    hj_match = re.search(r'Heading\s+([0-9.,]+°?)\s+dan\s+Jarak\s+([0-9.,]+(?:\s*NM)?)\s+dari\s+(.+)', str(hj), re.IGNORECASE)
+                    if hj_match:
+                        j_val = re.sub(r'(?i)\s*nm', '', hj_match.group(2)).strip()
+                        return f"{j_val} Nm dari {hj_match.group(3).strip()}"
+                    if "/" in str(hj):
+                        parts = hj.split("/")
+                        if len(parts) >= 2:
+                            j_part = re.sub(r'(?i)\s*nm', '', parts[1]).strip()
+                            if j_part and j_part != "-":
+                                return f"{j_part} Nm dari {pos_sar}"
+                return f"- Nm dari {pos_sar}"
+
             if key == "HEADING_JARAK":
-                # Cari heading, jarak, dan pos_sar
                 heading = data.get("heading") or data.get("heading_ke_lokasi")
                 jarak = data.get("jarak") or data.get("jarak_ke_lokasi")
-                pos_sar = data.get("pos_sar_terdekat") or "Kantor SAR Natuna"
-                
                 if heading and jarak:
-                    # Bersihkan simbol derajat/NM ganda
                     heading_str = str(heading).replace("°", "") + "°"
                     jarak_str = str(jarak).upper().replace("NM", "").strip() + " NM"
                     return f"Heading {heading_str} dan Jarak {jarak_str} dari {pos_sar}"
-                
-                # Fallback to HEADING_JARAK string if provided directly
                 direct_hj = data.get("HEADING_JARAK") or data.get("heading_jarak")
                 if direct_hj and direct_hj.strip() != "" and direct_hj != "Tidak terdeteksi":
                     if "/" in direct_hj:
@@ -1274,34 +1341,87 @@ class MessageFormatterService:
                     return direct_hj
                 return f"Tidak terdeteksi (Koordinat belum terisi)"
 
-            # 7. Unsur SAR, Alut, Aksi, Hasil Formatter (Menggunakan baris peluru)
-            if key in ("UNSUR_SAR", "ALUT_PALSAR", "AKSI"):
-                val = data.get(key) or data.get(key.lower())
+            # 7. Unsur SAR, Alut, Aksi, Hasil Formatter
+            if key in ("UNSUR_SAR", "UNSUR"):
+                val = data.get("UNSUR_SAR") or data.get("unsur_sar") or data.get("UNSUR") or data.get("unsur")
                 if not val or str(val).strip() == "":
-                    # Fallbacks
-                    if key == "UNSUR_SAR": return "* Kantor SAR Natuna\n* Potensi SAR Terdekat"
-                    if key == "ALUT_PALSAR": return "* LCR\n* Pal Keselamatan Lainnya"
-                    if key == "AKSI": return f"* Kantor SAR berkoordinasi dengan unsur terkait di lokasi"
+                    return "* Pos SAR Terdekat;\n* Potensi SAR Terdekat."
                 
+                raw_items = []
                 if isinstance(val, list):
-                    items_str = []
                     for item in val:
                         if isinstance(item, dict):
-                            name_val = item.get("nama") or item.get("name") or str(item)
-                            items_str.append(f"* {name_val}")
+                            raw_items.append(item.get("nama") or item.get("name") or str(item))
                         else:
-                            items_str.append(f"* {item}")
-                    return "\n".join(items_str)
+                            raw_items.append(str(item))
                 elif isinstance(val, str):
+                    raw_items = [line.strip() for line in val.split("\n") if line.strip()]
+                    
+                lines = [re.sub(r'^[\*\-\d\.\s]+', '', it).strip().rstrip(';.,') for it in raw_items if it.strip()]
+                formatted_unsur = []
+                for i, item in enumerate(lines):
+                    sep = "." if i == len(lines) - 1 else ";"
+                    formatted_unsur.append(f"* {item}{sep}")
+                return "\n".join(formatted_unsur)
+
+            if key in ("ALUT_PALSAR", "ALUT"):
+                val = data.get("ALUT_PALSAR") or data.get("alut_palsar") or data.get("ALUT") or data.get("alut")
+                if not val or str(val).strip() == "":
+                    return "* RIB Pos SAR\n* Palsar Air\n* Pal Komunikasi\n* Pal Keselamatan lainnya"
+                    
+                raw_items = []
+                if isinstance(val, list):
+                    for item in val:
+                        if isinstance(item, dict):
+                            raw_items.append(item.get("nama") or item.get("name") or str(item))
+                        else:
+                            raw_items.append(str(item))
+                elif isinstance(val, str):
+                    raw_items = [line.strip() for line in val.split("\n") if line.strip()]
+                    
+                formatted_alut = []
+                for it in raw_items:
+                    clean_it = re.sub(r'^[\*\-\d\.\s]+', '', it).strip()
+                    if clean_it:
+                        formatted_alut.append(f"* {clean_it}")
+                return "\n".join(formatted_alut)
+
+            if key in ("KRONOLOGI", "AKSI", "HASIL"):
+                val = data.get(key) or data.get(key.lower())
+                if not val or str(val).strip() in ("", "-", "None"):
+                    if key == "HASIL":
+                        return "* Dalam pencarian / Pemantauan."
+                    return "* Belum Diketahui"
+                if isinstance(val, str):
                     lines = [line.strip() for line in val.split("\n") if line.strip()]
                     formatted_lines = []
                     for line in lines:
-                        if isinstance(line, str):
-                            if not line.startswith("*"):
-                                formatted_lines.append(f"* {line}")
-                            else:
-                                formatted_lines.append(line)
+                        if not line.startswith("*"):
+                            formatted_lines.append(f"* {line}")
+                        else:
+                            formatted_lines.append(line)
                     return "\n".join(formatted_lines)
+
+            if key == "CUACA":
+                val = data.get("CUACA") or data.get("cuaca")
+                if not val or str(val).strip() in ("", "-", "None"):
+                    return (
+                        "* Cuaca : Cerah berawan\n"
+                        "* Gelombang : 0.4 - 1 m\n"
+                        "* Suhu\t: 32°C\n"
+                        "* Kecepatan angin : 1 - 3 Kts\n"
+                        "* Arah Angin : Barat"
+                    )
+                if isinstance(val, str):
+                    lines = [line.strip() for line in val.split("\n") if line.strip()]
+                    formatted_weather = []
+                    for line in lines:
+                        if not line.startswith("*"):
+                            formatted_weather.append(f"* {line}")
+                        else:
+                            formatted_weather.append(line)
+                    return "\n".join(formatted_weather)
+                return str(val)
 
             # 8. Alias mapping default
             aliases = {
@@ -1339,6 +1459,8 @@ class MessageFormatterService:
                 if key == "HASIL":
                     return "Dalam pencarian / Pemantauan"
                 return ""
+                
+            return str(val)
                 
             return str(val)
 

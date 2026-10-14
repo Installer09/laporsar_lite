@@ -1,6 +1,8 @@
 import json
 import re
 import logging
+
+logger = logging.getLogger(__name__)
 from typing import Dict, Any, List
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1159,32 +1161,33 @@ Keluarkan HANYA JSON hasil penyempurnaan, dengan struktur kunci yang sama sepert
             full_context_str = "\n\n".join(context_blocks)
 
             prompt = f"""
-Anda adalah Asisten Informasi & Bantuan SAR BASARNAS Indonesia.
-Tugas Anda adalah menjawab pertanyaan umum atau prosedur/SOP masyarakat secara akurat, lugas, profesional, formal, dan berbasis dokumen resmi BASARNAS.
+Anda adalah Asisten Informasi & Bantuan SAR Resmi BASARNAS Indonesia (Lapor SAR Info).
+Tugas Anda adalah menjawab pertanyaan masyarakat secara akurat, lugas, profesional, formal, dan HANYA berdasarkan dokumen resmi serta basis data yang tersedia.
 
-KONTEKS REFERENSI DOKUMEN RESMI & KNOWLEDGE BASE:
+KONTEKS REFERENSI DOKUMEN RESMI & KNOWLEDGE BASE SISTEM:
 {full_context_str}
 
 PERTANYAAN PENGGUNA:
 "{question}"
 
 PETUNJUK FORMAT JAWABAN (WAJIB DIIKUTI SECARA KETAT):
-1. KEAKURATAN & KESESUAIAN DOKUMEN RESMI:
-   - Jawaban Anda WAJIB didasarkan pada dokumen resmi BASARNAS, regulasi SAR, SOP terdaftar, dan kutipan teks yang tersedia pada konteks di atas.
-   - Sajikan langkah, prosedur, atau penjelasan secara runtut, solutif, dan terstruktur (gunakan penomoran angka atau tanda hubung standar).
+1. KEAKURATAN & STRICT GROUNDING:
+   - Jawaban Anda WAJIB HANYA didasarkan pada konteks dokumen resmi, regulasi SAR, SOP, dan basis data sistem di atas.
+   - JIKA informasi yang ditanyakan TIDAK TERCANTUM atau TIDAK RELEVAN dengan konteks dokumen di atas, Anda DILARANG berhalusinasi atau mengarang jawaban.
+   - Dalam kondisi informasi tidak tercantum, berikan jawaban standar berikut:
+     "Informasi tersebut tidak tercantum dalam basis data resmi sistem SAR.
+
+Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi Call Center BASARNAS di nomor 115 (Bebas Pulsa 24 Jam) atau kunjungi website resmi BASARNAS di https://basarnas.go.id."
 2. TANPA EMOJI ATAU IKON DEKORATIF (DILARANG KERAS):
    - JANGAN menggunakan emoji atau ikon dekoratif apapun (seperti 📞, 🚨, 📚, ℹ️, 📋, 💡, ⚠️, 🤖, dan sejenisnya).
-   - Format jawaban harus formal, bersih, profesional, dan bergaya institusional resmi layaknya dokumen kedinasan BASARNAS.
+   - Format jawaban harus formal, bersih, profesional, dan bergaya institusional kedinasan resmi.
 3. KETERANGAN SELURUH SUMBER YANG DIKUTIP (LEBIH BANYAK SUMBER LEBIH BAGUS):
-   - Di bagian akhir jawaban, Anda WAJIB membuat bagian khusus dengan judul:
+   - Jika menjawab berdasarkan dokumen pada konteks, cantumkan di bagian akhir jawaban:
      "**Referensi Dokumen & Sumber Resmi:**"
-   - Tuliskan secara rinci SEMUA dokumen resmi, regulasi, undang-undang, manual operasi, dokumen SOP, atau kamus istilah yang dikutip atau relevan dengan jawaban tersebut.
-   - Format penulisan sumber rujukan:
-     - [Nama Dokumen / Regulasi / SOP] - [Keterangan Relevansi / Bab / Pasal yang Dirujuk]
-   - Semakin lengkap dan kaya sumber rujukan resmi yang Anda sebutkan, semakin baik dan kredibel.
-4. NOMOR DARURAT & TINDAKAN PELAPORAN:
-   - Jika pertanyaan menyangkut kondisi musibah darurat, sebutkan Call Center BASARNAS di nomor 115 (Bebas Pulsa) dan sarankan menggunakan menu Lapor Cepat (SOS) atau Laporkan Kejadian.
-5. Gunakan Bahasa Indonesia yang baku, sopan, formal, presisi, dan mencerminkan instansi resmi pemerintah (BASARNAS).
+     - [Nama Dokumen / Regulasi / SOP yang relevan]
+4. INFORMASI KONTAK & SITUS RESMI:
+   - Sebutkan Call Center BASARNAS: 115 (Bebas Pulsa 24 Jam) dan Website Resmi: https://basarnas.go.id.
+5. Gunakan Bahasa Indonesia yang baku, sopan, formal, dan presisi.
 """
             tenant_settings = None
             if db is not None:
@@ -1196,8 +1199,8 @@ PETUNJUK FORMAT JAWABAN (WAJIB DIIKUTI SECARA KETAT):
 
             response = await ai_provider_manager.llm_generate(
                 prompt=prompt,
-                system_prompt="Anda adalah asisten bantuan SAR BASARNAS resmi. Jawab secara formal, presisi, berbasis dokumen resmi dan regulasi, tanpa menggunakan emoji atau ikon dekoratif apapun.",
-                temperature=0.3,
+                system_prompt="Anda adalah asisten Lapor SAR Info BASARNAS resmi. Jawab secara formal, presisi, HANYA berbasis dokumen resmi dan regulasi sistem, tanpa emoji dekoratif apapun. Bila tidak tercantum, tolak dengan mengarahkan ke Call Center 115 dan https://basarnas.go.id.",
+                temperature=0.2,
                 timeout=25.0,
                 tenant_settings=tenant_settings
             )
@@ -1217,7 +1220,8 @@ PETUNJUK FORMAT JAWABAN (WAJIB DIIKUTI SECARA KETAT):
             "2. Klasifikasi Insiden: Penentuan jenis musibah (Kecelakaan Kapal, Kecelakaan Pesawat, Bencana Alam, atau Kondisi Membahayakan Manusia/KMM).\n"
             "3. Pengerahan Tim Rescue & Alut: SAR Mission Coordinator (SMC) mengoordinasikan pengerahan personel dan alat utama penyelamatan.\n\n"
             "Call Center Darurat BASARNAS: 115 (Bebas Pulsa 24 Jam)\n"
-            "Untuk pelaporan musibah darurat saat ini, silakan gunakan menu Lapor Cepat (SOS) atau Laporkan Kejadian.\n\n"
+            "Website Resmi: https://basarnas.go.id\n"
+            "Untuk pelaporan musibah darurat saat ini, silakan gunakan menu Lapor SAR Cepat atau Lapor SAR Kejadian.\n\n"
             "**Referensi Dokumen & Sumber Resmi:**\n"
             "- Undang-Undang Republik Indonesia Nomor 29 Tahun 2014 tentang Pencarian dan Pertolongan\n"
             "- Peraturan Badan Nasional Pencarian dan Pertolongan tentang Tata Cara Penyelenggaraan Operasi SAR\n"
@@ -1225,6 +1229,99 @@ PETUNJUK FORMAT JAWABAN (WAJIB DIIKUTI SECARA KETAT):
             "- Standard Operating Procedure (SOP) Siaga Call Center 115 & Komando Operasi BASARNAS\n"
             "- Pedoman Teknis Pertolongan Pertama (Medical First Responder) BASARNAS"
         )
+
+    async def classify_user_intent(self, message: str, current_state: str = "AWAITING_REPORT", db: AsyncSession = None) -> str:
+        """
+        Classify user intent using AI (LLM) instead of rigid regex.
+        Fast-paths common exact button matches to avoid unnecessary latency,
+        then uses LLM for natural/conversational inputs.
+        """
+        msg_clean = message.strip().lower()
+        
+        # Fast path for exact button clicks / common commands
+        if msg_clean in ("/start", "/reset", "/mulai", "reset", "menu", "menu utama"):
+            return "RESET"
+        if msg_clean in ("lapor sar cepat", "lapor cepat", "1", "1.", "saya di lokasi", "sos", "lapor cepat (sos)"):
+            return "LAPOR_CEPAT"
+        if msg_clean in ("lapor sar kejadian", "lapor kejadian", "laporkan kejadian", "2", "2.", "saya saksi", "lapor kejadian (saksi)"):
+            return "LAPOR_KEJADIAN"
+        if msg_clean in ("lapor sar info", "info sar", "bantuan sar", "bantuan sar lainnya", "info", "3", "3.", "/bantuan", "tanya sar", "bantuan"):
+            return "LAPOR_INFO"
+        if msg_clean in ("/status", "/cek", "cek status", "cek status laporan", "status", "status laporan"):
+            return "CEK_STATUS"
+
+        # If user is in the middle of answering a specific field question,
+        # route message directly to the field processor without unnecessary LLM latency
+        if current_state and current_state.startswith("AWAITING_") and current_state != "AWAITING_REPORT":
+            return "DATA_PELAPORAN"
+
+        # Quick indicator check for obvious incident reports or info questions
+        incident_indicators = [
+            "tenggelam", "kapal", "pesawat", "korban", "hilang", "hanyut", "kebakaran", "jatuh", 
+            "mati mesin", "terbalik", "terbakar", "bencana", "banjir", "gempa", "longsor", 
+            "tabrakan", "laka", "kmm", "kpk", "meninggal", "selamat", "koordinat", "perairan"
+        ]
+        if any(w in msg_clean for w in incident_indicators):
+            return "DATA_PELAPORAN"
+
+        info_indicators = ["sop", "bagaimana cara", "apa itu", "kriteria", "prosedur", "kamus", "website", "call center", "tanya sar", "info sar"]
+        if any(w in msg_clean for w in info_indicators):
+            return "LAPOR_INFO"
+
+        if any(w in msg_clean for w in ["di lokasi", "posisi saya", "tenggelam sekarang", "tolong saya", "terjebak"]):
+            return "LAPOR_CEPAT"
+
+        # AI-driven intent classification for free text
+        prompt = f"""Tentukan maksud (intent) dari pesan pengguna untuk sistem Chatbot SAR Resmi.
+
+Pilihan intent:
+1. LAPOR_CEPAT: Pengguna menyatakan berada langsung di lokasi musibah/TKP, mengalami keadaan darurat/tenggelam/terjebak sekarang juga, atau ingin lapor cepat darurat.
+2. LAPOR_KEJADIAN: Pengguna ingin melaporkan kejadian musibah yang terjadi di tempat lain (ia adalah saksi/keluarga/melihat dari jauh/menceritakan kecelakaan).
+3. LAPOR_INFO: Pengguna menanyakan informasi, SOP, prosedur penyelamatan, regulasi, definisi istilah SAR, atau kontak resmi BASARNAS.
+4. CEK_STATUS: Pengguna ingin mengetahui progres atau status penanganan laporan yang telah dikirim sebelumnya.
+5. RESET: Pengguna ingin kembali ke menu utama, membatalkan, atau mulai dari awal.
+6. DATA_PELAPORAN: Pengguna sedang memberikan rincian data musibah (seperti koordinat, waktu, jumlah korban, lokasi, atau nama kapal).
+7. UNKNOWN: Maksud pesan tidak jelas atau sekadar sapaan umum tanpa rincian.
+
+Status sesi saat ini: {current_state}
+Pesan pengguna: "{message}"
+
+Jawab HANYA satu kata intent di atas (contoh: LAPOR_CEPAT, LAPOR_KEJADIAN, LAPOR_INFO, CEK_STATUS, RESET, DATA_PELAPORAN, atau UNKNOWN)."""
+
+        tenant_settings = None
+        if db is not None:
+            try:
+                from app.core.tenant_config import get_tenant_settings
+                tenant_settings = await get_tenant_settings(db)
+            except Exception:
+                pass
+
+        try:
+            resp = await ai_provider_manager.llm_generate(
+                prompt=prompt,
+                system_prompt="Anda adalah pengklasifikasi maksud pesan untuk sistem tanggap darurat SAR. Jawab hanya dengan nama intent tunggal.",
+                temperature=0.1,
+                timeout=10.0,
+                tenant_settings=tenant_settings
+            )
+            if resp:
+                intent_candidate = resp.strip().upper()
+                valid_intents = {"LAPOR_CEPAT", "LAPOR_KEJADIAN", "LAPOR_INFO", "CEK_STATUS", "RESET", "DATA_PELAPORAN", "UNKNOWN"}
+                for vi in valid_intents:
+                    if vi in intent_candidate:
+                        return vi
+        except Exception as e:
+            logger.warning(f"AI intent classification failed fallback: {e}")
+
+        # Fallback heuristic if LLM call is unavailable
+        if any(w in msg_clean for w in ["di lokasi", "posisi saya", "tenggelam sekarang", "tolong saya", "terjebak"]):
+            return "LAPOR_CEPAT"
+        if any(w in msg_clean for w in ["sop", "bagaimana cara", "apa itu", "kriteria", "prosedur", "kamus", "website", "call center"]):
+            return "LAPOR_INFO"
+        if any(w in msg_clean for w in ["ada kapal", "keluarga saya", "tabrakan", "pesawat jatuh", "banjir di"]):
+            return "LAPOR_KEJADIAN"
+
+        return "UNKNOWN"
 
 
 llm_rag_service = LLMRagService()

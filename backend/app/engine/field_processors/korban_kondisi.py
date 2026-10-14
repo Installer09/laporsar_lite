@@ -35,14 +35,14 @@ class KorbanKondisiFieldProcessor(BaseFieldProcessor):
         
         if re.search(r'-\s*\d+', answer_clean):
             reply = (
-                "⚠️ *Format Angka Tidak Valid*\n\n"
+                "*Format Angka Tidak Valid*\n\n"
                 "Jumlah korban tidak boleh bernilai negatif. Mohon masukkan angka yang valid atau ketuk **Belum Tahu**."
             )
             return False, {"text": reply, "buttons": ["Belum Tahu"]}
 
         if not (has_s or has_md or has_dp):
             reply = (
-                "⚠️ *Format Kondisi Korban Tidak Dikenali*\n\n"
+                "*Format Kondisi Korban Tidak Dikenali*\n\n"
                 "Mohon sebutkan kondisi korban yang Anda ketahui.\n"
                 "Contoh: _2 selamat, 1 hilang_ atau ketuk tombol **Belum Tahu**."
             )
@@ -100,7 +100,7 @@ class KorbanKondisiFieldProcessor(BaseFieldProcessor):
 
     def get_question(self, session: ChatSession, extracted_data: dict) -> tuple[str, list]:
         q_text = (
-            "📊 *Bagaimana rincian kondisi korban saat ini?*\n"
+            "*Bagaimana rincian kondisi korban saat ini?*\n"
             "Berapa korban yang selamat, meninggal, atau masih dalam pencarian (hilang)?\n"
             "Contoh: _2 selamat, 1 hilang_ atau _selamat semua_"
         )

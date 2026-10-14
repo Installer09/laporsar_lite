@@ -19,7 +19,7 @@ class ReporterLocationFieldProcessor(BaseFieldProcessor):
         from app.engine.chatbot_engine import SKIP_WORDS
         if answer_lower in SKIP_WORDS:
             reply = (
-                "⚠️ *Lokasi GPS Wajib Dibagikan*\n\n"
+                "*Lokasi GPS Wajib Dibagikan*\n\n"
                 "Kami memerlukan lokasi GPS Anda untuk memetakan titik penyelamatan. Silakan ketuk tombol **Share Location**."
             )
             return False, {"text": reply, "buttons": self._get_buttons()}
@@ -53,15 +53,15 @@ class ReporterLocationFieldProcessor(BaseFieldProcessor):
                 extracted_data["_explicit_koordinat"] = True
             return True, extracted_data
         else:
-            reply = "⚠️ Harap ketuk tombol **Share Location** di bawah untuk membagikan lokasi Anda saat ini."
+            reply = "Harap ketuk tombol **Share Location** di bawah untuk membagikan lokasi Anda saat ini."
             return False, {"text": reply, "buttons": self._get_buttons()}
 
     def get_question(self, session: ChatSession, extracted_data: dict) -> tuple[str, list]:
         q_text = (
-            "📍 *Bagikan Lokasi GPS Anda (Wajib)*\n\n"
+            "*Bagikan Lokasi GPS Anda (Wajib)*\n\n"
             "Kami membutuhkan lokasi GPS aktif Anda untuk mengarahkan tim penyelamat ke tempat Anda dengan tepat. Silakan ketuk tombol **Share Location** di bawah."
         )
         return q_text, self._get_buttons()
 
     def _get_buttons(self) -> list:
-        return [{"text": "📍 Share Location", "request_location": True}]
+        return [{"text": "Share Location", "request_location": True}]

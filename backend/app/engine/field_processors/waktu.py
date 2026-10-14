@@ -35,7 +35,7 @@ class WaktuFieldProcessor(BaseFieldProcessor):
 
         # Guard against raw message dumps for waktu
         if len(answer_clean) > 80:
-            reply = "⚠️ Penjelasan waktu terlalu panjang. " + self._get_question_text()
+            reply = "Penjelasan waktu terlalu panjang. " + self._get_question_text()
             buttons = ["Baru Saja", "1 Jam yang Lalu", "Belum Tahu"]
             return False, {"text": reply, "buttons": buttons}
 
@@ -64,7 +64,7 @@ class WaktuFieldProcessor(BaseFieldProcessor):
 
         if has_date and not has_time:
             reply = (
-                "⚠️ *Jam kejadian belum lengkap.*\n\n"
+                "*Jam kejadian belum lengkap.*\n\n"
                 "Mohon sebutkan jam perkiraan kejadiannya (Contoh: _Jam 4 sore_ atau _Jam 10 pagi_)."
             )
             buttons = ["Baru Saja", "Belum Tahu"]
@@ -72,7 +72,7 @@ class WaktuFieldProcessor(BaseFieldProcessor):
 
         if not has_date and has_time:
             reply = (
-                "⚠️ *Hari/tanggal kejadian belum lengkap.*\n\n"
+                "*Hari/tanggal kejadian belum lengkap.*\n\n"
                 "Mohon sebutkan harinya (Contoh: _Hari ini_, _Kemarin_, atau _Senin_)."
             )
             buttons = ["Baru Saja", "Belum Tahu"]
@@ -80,7 +80,7 @@ class WaktuFieldProcessor(BaseFieldProcessor):
 
         # If neither is found
         reply = (
-            "⚠️ *Format waktu tidak valid.*\n\n"
+            "*Format waktu tidak valid.*\n\n"
             "Mohon sebutkan kapan kejadiannya (hari dan jam).\n"
             "Contoh: _Baru saja_, _Hari ini jam 10 pagi_, atau _Kemarin sore jam 5_."
         )
@@ -92,13 +92,13 @@ class WaktuFieldProcessor(BaseFieldProcessor):
 
     def _get_question_text(self) -> str:
         return (
-            "📆 *Kapan kejadiannya?*\n\n"
+            "*Kapan kejadiannya?*\n\n"
             "Sebutkan jamnya atau kapan musibah itu terjadi.\n"
             "Contoh:\n"
-            "* _Baru saja_\n"
-            "* _10 menit yang lalu_\n"
-            "* _Hari ini jam 10 pagi_\n"
-            "* _Kemarin sore jam 5_"
+            "• _Baru saja_\n"
+            "• _10 menit yang lalu_\n"
+            "• _Hari ini jam 10 pagi_\n"
+            "• _Kemarin sore jam 5_"
         )
 
     def _has_date_indicator(self, text: str) -> bool:

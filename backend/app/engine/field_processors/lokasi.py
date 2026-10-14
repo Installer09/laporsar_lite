@@ -67,7 +67,7 @@ class LokasiFieldProcessor(BaseFieldProcessor):
 
     def get_question(self, session: ChatSession, extracted_data: dict) -> tuple[str, list]:
         q_text = (
-            "📍 *Di mana lokasi kejadiannya?*\n"
+            "*Di mana lokasi kejadiannya?*\n"
             "Sebutkan nama pantai, laut, desa, atau patokan terdekat yang Anda ketahui."
         )
         return q_text, ["Belum Tahu"]

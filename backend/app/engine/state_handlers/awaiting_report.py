@@ -51,11 +51,11 @@ class AwaitingReportStateHandler(BaseStateHandler):
             await db.commit()
             
             friendly_names = {
-                "Laka Kapal": "🚢 *Kategori Terpilih:* Laka Kapal.",
-                "Laka Pesawat": "✈️ *Kategori Terpilih:* Laka Pesawat.",
-                "KPK": "🚜 *Kategori Terpilih:* KPK.",
-                "Bencana": "🌋 *Kategori Terpilih:* Bencana.",
-                "KMM": "👥 *Kategori Terpilih:* KMM."
+                "Laka Kapal": "*Kategori Terpilih:* Laka Kapal.",
+                "Laka Pesawat": "*Kategori Terpilih:* Laka Pesawat.",
+                "KPK": "*Kategori Terpilih:* KPK (Kecelakaan dengan Penanganan Khusus).",
+                "Bencana": "*Kategori Terpilih:* Bencana Alam.",
+                "KMM": "*Kategori Terpilih:* KMM (Kondisi Membahayakan Manusia)."
             }
             confirm_msg = friendly_names[selected_category]
             
@@ -102,10 +102,10 @@ class AwaitingReportStateHandler(BaseStateHandler):
         # 3. Check if the message is a generic opening greeting/phrase
         if engine._is_generic_greeting(message, extracted_data):
             reply = (
-                "🚨 *Pusat Pelayanan Darurat Kantor SAR Natuna* 🚨\n\n"
-                "Ada keadaan darurat/musibah apa yang ingin Anda laporkan?\n\n"
-                "Mohon ceritakan kejadiannya secara singkat dan sebutkan lokasinya sekarang.\n"
-                "*(Anda juga bisa mengirimkan Rekaman Suara)*"
+                "*Pusat Pelayanan Darurat - Layanan Siaga Pencarian dan Pertolongan (SAR)*\n\n"
+                "Ada keadaan darurat atau musibah apa yang ingin Anda laporkan?\n\n"
+                "Jelaskan kejadiannya secara singkat dan sebutkan lokasinya saat ini.\n"
+                "_(Anda juga dapat mengirimkan rekaman suara)_"
             )
             engine._update_history(session, "assistant", reply, buttons=[])
             await db.commit()
