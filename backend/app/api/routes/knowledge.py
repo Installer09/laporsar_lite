@@ -988,10 +988,10 @@ async def upload_sop_document(
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Format file tidak didukung. Gunakan PDF, TXT, DOC, atau DOCX.")
 
-    # Validate file size (max 10MB)
+    # Validate file size (max 50MB)
     contents = await file.read()
-    if len(contents) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Ukuran file melebihi batas 10MB")
+    if len(contents) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Ukuran file melebihi batas 50MB")
 
     info = getattr(db, "info", None)
     tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else "global"

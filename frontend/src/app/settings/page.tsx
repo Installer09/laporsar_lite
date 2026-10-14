@@ -420,8 +420,8 @@ export default function SettingsPage() {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError('Ukuran file melebihi batas 10MB.');
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadError('Ukuran file melebihi batas 50MB.');
       return;
     }
 
@@ -1517,7 +1517,7 @@ export default function SettingsPage() {
                                       Seret & Letakkan berkas
                                     </span>
                                     <span className="text-[9px] text-gray-400 mt-0.5">
-                                      PDF, TXT, DOCX (Maks 10MB)
+                                      PDF, TXT, DOCX (Maks 50MB)
                                     </span>
                                   </>
                                 )}
