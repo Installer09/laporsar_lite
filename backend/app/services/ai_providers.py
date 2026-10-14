@@ -19,6 +19,7 @@ import os
 import json
 import base64
 import logging
+import asyncio
 from typing import Optional
 
 import httpx
@@ -274,8 +275,28 @@ async def _openai_get_embedding(text: str, model: str, api_key: str, base_url: s
         return data["data"][0]["embedding"]
 
 
+def _extract_retry_delay(response: httpx.Response, default_delay: float = 5.0) -> float:
+    """Extract retry delay in seconds from HTTP response headers or Gemini error body."""
+    retry_after = response.headers.get("retry-after")
+    if retry_after:
+        try:
+            return max(1.0, float(retry_after))
+        except ValueError:
+            pass
+    try:
+        err_json = response.json()
+        details = err_json.get("error", {}).get("details", [])
+        for item in details:
+            if isinstance(item, dict) and "retryDelay" in item:
+                delay_str = str(item["retryDelay"]).rstrip("s")
+                return max(1.0, float(delay_str) + 1.0)
+    except Exception:
+        pass
+    return default_delay
+
+
 async def _gemini_get_embedding(text: str, model: str, api_key: str) -> list[float]:
-    """Get embedding via Gemini embedContent REST API."""
+    """Get embedding via Gemini embedContent REST API with automatic rate-limit retries."""
     if not api_key:
         raise ValueError("API Key Google Gemini belum dikonfigurasi untuk Embedding")
     clean_model = model.replace("models/", "") if model else "gemini-embedding-2"
@@ -288,15 +309,26 @@ async def _gemini_get_embedding(text: str, model: str, api_key: str) -> list[flo
         "content": {"parts": [{"text": text}]},
         "outputDimensionality": 1024,
     }
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        return data.get("embedding", {}).get("values", [])
+
+    max_retries = 5
+    for attempt in range(max_retries):
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(url, json=payload)
+            if (response.status_code == 429 or response.status_code >= 500) and attempt < max_retries - 1:
+                delay = _extract_retry_delay(response, default_delay=float(2 ** attempt + 3))
+                logger.warning(
+                    f"[AIProvider] Gemini embed rate limited ({response.status_code}). Waiting {delay:.1f}s before retry ({attempt+1}/{max_retries})..."
+                )
+                await asyncio.sleep(delay)
+                continue
+            response.raise_for_status()
+            data = response.json()
+            return data.get("embedding", {}).get("values", [])
+    return []
 
 
 async def _gemini_get_embeddings_batch(texts: list[str], model: str, api_key: str) -> list[list[float]]:
-    """Get batch embeddings via Gemini batchEmbedContents REST API (up to 100 items per call)."""
+    """Get batch embeddings via Gemini batchEmbedContents REST API with rate-limit retries."""
     if not api_key:
         raise ValueError("API Key Google Gemini belum dikonfigurasi untuk Embedding")
     if not texts:
@@ -315,12 +347,23 @@ async def _gemini_get_embeddings_batch(texts: list[str], model: str, api_key: st
         for t in texts
     ]
     payload = {"requests": requests}
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        embeddings = data.get("embeddings", [])
-        return [e.get("values", []) for e in embeddings]
+
+    max_retries = 6
+    for attempt in range(max_retries):
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            response = await client.post(url, json=payload)
+            if (response.status_code == 429 or response.status_code >= 500) and attempt < max_retries - 1:
+                delay = _extract_retry_delay(response, default_delay=float(5 * (attempt + 1)))
+                logger.warning(
+                    f"[AIProvider] Gemini batchEmbedContents rate limited ({response.status_code}). Waiting {delay:.1f}s before retry ({attempt+1}/{max_retries})..."
+                )
+                await asyncio.sleep(delay)
+                continue
+            response.raise_for_status()
+            data = response.json()
+            embeddings = data.get("embeddings", [])
+            return [e.get("values", []) for e in embeddings]
+    return []
 
 
 # =====================================================================
@@ -628,11 +671,13 @@ class AIProviderManager:
         try:
             if provider == "gemini":
                 all_results = []
-                batch_size = 50
+                batch_size = 25
                 for i in range(0, len(texts), batch_size):
                     batch_texts = texts[i:i + batch_size]
                     batch_embeds = await _gemini_get_embeddings_batch(batch_texts, model, api_key)
                     all_results.extend(batch_embeds)
+                    if i + batch_size < len(texts):
+                        await asyncio.sleep(0.5)
                 return all_results
             elif provider == "openai":
                 # OpenAI /v1/embeddings accepts list of strings in input
@@ -646,15 +691,25 @@ class AIProviderManager:
                 batch_size = 50
                 for i in range(0, len(texts), batch_size):
                     batch_texts = texts[i:i + batch_size]
-                    async with httpx.AsyncClient(timeout=60.0) as client:
-                        response = await client.post(
-                            "https://api.openai.com/v1/embeddings",
-                            json={"model": model or "text-embedding-3-small", "input": batch_texts},
-                            headers=headers,
-                        )
-                        response.raise_for_status()
-                        items = response.json().get("data", [])
-                        all_results.extend([item["embedding"] for item in items])
+                    max_retries = 5
+                    for attempt in range(max_retries):
+                        async with httpx.AsyncClient(timeout=60.0) as client:
+                            response = await client.post(
+                                "https://api.openai.com/v1/embeddings",
+                                json={"model": model or "text-embedding-3-small", "input": batch_texts},
+                                headers=headers,
+                            )
+                            if (response.status_code == 429 or response.status_code >= 500) and attempt < max_retries - 1:
+                                delay = _extract_retry_delay(response, default_delay=float(2 ** attempt + 2))
+                                logger.warning(f"[AIProvider] OpenAI embeddings rate limited ({response.status_code}). Waiting {delay:.1f}s...")
+                                await asyncio.sleep(delay)
+                                continue
+                            response.raise_for_status()
+                            items = response.json().get("data", [])
+                            all_results.extend([item["embedding"] for item in items])
+                            break
+                    if i + batch_size < len(texts):
+                        await asyncio.sleep(0.2)
                 return all_results
             else:
                 # Fallback to sequential for Ollama, Groq, etc.
