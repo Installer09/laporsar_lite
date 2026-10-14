@@ -693,7 +693,13 @@ export default function SettingsPage() {
         queryClient.invalidateQueries({ queryKey: ['settings'] });
       }
 
-      const res = await setupTelegramWebhook(webhookBaseUrl, formData.telegram_token);
+      // Bersihkan base URL jika pengguna memasukkan URL lengkap atau ada spasi
+      let cleanBaseUrl = (webhookBaseUrl || '').trim();
+      if (cleanBaseUrl.includes('/api/telegram/webhook')) {
+        cleanBaseUrl = cleanBaseUrl.split('/api/telegram/webhook')[0].replace(/\/+$/, '');
+      }
+
+      const res = await setupTelegramWebhook(cleanBaseUrl, formData.telegram_token, tenantSlug || undefined);
       if (res.status === 'success') {
         showSuccessToast('Webhook Telegram berhasil terhubung!');
       } else {
@@ -1760,17 +1766,25 @@ export default function SettingsPage() {
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Webhook Base URL (Opsional / untuk Ngrok)</label>
+                          <label className="block text-xs font-bold text-gray-700 mb-1">Webhook Base URL (Opsional / untuk Ngrok & Cloudflare Tunnel)</label>
                           <input
                             type="text"
                             value={webhookBaseUrl}
                             onChange={(e) => setWebhookBaseUrl(e.target.value)}
-                            placeholder="Contoh: https://plated-coach-womanless.ngrok-free.dev"
+                            placeholder="Contoh: https://demonstrate-draws-ireland-plains.trycloudflare.com"
                             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                           />
-                          <p className="text-[10px] text-gray-400 mt-1">
-                            Kosongkan jika di server production. Isi jika Anda menggunakan tunnel seperti ngrok untuk local development (harus menggunakan HTTPS).
+                          <p className="text-[10px] text-gray-500 mt-1">
+                            Masukkan domain utama HTTPS saja (tanpa perlu menambahkan <code>/api/telegram/webhook/...</code>). Sistem akan otomatis merutekan ke tenant <b>{tenantSlug || 'pusat'}</b>.
                           </p>
+                          <div className="mt-2 p-2.5 bg-sky-50/80 border border-sky-100 rounded-xl text-[11px] text-sky-900 font-mono flex items-center gap-1.5 break-all">
+                            <span className="font-bold text-sky-700">Endpoint Webhook:</span>
+                            <span>
+                              {webhookBaseUrl
+                                ? `${webhookBaseUrl.trim().replace(/\/api\/telegram\/webhook.*$/, '').replace(/\/+$/, '')}/api/telegram/webhook/${tenantSlug || 'pusat'}`
+                                : `[Base URL]/api/telegram/webhook/${tenantSlug || 'pusat'}`}
+                            </span>
+                          </div>
                         </div>
                         <div className="md:col-span-2 flex justify-start">
                           <button

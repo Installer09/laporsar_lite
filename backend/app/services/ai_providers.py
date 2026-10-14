@@ -58,31 +58,6 @@ def _resolve_internal_url(url: str) -> str:
     return url_str
 
 # =====================================================================
-# Helper — resolve API key for an engine category
-# =====================================================================
-
-def _resolve_api_key(engine: str) -> str:
-    """
-    Resolve the API key for a given engine.
-    Falls back to LLM key if the engine's own key is empty and the provider matches.
-    Engine values: 'llm', 'embed', 'stt'
-    """
-    if engine == "llm":
-        return settings.AI_LLM_API_KEY or ""
-    elif engine == "embed":
-        key = settings.AI_EMBED_API_KEY
-        if not key and settings.AI_EMBED_PROVIDER == settings.AI_LLM_PROVIDER:
-            key = settings.AI_LLM_API_KEY
-        return key or ""
-    elif engine == "stt":
-        key = settings.AI_STT_API_KEY
-        if not key and settings.AI_STT_PROVIDER == settings.AI_LLM_PROVIDER:
-            key = settings.AI_LLM_API_KEY
-        return key or ""
-    return ""
-
-
-# =====================================================================
 # LLM Providers
 # =====================================================================
 

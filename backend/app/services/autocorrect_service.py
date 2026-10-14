@@ -26,12 +26,8 @@ class AutoCorrectService(metaclass=MultitenantServiceMeta):
         Loads all APPROVED words with a valid synonym_target by merging
         global approved synonyms (Master DB) and regional approved synonyms (Tenant DB).
         """
-        from unittest.mock import Mock
-        if isinstance(db, Mock):
-            tenant_slug = tenant_context.get()
-        else:
-            info = getattr(db, "info", None)
-            tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else "global"
+        info = getattr(db, "info", None)
+        tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else (tenant_context.get() or "global")
         
         # 1. Fetch approved synonyms from Master DB
         master_synonyms = []

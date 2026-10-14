@@ -11,12 +11,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
     # Global Super Admin Fallback (platform-wide access, non-tenant)
-    DEV_SUPERADMIN_ENABLED: bool = True
+    # Disabled by default for production security. Can be enabled via .env during local development.
+    DEV_SUPERADMIN_ENABLED: bool = False
     DEV_SUPERADMIN_USERNAME: str = "superadmin"
     DEV_SUPERADMIN_PASSWORD: str = "superadmin"
 
     # Tenant Admin Fallback (scoped to Basarnas Pusat Command Center)
-    DEV_ADMIN_ENABLED: bool = True
+    # Disabled by default for production security. Can be enabled via .env during local development.
+    DEV_ADMIN_ENABLED: bool = False
     DEV_ADMIN_USERNAME: str = "admin"
     DEV_ADMIN_PASSWORD: str = "admin"
     

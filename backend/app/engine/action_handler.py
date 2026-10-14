@@ -119,37 +119,28 @@ class ActionHandler:
         from app.models.settings_models import Classification
         from sqlalchemy.future import select
         from sqlalchemy import func
-        from unittest.mock import Mock
         
         jenis_kejadian = "Kondisi Membahayakan Manusia"
-        if isinstance(db, Mock):
-            # In unit tests with mock DB, bypass DB lookup
+        try:
+            matched = await match_classification(jenis_kejadian_resolved, db)
+            if matched:
+                # Query the exact title case category name from DB
+                res_cls = await db.execute(select(Classification).where(func.upper(Classification.category) == matched.upper()))
+                cls_obj = res_cls.scalar_one_or_none()
+                if hasattr(cls_obj, "category") and isinstance(cls_obj.category, str):
+                    jenis_kejadian = cls_obj.category
+                else:
+                    jenis_kejadian = matched.title()
+            elif jenis_kejadian_resolved:
+                jenis_kejadian = jenis_kejadian_resolved
+        except Exception as e:
+            logger.warning(f"Failed to match database classification for {jenis_kejadian_resolved}: {e}")
             if jenis_kejadian_resolved in ("KMM", "Kondisi Membahayakan Manusia"):
                 jenis_kejadian = "Kondisi Membahayakan Manusia"
             elif jenis_kejadian_resolved in ("Kecelakaan Kapal", "Laka Kapal"):
                 jenis_kejadian = "Kecelakaan Kapal"
             else:
-                jenis_kejadian = jenis_kejadian_resolved
-        else:
-            try:
-                matched = await match_classification(jenis_kejadian_resolved, db)
-                if matched:
-                    # Query the exact title case category name from DB
-                    res_cls = await db.execute(select(Classification).where(func.upper(Classification.category) == matched.upper()))
-                    cls_obj = res_cls.scalar_one_or_none()
-                    if cls_obj and not isinstance(cls_obj, Mock):
-                        jenis_kejadian = cls_obj.category
-                    else:
-                        jenis_kejadian = matched.title()
-                else:
-                    # Fallback to standard DB name if possible
-                    res_cls = await db.execute(select(Classification).where(Classification.category == "Kondisi Membahayakan Manusia"))
-                    cls_obj = res_cls.scalar_one_or_none()
-                    if cls_obj and not isinstance(cls_obj, Mock):
-                        jenis_kejadian = cls_obj.category
-            except Exception as e:
-                logger.warning(f"Failed to match database classification for {jenis_kejadian_resolved}: {e}")
-                jenis_kejadian = "Kondisi Membahayakan Manusia"
+                jenis_kejadian = jenis_kejadian_resolved or "Kondisi Membahayakan Manusia"
             
         jenis_kejadian = jenis_kejadian[:50]
         waktu = (extracted.get("waktu") or "Tidak diketahui")[:50]

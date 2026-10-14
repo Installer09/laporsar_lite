@@ -443,10 +443,13 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
 @router.post("/webhook/")
 @router.post("/webhook/{tenant_slug}")
 @router.post("/webhook/{tenant_slug}/")
+@router.post("/webhook/{tenant_slug}/api/telegram/webhook/{extra_slug}")
+@router.post("/webhook/{tenant_slug}/api/telegram/webhook/{extra_slug}/")
 async def telegram_webhook(
     request: Request, 
     background_tasks: BackgroundTasks,
     tenant_slug: str = "pusat",
+    extra_slug: Optional[str] = None,
     x_telegram_bot_api_secret_token: str = Header(None, alias="X-Telegram-Bot-API-Secret-Token"),
     db: AsyncSession = Depends(get_db),
     tenant: Tenant = Depends(get_tenant)
@@ -478,12 +481,13 @@ async def telegram_webhook(
                 logger.info(f"Duplicate Telegram Update ID {update_id} ignored.")
                 return {"status": "ok", "detail": "duplicate ignored"}
         
-        logger.info(f"Received Telegram Webhook for tenant {tenant_slug} - queueing background task")
+        effective_slug = extra_slug or tenant_slug or tenant.slug
+        logger.info(f"Received Telegram Webhook for tenant {effective_slug} - queueing background task")
         
         # Queue the background task
         background_tasks.add_task(
             process_telegram_background,
-            tenant_slug=tenant_slug,
+            tenant_slug=effective_slug,
             db_url=tenant.db_url,
             s3_bucket=tenant.s3_bucket,
             token=token,
@@ -498,23 +502,29 @@ async def telegram_webhook(
     return {"status": "ok"}
 
 
+@router.get("/webhook")
+@router.get("/webhook/")
 @router.get("/webhook/{tenant_slug}")
 @router.get("/webhook/{tenant_slug}/")
-async def test_webhook_get(tenant_slug: str, db: AsyncSession = Depends(get_db)):
+@router.get("/webhook/{tenant_slug}/api/telegram/webhook/{extra_slug}")
+@router.get("/webhook/{tenant_slug}/api/telegram/webhook/{extra_slug}/")
+async def test_webhook_get(tenant_slug: str = "pusat", extra_slug: Optional[str] = None, db: AsyncSession = Depends(get_db)):
     """
     GET endpoint for connectivity verification.
     Ensures that the endpoint is reachable and returns tenant status.
     """
+    effective_slug = extra_slug or tenant_slug or "pusat"
     return {
         "status": "active",
-        "message": f"Telegram Webhook for tenant '{tenant_slug}' is running. Use POST to submit updates.",
-        "tenant_slug": tenant_slug
+        "message": f"Telegram Webhook for tenant '{effective_slug}' is running. Use POST to submit updates.",
+        "tenant_slug": effective_slug
     }
 
 
 class WebhookSetupRequest(BaseModel):
     base_url: Optional[str] = None
     bot_token: Optional[str] = None
+    tenant_slug: Optional[str] = None
 
 @router.post("/setup-webhook", dependencies=[Depends(verify_admin)])
 async def setup_telegram_webhook(
@@ -538,8 +548,8 @@ async def setup_telegram_webhook(
             detail="Token Telegram belum dikonfigurasi pada pengaturan instansi. Silakan isi token dan simpan pengaturan terlebih dahulu."
         )
 
-    # If bot_token was explicitly provided in payload, ensure it is persisted in DB if not already set
-    if payload and payload.bot_token and payload.bot_token.strip() and not tenant_settings.TELEGRAM_BOT_TOKEN:
+    # Always persist bot_token to DB if explicitly provided in payload
+    if payload and payload.bot_token and payload.bot_token.strip():
         try:
             stmt = select(SystemSetting).where(SystemSetting.key == "telegram_token")
             res = await db.execute(stmt)
@@ -552,22 +562,32 @@ async def setup_telegram_webhook(
         except Exception as e:
             logger.warning(f"Could not auto-persist telegram_token: {e}")
 
+    # Determine target tenant slug
+    target_tenant_slug = (payload.tenant_slug.strip() if payload and payload.tenant_slug and payload.tenant_slug.strip() else None) or tenant.slug
+
     # Use the custom base URL if provided in the payload, otherwise fall back to request base URL
-    custom_base_url = payload.base_url if payload else None
+    custom_base_url = payload.base_url.strip() if payload and payload.base_url else None
     if custom_base_url:
-        base_url = custom_base_url.rstrip('/')
+        clean_url = custom_base_url.rstrip('/')
+        # Prevent double-path if user accidentally pasted full webhook URL (e.g. https://domain.com/api/telegram/webhook/natuna)
+        if "/api/telegram/webhook" in clean_url:
+            parts = clean_url.split("/api/telegram/webhook")
+            clean_url = parts[0].rstrip('/')
+            if len(parts) > 1 and parts[1].strip('/'):
+                extracted_slug = parts[1].strip('/').split('/')[0]
+                if extracted_slug:
+                    target_tenant_slug = extracted_slug
+        base_url = clean_url
     else:
         # Construct webhook URL based on the request's base URL
-        # E.g. request.base_url is 'http://localhost:8000/' or 'https://natuna.laporsar.id/'
         base_url = str(request.base_url).rstrip('/') if request else ""
         
-        # In some reverse proxy setups, request.base_url might be HTTP even if the external proxy is HTTPS.
-        # Check X-Forwarded-Proto header to verify protocol
+        # In reverse proxy setups, check X-Forwarded-Proto header
         x_forwarded_proto = request.headers.get("x-forwarded-proto") or request.headers.get("X-Forwarded-Proto") if request else None
         if x_forwarded_proto == "https" and base_url.startswith("http://"):
             base_url = base_url.replace("http://", "https://")
 
-    webhook_url = f"{base_url}/api/telegram/webhook/{tenant.slug}"
+    webhook_url = f"{base_url}/api/telegram/webhook/{target_tenant_slug}"
     
     # We can also use a secret token for security if configured
     secret_token = tenant_settings.TELEGRAM_SECRET_TOKEN

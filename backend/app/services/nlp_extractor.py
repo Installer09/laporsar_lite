@@ -21,14 +21,8 @@ class SARNLPExtractor:
         logger.info(f"Extracting data from message: {message[:50]}...")
         
         from app.db.session import tenant_context
-        from unittest.mock import Mock
-        is_mock_db = isinstance(db, Mock)
-        
-        if is_mock_db:
-            tenant_slug = tenant_context.get()
-        else:
-            info = getattr(db, "info", None)
-            tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else "global"
+        info = getattr(db, "info", None)
+        tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else (tenant_context.get() or "global")
             
         token = tenant_context.set(tenant_slug)
         try:

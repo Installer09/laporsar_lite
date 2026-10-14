@@ -873,13 +873,7 @@ class ChatbotEngine:
                     )
                     result = await db.execute(stmt)
                     val = result.scalar_one()
-                    
-                    # Safe fallback for mock db execution in tests
-                    from unittest.mock import Mock
-                    if isinstance(val, Mock):
-                        match_count = 0
-                    else:
-                        match_count = val or 0
+                    match_count = int(val) if isinstance(val, (int, float)) else 0
                             
                     if match_count >= 3:
                         return True, "Nomor telepon Anda telah digunakan untuk membuat laporan maksimal (3 laporan per jam) untuk menghindari spam."

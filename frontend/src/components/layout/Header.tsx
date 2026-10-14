@@ -21,6 +21,9 @@ export function Header() {
   
   const [isMounted, setIsMounted] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [tenantSlug, setTenantSlug] = useState<string | null>(null);
   const [showProfileDrop, setShowProfileDrop] = useState(false);
   
   useEffect(() => {
@@ -36,10 +39,38 @@ export function Header() {
     if (token) {
       const payload = decodeJwt(token);
       if (payload) {
-        setUserRole(payload.role);
+        setUserRole(payload.role || null);
+        setUserName(payload.name || null);
+        setUserEmail(payload.sub || null);
+        setTenantSlug(payload.tenant_slug || null);
       }
     }
   }, []);
+
+  const getInitials = (name: string | null, role: string | null) => {
+    if (name && name.trim()) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return name.slice(0, 2).toUpperCase();
+    }
+    if (role === 'Super Admin') return 'SA';
+    if (role === 'Operator') return 'OP';
+    if (role === 'User') return 'US';
+    return 'AD';
+  };
+
+  const displayName = userName 
+    || (userRole === 'Super Admin'
+      ? 'Super Admin'
+      : userRole === 'Operator'
+      ? 'Operator SAR'
+      : userRole === 'User'
+      ? 'Pengguna'
+      : tenantSlug && tenantSlug !== 'pusat'
+      ? `Admin SAR ${tenantSlug.charAt(0).toUpperCase() + tenantSlug.slice(1)}`
+      : 'Admin CC');
   
   const { isConnected } = useSocket();
   
@@ -226,41 +257,42 @@ export function Header() {
             title="Profil Pengguna"
           >
             <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0">
-              {userRole === 'User' ? 'US' : userRole === 'Operator' ? 'OP' : userRole === 'Super Admin' ? 'SA' : 'AD'}
+              {getInitials(displayName, userRole)}
             </div>
             <div className="hidden sm:flex flex-col text-left min-w-0 pr-1">
-              <span className="text-xs font-semibold text-slate-800 leading-none truncate max-w-[120px]">
-                {userRole === 'User' 
-                  ? 'Pengguna' 
-                  : userRole === 'Operator' 
-                  ? 'Operator SAR' 
-                  : userRole === 'Super Admin'
-                  ? 'Super Admin'
-                  : 'Admin CC'}
+              <span className="text-xs font-semibold text-slate-800 leading-none truncate max-w-[140px]" title={displayName}>
+                {displayName}
               </span>
-              <span className="text-[9px] text-green-600 font-medium flex items-center gap-1 mt-0.5 leading-none">
+              <span className="text-[9px] text-slate-500 font-medium flex items-center gap-1 mt-0.5 leading-none">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                Online
+                <span className="text-green-600 font-semibold">Online</span>
+                {tenantSlug && (
+                  <span className="text-slate-400 font-mono">({tenantSlug.toUpperCase()})</span>
+                )}
               </span>
             </div>
           </button>
 
           {showProfileDrop && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50">
-              <div className="px-4 py-2 border-b border-gray-50 flex flex-col sm:hidden">
-                <span className="text-xs font-bold text-slate-800">
-                  {userRole === 'User' 
-                    ? 'Pengguna' 
-                    : userRole === 'Operator' 
-                    ? 'Operator SAR' 
-                    : userRole === 'Super Admin'
-                    ? 'Super Admin'
-                    : 'Admin CC'}
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50">
+              <div className="px-4 py-2.5 border-b border-gray-100 flex flex-col">
+                <span className="text-xs font-bold text-slate-900 truncate" title={displayName}>
+                  {displayName}
                 </span>
-                <span className="text-[9px] text-green-600 font-bold flex items-center gap-1 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                  Online
-                </span>
+                {userEmail && (
+                  <span className="text-[10px] text-slate-500 truncate" title={userEmail}>
+                    {userEmail}
+                  </span>
+                )}
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[9px] font-semibold">
+                    {tenantSlug ? `WORKSPACE: ${tenantSlug.toUpperCase()}` : 'WORKSPACE: PUSAT'}
+                  </span>
+                  <span className="text-[9px] text-emerald-600 font-bold flex items-center gap-1 ml-auto">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Online
+                  </span>
+                </div>
               </div>
               <button
                 onClick={() => {

@@ -257,8 +257,7 @@ class LLMRagService:
         Search relevant dictionary terms using pgvector semantic similarity.
         Searches both Master DB (Global) and Tenant DB (Regional).
         """
-        from unittest.mock import Mock
-        if not db or isinstance(db, Mock) or not text or not text.strip():
+        if not db or not text or not text.strip():
             return []
         try:
             from app.core.tenant_config import get_tenant_settings
@@ -389,8 +388,7 @@ class LLMRagService:
 
     async def search_similar_reports(self, text: str, db: AsyncSession, limit: int = 2) -> List[Dict[str, Any]]:
         """Search similar reports using pgvector similarity in both Master DB (global) and Tenant DB (regional)."""
-        from unittest.mock import Mock
-        if not db or isinstance(db, Mock):
+        if not db:
             return []
         try:
             from app.core.tenant_config import get_tenant_settings
@@ -510,8 +508,7 @@ class LLMRagService:
 
     async def search_sop_chunks(self, text: str, db: AsyncSession, limit: int = 5) -> List[Dict[str, Any]]:
         """Search relevant official SOP document chunks using pgvector similarity in both Master DB and Tenant DB."""
-        from unittest.mock import Mock
-        if not db or isinstance(db, Mock):
+        if not db:
             return []
         try:
             from app.core.tenant_config import get_tenant_settings
@@ -661,88 +658,6 @@ class LLMRagService:
             role = "Pelapor" if msg.get("role") == "user" else "Sistem SAR"
             formatted += f"[{role}]: {msg.get('content')}\n"
         return formatted
-
-    async def extract_report_data_strict(
-        self, 
-        message: str, 
-        context: str = "", 
-        conversation_history: list = None,
-        db = None
-    ) -> SARExtractedFields:
-        """
-        Extracts data using strict JSON schema with Pydantic.
-        """
-        history_context = self._format_conversation_history(conversation_history)
-        
-        system_prompt = f"""Anda adalah sistem ekstraksi AI untuk Badan Nasional Pencarian dan Pertolongan (BASARNAS) Indonesia.
-Tugas Anda adalah mengekstrak informasi kejadian darurat secara akurat ke dalam format JSON sesuai dengan skema yang diminta.
-
-{context}
-
-ATURAN EKSTRAKSI KETAT & PENCEGAHAN HALUSINASI:
-1. 'jenis_kejadian': Kategori kejadian darurat formal (contoh: LAKA KAPAL, KMM, LAKA LANTAS, LAKA PESAWAT).
-2. 'waktu': Waktu kejadian secara eksplisit (hari, tanggal, jam).
-   - [PENTING] JIKA TIDAK ADA informasi waktu yang eksplisit di dalam teks, set nilai ini ke null. JANGAN MENGARANG.
-   - [PENTING] Dilarang keras memindahkan angka kronologi atau data korban (seperti "6 orang", "3 selamat") ke kolom waktu.
-3. 'lokasi_teks': Nama tempat kejadian secara spesifik (contoh: Pantai Piwang, Perairan Kepulauan Seribu).
-4. 'korban': Ringkasan jumlah korban tenggelam/terbawa arus/musibah secara umum (contoh: "3 orang tenggelam").
-5. 'data_korban': Array objek berisi rincian identitas masing-masing korban riil (yang tenggelam/hilang/tewas):
-   - 'nama': Nama korban (null jika tidak diketahui).
-   - 'umur': Umur korban (null jika tidak diketahui).
-   - 'jenis_kelamin': Laki-laki atau Perempuan (null jika tidak diketahui).
-   - 'alamat': Alamat korban (null jika tidak diketahui).
-   - 'no_hp': Nomor HP atau nomor telepon korban jika disebutkan (null jika tidak diketahui).
-   - 'kondisi': Wajib diisi konsisten menggunakan istilah SAR: "Selamat" (jika dievakuasi/diselamatkan), "Dalam Pencarian" (jika hilang/belum ditemukan), atau "Meninggal Dunia" (jika tewas/MD).
-   - [PENTING] Dilarang memasukkan orang yang tidak tertimpa musibah (seperti orang yang selamat sejak awal karena tidak ikut tenggelam) ke dalam array data_korban ini.
-6. 'kronologi': Uraian kronologis singkat kejadian maksimal 2 kalimat.
-
-Berikan output HANYA berupa valid JSON sesuai skema tanpa teks penjelasan tambahan apapun.
-"""
-
-        prompt = f"""
-{history_context}
-
-PESAN PELAPOR TERBARU:
-{message}
-
-Ekstrak informasi dari pesan terbaru (dan riwayat jika ada) ke dalam format JSON.
-"""
-        
-        try:
-            tenant_settings = None
-            if db is not None:
-                from app.core.tenant_config import get_tenant_settings
-                tenant_settings = await get_tenant_settings(db)
-
-            response_text = await ai_provider_manager.llm_generate(
-                prompt=prompt,
-                system_prompt=system_prompt,
-                temperature=0.0,
-                json_mode=True,
-                timeout=120.0,
-                tenant_settings=tenant_settings
-            )
-            
-            if not response_text:
-                return None
-                
-            # Parse JSON
-            data = json.loads(response_text)
-            
-            # Extract nested extraction dict if wrapped by thinking models
-            data = _extract_nested_dict(
-                data, 
-                ["jenis_kejadian", "waktu", "lokasi_teks", "korban", "data_korban", "kronologi"]
-            )
-            
-            # Validate with Pydantic
-            validated = SARExtractedFields(**data)
-            
-            return validated
-            
-        except Exception as e:
-            logger.error(f"Failed strict extraction: {str(e)}")
-            return None
 
     async def validate_extraction_with_ai(
         self,
@@ -998,62 +913,6 @@ Respond ONLY with the JSON object. No explanation."""
 
         except Exception as e:
             logger.error(f"Error saving unknown words: {e}")
-
-    async def parse_waktu_to_pdtw(self, waktu_str: str, current_time_str: str, db = None) -> str:
-        """
-        Parses an Indonesian relative/absolute time string into BASARNAS PDTW format:
-        PDTW MMdd HHmm G (e.g., May 25, 2026 at 16:00 becomes PDTW 0525 1600 G)
-        """
-        import re
-        # Let's prompt LLM to do this precisely!
-        prompt = f"""Konversikan keterangan waktu dalam bahasa Indonesia berikut ke dalam format PDTW (Date-Time Group BASARNAS) dengan format:
-PDTW MMdd HHmm G
-di mana:
-- MM adalah 2 digit bulan (misal Mei = 05, Juni = 06, dsb)
-- dd adalah 2 digit tanggal (misal 25 = 25)
-- HHmm adalah 4 digit jam dan menit (misal 16:00 = 1600)
-- G adalah penanda zona waktu (default selalu akhiri dengan G)
-
-Current Time (Waktu Sekarang): {current_time_str}
-Waktu dari Pelapor: {waktu_str}
-
-Contoh Konversi:
-- "Pukul 4 SORE" (jika hari ini 25 Mei) -> PDTW 0525 1600 G
-- "tadi pagi pukul 08:00" (jika hari ini 25 Mei) -> PDTW 0525 0800 G
-- "10 menit yang lalu" (jika sekarang 16:10, 25 Mei) -> PDTW 0525 1600 G
-- "kemarin jam 9 malam" (jika hari ini 25 Mei) -> PDTW 0524 2100 G
-
-Kembalikan HANYA string PDTW hasil konversi tersebut tanpa penjelasan lain (contoh output: PDTW 0525 1600 G). Jika tidak bisa dikonversi, kembalikan format PDTW berbasis waktu sekarang."""
-
-        try:
-            tenant_settings = None
-            if db is not None:
-                from app.core.tenant_config import get_tenant_settings
-                tenant_settings = await get_tenant_settings(db)
-
-            response = await ai_provider_manager.llm_generate(
-                prompt=prompt,
-                system_prompt="Anda adalah asisten administrasi operasi SAR yang bertugas memformat waktu ke PDTW.",
-                temperature=0.0,
-                timeout=15.0,
-                tenant_settings=tenant_settings
-            )
-            if response:
-                result = response.strip()
-                if re.match(r'^PDTW\s+\d{4}\s+\d{4}\s+G$', result):
-                    return result
-        except Exception as e:
-            logger.error(f"Failed to parse waktu to PDTW via LLM: {e}")
-            
-        try:
-            # Let's try parsing basic digits
-            clean = re.sub(r'[^a-zA-Z0-9\s]', '', waktu_str).upper()
-            if re.match(r'^PDTW\s+\d{4}\s+\d{4}\s+G$', clean):
-                return clean
-        except Exception:
-            pass
-            
-        return waktu_str
 
     async def parse_data_korban(self, text: str, db = None) -> list[dict]:
         """
@@ -1330,10 +1189,8 @@ PETUNJUK FORMAT JAWABAN (WAJIB DIIKUTI SECARA KETAT):
             tenant_settings = None
             if db is not None:
                 try:
-                    from unittest.mock import Mock
-                    if not isinstance(db, Mock):
-                        from app.core.tenant_config import get_tenant_settings
-                        tenant_settings = await get_tenant_settings(db)
+                    from app.core.tenant_config import get_tenant_settings
+                    tenant_settings = await get_tenant_settings(db)
                 except Exception as t_err:
                     logger.warning(f"Failed to load tenant settings: {t_err}")
 

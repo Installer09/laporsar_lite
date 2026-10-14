@@ -76,11 +76,6 @@ def _degrees_to_compass(deg: float) -> str:
     return WIND_DIRECTIONS[idx][1]
 
 
-def _ms_to_knots(ms: float) -> float:
-    """Convert meters/second to knots."""
-    return round(ms * 1.94384, 1)
-
-
 async def fetch_weather(lat: float, lon: float) -> Optional[str]:
     """
     Fetch current weather from Open-Meteo API and format for Info Awal.

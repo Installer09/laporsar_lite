@@ -47,7 +47,14 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
         for ai_key in AI_SETTING_KEYS:
             if ai_key not in tenant_settings and ai_key in pusat_settings:
                 tenant_settings[ai_key] = SystemSetting(key=ai_key, value=pusat_settings[ai_key])
-                
+
+    # Fallback to runtime config / env for any keys not explicitly in DB (e.g. telegram_token, telegram_group)
+    for db_key, env_attr in _ENV_TO_DB_MAP.items():
+        if db_key not in tenant_settings and env_attr:
+            val = getattr(app_settings, env_attr, "") or ""
+            if val:
+                tenant_settings[db_key] = SystemSetting(key=db_key, value=str(val))
+
     return list(tenant_settings.values())
 
 @router.put("/config", response_model=dict)

@@ -86,57 +86,6 @@ async def create_database_if_not_exists(db_url: str):
             )
     await engine.dispose()
 
-def run_tenant_migrations(db_url: str):
-    # Ensure correct asyncpg prefix is passed for Alembic (which now uses async engine)
-    raw_db_url = db_url
-    if raw_db_url.startswith("postgresql://") and not raw_db_url.startswith("postgresql+asyncpg://"):
-        raw_db_url = raw_db_url.replace("postgresql://", "postgresql+asyncpg://")
-
-    # Go up 4 levels to reach the backend root containing alembic.ini (/app)
-    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    cmd = [
-        sys.executable, "-m", "alembic",
-        "-x", f"db_url={raw_db_url}",
-        "upgrade", "head"
-    ]
-    try:
-        result = subprocess.run(cmd, cwd=backend_dir, capture_output=True, text=True, check=True)
-        logger.info(f"Migrations ran successfully for tenant DB. Output:\n{result.stdout}")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to run migrations for tenant DB. stdout:\n{e.stdout}\nstderr:\n{e.stderr}")
-        raise RuntimeError(f"Gagal menjalankan migrasi Alembic: {e.stderr or e.stdout}")
-
-async def seed_tenant_data(db_url: str):
-    session_maker = get_tenant_sessionmaker(db_url)
-    async with session_maker() as db:
-        # 1. Seed Dictionary Words
-        from app.db.seed_dictionary import seed_default_dictionary
-        try:
-            await seed_default_dictionary(db)
-        except Exception as e:
-            logger.error(f"Failed to seed dictionary: {e}")
-
-        # 2. Seed Default Settings
-        from app.models.settings_models import SystemSetting
-        from app.api.routes.identitas import DEFAULT_IDENTITAS
-        try:
-            for key, val in DEFAULT_IDENTITAS.items():
-                # check if exists
-                res = await db.execute(select(SystemSetting).where(SystemSetting.key == key))
-                if not res.scalar_one_or_none():
-                    db.add(SystemSetting(key=key, value=val))
-            await db.commit()
-            logger.info("Successfully seeded default settings for tenant.")
-        except Exception as e:
-            await db.rollback()
-            logger.error(f"Failed to seed default settings: {e}")
-
-        # 3. Seed/Sync Classifications
-        from app.db.seed_classifications import sync_classifications_from_center
-        try:
-            await sync_classifications_from_center(db)
-        except Exception as e:
-            logger.error(f"Failed to sync classifications: {e}")
 
 @router.post("/tenants", response_model=TenantResponse, dependencies=[Depends(verify_super_admin)])
 async def create_tenant(tenant_in: TenantCreate, background_tasks: BackgroundTasks, db_master: AsyncSession = Depends(get_master_db)):

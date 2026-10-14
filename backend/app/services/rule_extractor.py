@@ -43,20 +43,14 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
     @classmethod
     async def load_cache(cls, db: AsyncSession):
         """Pre-warm dictionary cache by merging global approved words (Master DB) and regional approved words (Tenant DB)."""
-        from unittest.mock import Mock
-        is_mock_db = isinstance(db, Mock)
-        
-        if is_mock_db:
-            tenant_slug = tenant_context.get()
-        else:
-            info = getattr(db, "info", None)
-            tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else "global"
+        info = getattr(db, "info", None)
+        tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else (tenant_context.get() or "global")
         
         # 1. Fetch approved words from Master DB
         master_words = []
         try:
             from app.models.knowledge_models import DictionaryWord, DictionaryStatus
-            if tenant_slug == "global" or is_mock_db:
+            if tenant_slug == "global":
                 result = await db.execute(
                     select(DictionaryWord).where(
                         DictionaryWord.status == DictionaryStatus.APPROVED
@@ -75,9 +69,9 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
         except Exception as e:
             logger.warning(f"[RuleExtractor] Failed to load global dictionary words: {e}")
 
-        # 2. Fetch approved words from Tenant DB (if not global and not mock)
+        # 2. Fetch approved words from Tenant DB (if not global)
         tenant_words = []
-        if tenant_slug != "global" and not is_mock_db:
+        if tenant_slug != "global":
             try:
                 from app.models.knowledge_models import DictionaryWord, DictionaryStatus
                 result = await db.execute(
@@ -129,7 +123,7 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
         # Load from Master classifications
         try:
             from app.models.settings_models import Classification
-            if tenant_slug == "global" or is_mock_db:
+            if tenant_slug == "global":
                 class_res = await db.execute(select(Classification))
                 classifications = class_res.scalars().all()
             else:
@@ -147,8 +141,8 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
         except Exception as e:
             logger.warning(f"[RuleExtractor] Failed to load global classifications: {e}")
 
-        # Load from Tenant classifications (if not global and not mock)
-        if tenant_slug != "global" and not is_mock_db:
+        # Load from Tenant classifications (if not global)
+        if tenant_slug != "global":
             try:
                 from app.models.settings_models import Classification
                 class_res = await db.execute(select(Classification))
@@ -301,19 +295,13 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
     @staticmethod
     async def extract_all(message: str, db: AsyncSession) -> Dict[str, Any]:
         """Run all rule-based extractors and return a dict of found fields."""
-        from unittest.mock import Mock
-        is_mock_db = isinstance(db, Mock)
-        
-        if is_mock_db:
-            tenant_slug = tenant_context.get()
-        else:
-            info = getattr(db, "info", None)
-            tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else "global"
+        info = getattr(db, "info", None)
+        tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else (tenant_context.get() or "global")
         
         # Set active tenant context
         token = tenant_context.set(tenant_slug)
         try:
-            if not RuleExtractor._cache_loaded and not is_mock_db:
+            if not RuleExtractor._cache_loaded:
                 await RuleExtractor.load_cache(db)
                 
             extracted: Dict[str, Any] = {
@@ -1078,51 +1066,6 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
             logger.warning(f"[RuleExtractor] Dictionary enrichment error: {e}")
 
         return hints
-
-    # ── Helper: find unrecognized words ───────────────────────────
-
-    @staticmethod
-    async def find_unrecognized_words(
-        message: str, db: AsyncSession
-    ) -> List[str]:
-        """
-        Find uppercase abbreviations (2-8 chars) in the message that are
-        NOT in the SAR_GLOSSARY AND NOT already in dictionary_words.
-        These are candidates for AI definition.
-        """
-        from app.services.term_extractor import SAR_GLOSSARY, STOP_ABBREVS
-        from app.models.knowledge_models import DictionaryWord
-        from sqlalchemy import func as sa_func
-
-        # Extract uppercase abbreviations
-        abbrevs = set(re.findall(r"\b([A-Z]{2,8})\b", message))
-        abbrevs -= STOP_ABBREVS
-
-        if not abbrevs:
-            return []
-
-        # Remove those already in glossary
-        abbrevs -= set(SAR_GLOSSARY.keys())
-
-        if not abbrevs:
-            return []
-
-        # Remove those already in DB
-        unrecognized: List[str] = []
-        try:
-            for abbr in abbrevs:
-                result = await db.execute(
-                    select(DictionaryWord).where(
-                        sa_func.upper(DictionaryWord.word) == abbr.upper()
-                    )
-                )
-                if result.scalar_one_or_none() is None:
-                    unrecognized.append(abbr)
-        except Exception as e:
-            logger.warning(f"[RuleExtractor] Unrecognized word check error: {e}")
-            unrecognized = list(abbrevs)
-
-        return unrecognized
 
 
 rule_extractor = RuleExtractor()
