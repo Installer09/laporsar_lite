@@ -17,11 +17,12 @@ import {
   Eye,
   X
 } from 'lucide-react';
-import { getStorageStats, listStorageFiles, deleteStorageFile, cleanupStorageFiles } from '@/lib/api';
+import { getStorageStats, listStorageFiles, deleteStorageFile } from '@/lib/api';
 
 interface StorageStats {
   storage_type: string;
   storage_path: string;
+  tenant_slug?: string;
   total_files: number;
   total_size_bytes: number;
   total_size_mb: number;
@@ -51,8 +52,6 @@ export default function StorageManagerPage() {
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
-  const [showCleanupModal, setShowCleanupModal] = useState(false);
-  const [cleaningUp, setCleaningUp] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -90,20 +89,6 @@ export default function StorageManagerPage() {
     }
   };
 
-  const handleCleanup = async () => {
-    try {
-      setCleaningUp(true);
-      await cleanupStorageFiles();
-      setNotification({ type: 'success', message: 'Seluruh berkas uji coba berhasil dibersihkan.' });
-      setShowCleanupModal(false);
-      fetchData();
-    } catch (err: any) {
-      setNotification({ type: 'error', message: 'Gagal membersihkan berkas.' });
-    } finally {
-      setCleaningUp(false);
-    }
-  };
-
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
         {/* Header */}
@@ -114,9 +99,14 @@ export default function StorageManagerPage() {
                 <HardDrive className="w-6 h-6" />
               </span>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Manajemen Berkas & Media</h1>
+              {stats?.tenant_slug && (
+                <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-full uppercase">
+                  Kantor SAR {stats.tenant_slug}
+                </span>
+              )}
             </div>
             <p className="text-sm text-slate-500 mt-1">
-              Pengelolaan media lokal Lapor SAR: Voice Note, foto dokumentasi musibah, dan lampiran darurat.
+              Pengelolaan media lokal {stats?.tenant_slug ? `Kantor SAR ${stats.tenant_slug.toUpperCase()}` : 'Lapor SAR'}: Voice Note, foto dokumentasi musibah, dan lampiran darurat (Terisolasi per Kantor SAR).
             </p>
           </div>
 
@@ -128,13 +118,6 @@ export default function StorageManagerPage() {
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Segarkan
-            </button>
-            <button
-              onClick={() => setShowCleanupModal(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition"
-            >
-              <Trash2 className="w-4 h-4" />
-              Reset Berkas Demo
             </button>
           </div>
         </div>
@@ -350,41 +333,6 @@ export default function StorageManagerPage() {
                 <X className="w-5 h-5" />
               </button>
               <img src={previewImage} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-xl" />
-            </div>
-          </div>
-        )}
-
-        {/* Cleanup Confirmation Modal */}
-        {showCleanupModal && (
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-              <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div className="text-center">
-                <h3 className="text-lg font-bold text-slate-900">Reset Semua Berkas Demo?</h3>
-                <p className="text-sm text-slate-500 mt-2">
-                  Tindakan ini akan menghapus seluruh rekaman suara dan foto yang tersimpan di direktori server lokal. Sangat berguna untuk membersihkan data setelah simulasi pitch selesai.
-                </p>
-              </div>
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCleanupModal(false)}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCleanup}
-                  disabled={cleaningUp}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition inline-flex items-center justify-center gap-2"
-                >
-                  {cleaningUp && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Ya, Bersihkan
-                </button>
-              </div>
             </div>
           </div>
         )}

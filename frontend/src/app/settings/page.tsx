@@ -686,7 +686,14 @@ export default function SettingsPage() {
   const handleSetupTelegramWebhook = async () => {
     setIsSettingUpWebhook(true);
     try {
-      const res = await setupTelegramWebhook(webhookBaseUrl);
+      // Auto-simpan pengaturan form terlebih dahulu agar token tersimpan di database
+      if (formData.telegram_token) {
+        const payload = Object.entries(formData).map(([key, value]) => ({ key, value }));
+        await updateSettings(payload);
+        queryClient.invalidateQueries({ queryKey: ['settings'] });
+      }
+
+      const res = await setupTelegramWebhook(webhookBaseUrl, formData.telegram_token);
       if (res.status === 'success') {
         showSuccessToast('Webhook Telegram berhasil terhubung!');
       } else {

@@ -16,12 +16,21 @@ from app.core.websocket import manager
 
 router = APIRouter(redirect_slashes=False)
 
-# KML/KMZ Upload directory
+# Base Upload directories
 UPLOAD_DIR = Path("uploads/maps")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 LOGO_DIR = Path("uploads/identity")
 LOGO_DIR.mkdir(parents=True, exist_ok=True)
+
+def get_tenant_identity_dirs(tenant_slug: str):
+    """Get isolated directories for maps and identity logos per tenant."""
+    slug = (tenant_slug or "pusat").lower().strip()
+    maps_dir = Path("uploads/tenants") / slug / "maps"
+    logo_dir = Path("uploads/tenants") / slug / "identity"
+    maps_dir.mkdir(parents=True, exist_ok=True)
+    logo_dir.mkdir(parents=True, exist_ok=True)
+    return maps_dir, logo_dir
 
 DEFAULT_IDENTITAS = {
     "identitas_nama_instansi": "Kantor Pencarian dan Pertolongan Natuna",
@@ -43,6 +52,9 @@ async def get_identity(db: AsyncSession = Depends(get_db), tenant = Depends(get_
     data = DEFAULT_IDENTITAS.copy()
     
     # Dynamic defaults based on active tenant name/slug
+    tenant_slug = tenant.slug if tenant else "pusat"
+    tenant_maps_dir, _ = get_tenant_identity_dirs(tenant_slug)
+
     if tenant:
         data["identitas_nama_instansi"] = tenant.name
         if tenant.slug == "pusat":
@@ -56,10 +68,12 @@ async def get_identity(db: AsyncSession = Depends(get_db), tenant = Depends(get_
     # Self-healing KML path check
     kml_path = data.get("identitas_kml_path")
     if not kml_path or not os.path.exists(kml_path):
-        # Stored file not found or empty. Scan for any existing KML/KMZ files in UPLOAD_DIR
-        kml_files = list(UPLOAD_DIR.glob("batas_wilayah_*"))
+        # Stored file not found or empty. Scan tenant's maps dir first, then fallback to global maps
+        kml_files = list(tenant_maps_dir.glob("batas_wilayah_*"))
         if not kml_files:
-            kml_files = list(UPLOAD_DIR.glob("*.kml")) + list(UPLOAD_DIR.glob("*.kmz"))
+            kml_files = list(tenant_maps_dir.glob("*.kml")) + list(tenant_maps_dir.glob("*.kmz"))
+        if not kml_files:
+            kml_files = list(UPLOAD_DIR.glob("batas_wilayah_*"))
             
         if kml_files:
             # Sort by modification time to get the newest file if there are multiple
@@ -109,22 +123,24 @@ async def update_identity(payload: dict, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Database transaction failed")
 
 @router.post("/identity/kml", dependencies=[Depends(verify_admin)])
-async def upload_kml(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+async def upload_kml(file: UploadFile = File(...), db: AsyncSession = Depends(get_db), tenant = Depends(get_tenant)):
     """Upload KML/KMZ file for map overlay."""
     if not file.filename.lower().endswith(('.kml', '.kmz')):
         raise HTTPException(status_code=400, detail="Hanya file .kml dan .kmz yang didukung")
         
     ext = ".kml" if file.filename.lower().endswith('.kml') else ".kmz"
+    tenant_slug = tenant.slug if tenant else "pusat"
+    maps_dir, _ = get_tenant_identity_dirs(tenant_slug)
     
-    # Clean up existing KML/KMZ files first to prevent clutter
-    for old_file in UPLOAD_DIR.glob("batas_wilayah_*"):
+    # Clean up existing KML/KMZ files for this tenant first to prevent clutter
+    for old_file in maps_dir.glob("batas_wilayah_*"):
         try:
             os.remove(old_file)
         except Exception:
             pass
             
     safe_name = f"batas_wilayah_{uuid.uuid4().hex}{ext}"
-    file_path = UPLOAD_DIR / safe_name
+    file_path = maps_dir / safe_name
     
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -174,22 +190,24 @@ async def delete_kml(db: AsyncSession = Depends(get_db)):
     return {"status": "success", "message": "File batas wilayah berhasil dihapus"}
 
 @router.post("/identity/logo", dependencies=[Depends(verify_admin)])
-async def upload_logo(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+async def upload_logo(file: UploadFile = File(...), db: AsyncSession = Depends(get_db), tenant = Depends(get_tenant)):
     """Upload logo image for tenant identity."""
     if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
         raise HTTPException(status_code=400, detail="Hanya file gambar (.png, .jpg, .jpeg) yang didukung")
         
     ext = Path(file.filename).suffix
+    tenant_slug = tenant.slug if tenant else "pusat"
+    _, logo_dir = get_tenant_identity_dirs(tenant_slug)
     
-    # Clean up existing logo files to prevent clutter
-    for old_file in LOGO_DIR.glob("logo_*"):
+    # Clean up existing logo files for this tenant to prevent clutter
+    for old_file in logo_dir.glob("logo_*"):
         try:
             os.remove(old_file)
         except Exception:
             pass
             
     safe_name = f"logo_{uuid.uuid4().hex}{ext}"
-    file_path = LOGO_DIR / safe_name
+    file_path = logo_dir / safe_name
     
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)

@@ -337,7 +337,8 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                                     file_type=file_type,
                                     user_id=f"tg_{chat_id}",
                                     channel="telegram",
-                                    bucket_name=bucket_name
+                                    bucket_name=bucket_name,
+                                    tenant_slug=tenant_slug
                                 )
                                 
                                 if file_key:
@@ -513,6 +514,7 @@ async def test_webhook_get(tenant_slug: str, db: AsyncSession = Depends(get_db))
 
 class WebhookSetupRequest(BaseModel):
     base_url: Optional[str] = None
+    bot_token: Optional[str] = None
 
 @router.post("/setup-webhook", dependencies=[Depends(verify_admin)])
 async def setup_telegram_webhook(
@@ -526,14 +528,29 @@ async def setup_telegram_webhook(
     Uses the request's base URL or the provided base URL to construct the webhook endpoint dynamically.
     """
     from app.core.tenant_config import get_tenant_settings
+    from app.models.settings_models import SystemSetting
     
     tenant_settings = await get_tenant_settings(db)
-    token = tenant_settings.TELEGRAM_BOT_TOKEN
+    token = (payload.bot_token.strip() if payload and payload.bot_token and payload.bot_token.strip() else None) or tenant_settings.TELEGRAM_BOT_TOKEN
     if not token:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token Telegram belum dikonfigurasi pada pengaturan instansi."
+            detail="Token Telegram belum dikonfigurasi pada pengaturan instansi. Silakan isi token dan simpan pengaturan terlebih dahulu."
         )
+
+    # If bot_token was explicitly provided in payload, ensure it is persisted in DB if not already set
+    if payload and payload.bot_token and payload.bot_token.strip() and not tenant_settings.TELEGRAM_BOT_TOKEN:
+        try:
+            stmt = select(SystemSetting).where(SystemSetting.key == "telegram_token")
+            res = await db.execute(stmt)
+            existing = res.scalar_one_or_none()
+            if existing:
+                existing.value = payload.bot_token.strip()
+            else:
+                db.add(SystemSetting(key="telegram_token", value=payload.bot_token.strip()))
+            await db.commit()
+        except Exception as e:
+            logger.warning(f"Could not auto-persist telegram_token: {e}")
 
     # Use the custom base URL if provided in the payload, otherwise fall back to request base URL
     custom_base_url = payload.base_url if payload else None

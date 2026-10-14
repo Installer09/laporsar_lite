@@ -30,18 +30,53 @@ logger = logging.getLogger(__name__)
 router = APIRouter(redirect_slashes=False)
 
 # --- Settings ---
-@router.get("/config", response_model=List[SystemSettingResponse], dependencies=[Depends(verify_super_admin)])
+@router.get("/config", response_model=List[SystemSettingResponse], dependencies=[Depends(verify_admin)])
 async def get_settings(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(SystemSetting))
-    return result.scalars().all()
+    tenant_settings = {s.key: s for s in result.scalars().all()}
+    
+    tenant_slug = db.info.get("tenant_slug")
+    if not tenant_slug:
+        from app.db.session import tenant_context
+        tenant_slug = tenant_context.get() or "pusat"
 
-@router.put("/config", response_model=dict, dependencies=[Depends(verify_super_admin)])
-async def update_settings(bulk_update: SystemSettingsBulkUpdate, db: AsyncSession = Depends(get_db)):
-    keys = [s.key for s in bulk_update.settings]
+    # If tenant is not pusat, include inherited central AI settings if not customized locally
+    if tenant_slug != "pusat":
+        from app.core.tenant_config import get_pusat_settings, AI_SETTING_KEYS
+        pusat_settings = await get_pusat_settings()
+        for ai_key in AI_SETTING_KEYS:
+            if ai_key not in tenant_settings and ai_key in pusat_settings:
+                tenant_settings[ai_key] = SystemSetting(key=ai_key, value=pusat_settings[ai_key])
+                
+    return list(tenant_settings.values())
+
+@router.put("/config", response_model=dict)
+async def update_settings(
+    bulk_update: SystemSettingsBulkUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(verify_admin)
+):
+    from app.core.tenant_config import AI_SETTING_KEYS, invalidate_pusat_settings_cache
+
+    is_super_admin = (
+        current_user.get("role") == "Super Admin"
+        or current_user.get("sub") == getattr(app_settings, "DEV_SUPERADMIN_USERNAME", "superadmin")
+    )
+    tenant_slug = db.info.get("tenant_slug") or current_user.get("tenant_slug") or "pusat"
+
+    # Filter settings if user is not Super Admin (tenant admin cannot change central AI settings)
+    settings_to_apply = []
+    for s in bulk_update.settings:
+        if s.key in AI_SETTING_KEYS and not is_super_admin:
+            # Non-superadmin cannot overwrite central AI settings
+            continue
+        settings_to_apply.append(s)
+
+    keys = [s.key for s in settings_to_apply]
     result = await db.execute(select(SystemSetting).where(SystemSetting.key.in_(keys)))
     existing_settings = {s.key: s for s in result.scalars().all()}
     
-    for setting_in in bulk_update.settings:
+    for setting_in in settings_to_apply:
         setting = existing_settings.get(setting_in.key)
         if setting:
             setting.value = setting_in.value
@@ -55,6 +90,10 @@ async def update_settings(bulk_update: SystemSettingsBulkUpdate, db: AsyncSessio
         await db.rollback()
         logger.error(f"Failed to update settings: {e}")
         raise HTTPException(status_code=500, detail="Database transaction failed")
+
+    # If pusat updated settings, invalidate cached AI settings for all tenants
+    if tenant_slug == "pusat":
+        invalidate_pusat_settings_cache()
 
     await manager.broadcast({"event": "settings_updated"}, db=db)
     return {"status": "success", "message": "Settings updated"}

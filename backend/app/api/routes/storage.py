@@ -17,6 +17,8 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from app.services.storage_service import storage_service
 from app.core.security import verify_jwt, verify_admin
+from app.db.session import get_db, get_tenant
+from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,9 +29,12 @@ router = APIRouter()
 @router.get("/stats")
 async def get_storage_stats(
     payload: dict = Depends(verify_jwt),
+    tenant = Depends(get_tenant),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Get storage statistics (disk space, breakdown by type)."""
-    stats = await storage_service.get_storage_stats()
+    """Get storage statistics isolated for the active tenant."""
+    tenant_slug = tenant.slug if tenant else payload.get("tenant_slug", "pusat")
+    stats = await storage_service.get_storage_stats(tenant_slug=tenant_slug, db=db)
     return stats
 
 
@@ -39,9 +44,18 @@ async def list_storage_files(
     limit: int = Query(100, ge=1, le=500),
     skip: int = Query(0, ge=0),
     payload: dict = Depends(verify_jwt),
+    tenant = Depends(get_tenant),
+    db: AsyncSession = Depends(get_db),
 ):
-    """List stored files for the Storage Manager UI."""
-    files = await storage_service.list_files(category=category, limit=limit, skip=skip)
+    """List stored files isolated for the active tenant."""
+    tenant_slug = tenant.slug if tenant else payload.get("tenant_slug", "pusat")
+    files = await storage_service.list_files(
+        category=category,
+        limit=limit,
+        skip=skip,
+        tenant_slug=tenant_slug,
+        db=db
+    )
     return {
         "total": len(files),
         "items": files
@@ -89,13 +103,23 @@ async def stream_storage_file(filepath: str):
 async def delete_storage_file(
     filepath: str,
     payload: dict = Depends(verify_admin),
+    tenant = Depends(get_tenant),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Delete a file from storage (Admin only)."""
-    success = await storage_service.delete_file(filepath)
+    """Delete a file from storage with tenant boundary verification (Admin only)."""
+    tenant_slug = tenant.slug if tenant else payload.get("tenant_slug", "pusat")
+    is_super_admin = payload.get("role") == "Super Admin" and tenant_slug in (None, "pusat")
+    
+    success = await storage_service.delete_file(
+        filepath,
+        tenant_slug=tenant_slug,
+        is_super_admin=is_super_admin,
+        db=db
+    )
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="File could not be deleted or does not exist."
+            detail="Berkas tidak ditemukan atau Anda tidak memiliki izin untuk menghapusnya."
         )
     return {"message": "File deleted successfully", "filepath": filepath}
 
@@ -103,10 +127,17 @@ async def delete_storage_file(
 @router.post("/cleanup")
 async def cleanup_test_files(
     payload: dict = Depends(verify_admin),
+    tenant = Depends(get_tenant),
 ):
-    """Reset / cleanup all demo uploads (Admin only)."""
-    result = await storage_service.cleanup_all_test_files()
+    """Reset / cleanup demo uploads strictly for the active tenant (Admin only)."""
+    tenant_slug = tenant.slug if tenant else payload.get("tenant_slug", "pusat")
+    is_super_admin = payload.get("role") == "Super Admin" and tenant_slug in (None, "pusat")
+    
+    result = await storage_service.cleanup_all_test_files(
+        tenant_slug=tenant_slug,
+        is_super_admin=is_super_admin
+    )
     return {
-        "message": "Storage cleaned successfully",
+        "message": f"Penyimpanan berkas untuk instansi '{tenant_slug}' berhasil dibersihkan",
         **result
     }

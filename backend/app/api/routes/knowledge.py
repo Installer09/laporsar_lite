@@ -999,13 +999,17 @@ async def upload_sop_document(
     if is_global and tenant_slug not in ("pusat", "global"):
         raise HTTPException(status_code=403, detail="Hanya UPT Pusat yang dapat mengunggah SOP dasar nasional")
 
-    # Ensure upload directory exists
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    # Determine target upload directory: master SOP vs tenant-specific SOP
+    if is_global:
+        target_dir = UPLOAD_DIR
+    else:
+        target_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "uploads", "tenants", tenant_slug, "sop")
+    os.makedirs(target_dir, exist_ok=True)
 
     # Save file with unique name
     ext = os.path.splitext(file.filename)[1] if file.filename else ".pdf"
     unique_name = f"{uuid.uuid4().hex}{ext}"
-    file_path = os.path.join(UPLOAD_DIR, unique_name)
+    file_path = os.path.join(target_dir, unique_name)
 
     with open(file_path, "wb") as f:
         f.write(contents)

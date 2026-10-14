@@ -139,7 +139,8 @@ async def process_whatsapp_background(tenant_slug: str, db_url: str, s3_bucket: 
                                                         file_type=file_type,
                                                         user_id=f"wa_{from_phone}",
                                                         channel="whatsapp",
-                                                        bucket_name=bucket_name
+                                                        bucket_name=bucket_name,
+                                                        tenant_slug=tenant_slug
                                                     )
                                                     
                                                     if file_key:

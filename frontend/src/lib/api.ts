@@ -259,8 +259,11 @@ export const getLiveStatus = async () => {
   return data;
 };
 
-export const setupTelegramWebhook = async (baseUrl?: string) => {
-  const { data } = await api.post('/telegram/setup-webhook', baseUrl ? { base_url: baseUrl } : {});
+export const setupTelegramWebhook = async (baseUrl?: string, botToken?: string) => {
+  const payload: { base_url?: string; bot_token?: string } = {};
+  if (baseUrl) payload.base_url = baseUrl;
+  if (botToken) payload.bot_token = botToken;
+  const { data } = await api.post('/telegram/setup-webhook', payload);
   return data;
 };
 
