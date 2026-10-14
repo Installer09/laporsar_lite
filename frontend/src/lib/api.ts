@@ -55,7 +55,9 @@ export const getTenantSlug = () => {
       host.includes('trycloudflare.com') ||
       host.includes('pages.dev') ||
       host.includes('vercel.app') ||
-      host.includes('ngrok')
+      host.includes('ngrok') ||
+      /^\d+\.\d+\.\d+\.\d+$/.test(host) ||
+      host.includes(':')
     ) {
       return null;
     }

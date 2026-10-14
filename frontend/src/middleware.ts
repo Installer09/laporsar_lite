@@ -14,6 +14,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Ignore raw IP addresses (IPv4 or IPv6 with optional port)
+  const cleanHost = host.split(':')[0].replace(/^\[|\]$/g, '');
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(cleanHost) || cleanHost === 'localhost' || cleanHost === '127.0.0.1' || cleanHost.includes(':')) {
+    return NextResponse.next();
+  }
+
   // Get subdomain
   const parts = host.split('.');
   if (parts.length > 1) {

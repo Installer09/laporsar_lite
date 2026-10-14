@@ -270,19 +270,30 @@ async def get_tenant(request: Request, db_master: AsyncSession = Depends(get_mas
         # Resolve subdomain. E.g., jakarta.localhost:3000 -> jakarta
         # E.g., surabaya.laporsar.id -> surabaya
         if not any(ignored in host for ignored in ("trycloudflare.com", "pages.dev", "vercel.app", "ngrok")):
-            parts = host.split(".")
-            if len(parts) > 1:
-                first_part = parts[0].split(":")[0]  # Remove port if present
-                if first_part not in ("www", "admin", "localhost", "127", "localhost:3000", "localhost:8000", "laporsar"):
-                    tenant_slug = first_part
+            clean_host = host.split(":")[0].strip("[]")
+            is_ip = False
+            try:
+                import ipaddress
+                ipaddress.ip_address(clean_host)
+                is_ip = True
+            except (ValueError, Exception):
+                is_ip = False
+
+            if not is_ip:
+                parts = host.split(".")
+                if len(parts) > 1:
+                    first_part = parts[0].split(":")[0]  # Remove port if present
+                    if first_part not in ("www", "admin", "localhost", "127", "localhost:3000", "localhost:8000", "laporsar", "api") and not first_part.isdigit():
+                        tenant_slug = first_part
 
     if not tenant_slug:
         path = request.url.path
+        clean_path = path.rstrip("/")
         if (
-            path.endswith("/api/auth/login") or 
-            path.endswith("/auth/login") or 
-            path.endswith("/api/auth/me") or 
-            path.endswith("/auth/me") or
+            clean_path.endswith("/api/auth/login") or 
+            clean_path.endswith("/auth/login") or 
+            clean_path.endswith("/api/auth/me") or 
+            clean_path.endswith("/auth/me") or
             "/api/public/" in path or
             "/api/admin/" in path
         ):
