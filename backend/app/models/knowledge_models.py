@@ -34,7 +34,8 @@ class DictionaryWord(Base):
     category = Column(String(50), nullable=True, default="OPERASIONAL_SAR", index=True)
     canonical_name = Column(String(100), nullable=True)
     semantic_description = Column(Text, nullable=True)
-    embedding = Column(Vector(1024), nullable=True)
+    from app.models.vector_memory import EmbeddingVector
+    embedding = Column(EmbeddingVector(1024), nullable=True)
 
     # Legacy categorization fields kept for compatibility
     word_type = Column(String(20), default="GENERAL")   # ABBREVIATION / JARGON / GENERAL

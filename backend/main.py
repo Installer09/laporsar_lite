@@ -60,6 +60,9 @@ async def lifespan(app: FastAPI):
                 if res_vec.scalar():
                     has_vector = True
 
+            from app.db.session import set_vector_extension_available
+            set_vector_extension_available(has_vector)
+
             # 2. If vector extension is absent, fallback embedding columns to TEXT
             if not has_vector:
                 from app.models.knowledge_models import DictionaryWord
@@ -85,11 +88,8 @@ async def lifespan(app: FastAPI):
                     except Exception as e:
                         logger.warning(f"Vector extension note: {e}")
 
-                tables_to_create = [
-                    t for name, t in Base.metadata.tables.items() 
-                    if has_vector or name != "vector_memory"
-                ]
-                await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn, tables=tables_to_create))
+                # Create all tables (vector_memory will use Vector if has_vector, else Text)
+                await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn))
 
             db_connected = True
             logger.info("Database connection and schema initialization successful.")

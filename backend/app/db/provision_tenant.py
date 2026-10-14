@@ -117,7 +117,7 @@ async def provision_tenant_db(
         # Exclude master-only tables from tenant databases if not master
         tables_to_create = [
             t for name, t in Base.metadata.tables.items()
-            if (has_vector or name != "vector_memory") and (is_master_db or name not in ("tenants", "user_tenant_mappings", "global_reports"))
+            if is_master_db or name not in ("tenants", "user_tenant_mappings", "global_reports")
         ]
         await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn, tables=tables_to_create))
 

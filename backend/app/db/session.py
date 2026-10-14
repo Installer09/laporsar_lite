@@ -207,6 +207,16 @@ class MultitenantServiceMeta(type):
 MASTER_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://laporsar_admin:laporsar_admin@db:5432/laporsar_master")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
+# Flag indicating whether PostgreSQL vector extension is active
+HAS_VECTOR_EXTENSION = False
+
+def set_vector_extension_available(status: bool):
+    global HAS_VECTOR_EXTENSION
+    HAS_VECTOR_EXTENSION = bool(status)
+
+def is_vector_extension_available() -> bool:
+    return HAS_VECTOR_EXTENSION
+
 master_engine = create_async_engine(MASTER_DATABASE_URL, echo=False)
 MasterSessionLocal = sessionmaker(autocommit=False, autoflush=False, expire_on_commit=False, bind=master_engine, class_=AsyncSession)
 SessionLocal = MasterSessionLocal

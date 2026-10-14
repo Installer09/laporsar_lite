@@ -11,7 +11,17 @@ from app.models.knowledge_models import DictionaryWord, DictionaryStatus
 from app.models.vector_memory import VectorMemory
 from app.schemas.nlp_schemas import SARExtractedFields
 
-logger = logging.getLogger(__name__)
+def _compute_cosine_distance(vec_a: list, vec_b: list) -> float:
+    """Calculates cosine distance (1 - cosine_similarity) between two float vectors."""
+    if not vec_a or not vec_b or len(vec_a) != len(vec_b):
+        return 1.0
+    dot = sum(a * b for a, b in zip(vec_a, vec_b))
+    norm_a = sum(a * a for a in vec_a) ** 0.5
+    norm_b = sum(b * b for b in vec_b) ** 0.5
+    if norm_a <= 0 or norm_b <= 0:
+        return 1.0
+    sim = max(-1.0, min(1.0, dot / (norm_a * norm_b)))
+    return max(0.0, 1.0 - sim)
 
 def _extract_nested_dict(data: dict, target_keys: list) -> dict:
     if not isinstance(data, dict):
@@ -271,8 +281,49 @@ class LLMRagService:
                 try:
                     from app.db.session import MasterSessionLocal
                     async with MasterSessionLocal() as master_db:
+                        try:
+                            distance_expr = DictionaryWord.embedding.cosine_distance(embed)
+                            res = await master_db.execute(
+                                select(DictionaryWord, distance_expr.label("distance"))
+                                .where(
+                                    DictionaryWord.embedding.isnot(None),
+                                    DictionaryWord.status == DictionaryStatus.APPROVED,
+                                    distance_expr <= max_distance
+                                )
+                                .order_by(distance_expr)
+                                .limit(limit)
+                            )
+                            return [(row[0], row[1], "global") for row in res.all()]
+                        except Exception as native_err:
+                            res = await master_db.execute(
+                                select(DictionaryWord).where(
+                                    DictionaryWord.embedding.isnot(None),
+                                    DictionaryWord.status == DictionaryStatus.APPROVED
+                                )
+                            )
+                            rows = res.scalars().all()
+                            scored = []
+                            for r in rows:
+                                r_emb = r.embedding
+                                if isinstance(r_emb, str):
+                                    try:
+                                        r_emb = json.loads(r_emb)
+                                    except Exception:
+                                        continue
+                                d = _compute_cosine_distance(embed, r_emb)
+                                if d <= max_distance:
+                                    scored.append((r, d, "global"))
+                            scored.sort(key=lambda x: x[1])
+                            return scored[:limit]
+                except Exception as ex:
+                    logger.warning(f"[LLMRagService] Master dictionary vector search failed: {ex}")
+                    return []
+
+            async def search_tenant_words():
+                try:
+                    try:
                         distance_expr = DictionaryWord.embedding.cosine_distance(embed)
-                        res = await master_db.execute(
+                        res = await db.execute(
                             select(DictionaryWord, distance_expr.label("distance"))
                             .where(
                                 DictionaryWord.embedding.isnot(None),
@@ -282,25 +333,28 @@ class LLMRagService:
                             .order_by(distance_expr)
                             .limit(limit)
                         )
-                        return [(row[0], row[1], "global") for row in res.all()]
-                except Exception as ex:
-                    logger.warning(f"[LLMRagService] Master dictionary vector search failed: {ex}")
-                    return []
-
-            async def search_tenant_words():
-                try:
-                    distance_expr = DictionaryWord.embedding.cosine_distance(embed)
-                    res = await db.execute(
-                        select(DictionaryWord, distance_expr.label("distance"))
-                        .where(
-                            DictionaryWord.embedding.isnot(None),
-                            DictionaryWord.status == DictionaryStatus.APPROVED,
-                            distance_expr <= max_distance
+                        return [(row[0], row[1], tenant_slug) for row in res.all()]
+                    except Exception as native_err:
+                        res = await db.execute(
+                            select(DictionaryWord).where(
+                                DictionaryWord.embedding.isnot(None),
+                                DictionaryWord.status == DictionaryStatus.APPROVED
+                            )
                         )
-                        .order_by(distance_expr)
-                        .limit(limit)
-                    )
-                    return [(row[0], row[1], tenant_slug) for row in res.all()]
+                        rows = res.scalars().all()
+                        scored = []
+                        for r in rows:
+                            r_emb = r.embedding
+                            if isinstance(r_emb, str):
+                                try:
+                                    r_emb = json.loads(r_emb)
+                                except Exception:
+                                    continue
+                            d = _compute_cosine_distance(embed, r_emb)
+                            if d <= max_distance:
+                                scored.append((r, d, tenant_slug))
+                        scored.sort(key=lambda x: x[1])
+                        return scored[:limit]
                 except Exception as ex:
                     logger.warning(f"[LLMRagService] Tenant dictionary vector search failed: {ex}")
                     return []
@@ -363,13 +417,30 @@ class LLMRagService:
                 try:
                     from app.db.session import MasterSessionLocal
                     async with MasterSessionLocal() as master_db:
-                        distance_expr = VectorMemory.embedding.cosine_distance(embed)
-                        res = await master_db.execute(
-                            select(VectorMemory, distance_expr.label("distance"))
-                            .order_by(distance_expr)
-                            .limit(limit)
-                        )
-                        return [(row[0], row[1], "global") for row in res.all()]
+                        try:
+                            distance_expr = VectorMemory.embedding.cosine_distance(embed)
+                            res = await master_db.execute(
+                                select(VectorMemory, distance_expr.label("distance"))
+                                .order_by(distance_expr)
+                                .limit(limit)
+                            )
+                            return [(row[0], row[1], "global") for row in res.all()]
+                        except Exception as native_err:
+                            logger.info(f"[LLMRagService] Master reports vector fallback to python cosine: {native_err}")
+                            res = await master_db.execute(select(VectorMemory))
+                            rows = res.scalars().all()
+                            scored = []
+                            for r in rows:
+                                r_emb = r.embedding
+                                if isinstance(r_emb, str):
+                                    try:
+                                        r_emb = json.loads(r_emb)
+                                    except Exception:
+                                        continue
+                                d = _compute_cosine_distance(embed, r_emb)
+                                scored.append((r, d, "global"))
+                            scored.sort(key=lambda x: x[1])
+                            return scored[:limit]
                 except Exception as ex:
                     logger.warning(f"[LLMRagService] Failed to search Master VectorMemory: {ex}")
                     return []
@@ -379,13 +450,30 @@ class LLMRagService:
             # 2. Search in Tenant DB (Regional SOPs/reports) if not global
             async def search_tenant():
                 try:
-                    distance_expr = VectorMemory.embedding.cosine_distance(embed)
-                    res = await db.execute(
-                        select(VectorMemory, distance_expr.label("distance"))
-                        .order_by(distance_expr)
-                        .limit(limit)
-                    )
-                    return [(row[0], row[1], tenant_slug) for row in res.all()]
+                    try:
+                        distance_expr = VectorMemory.embedding.cosine_distance(embed)
+                        res = await db.execute(
+                            select(VectorMemory, distance_expr.label("distance"))
+                            .order_by(distance_expr)
+                            .limit(limit)
+                        )
+                        return [(row[0], row[1], tenant_slug) for row in res.all()]
+                    except Exception as native_err:
+                        logger.info(f"[LLMRagService] Tenant reports vector fallback to python cosine: {native_err}")
+                        res = await db.execute(select(VectorMemory))
+                        rows = res.scalars().all()
+                        scored = []
+                        for r in rows:
+                            r_emb = r.embedding
+                            if isinstance(r_emb, str):
+                                try:
+                                    r_emb = json.loads(r_emb)
+                                except Exception:
+                                    continue
+                            d = _compute_cosine_distance(embed, r_emb)
+                            scored.append((r, d, tenant_slug))
+                        scored.sort(key=lambda x: x[1])
+                        return scored[:limit]
                 except Exception as ex:
                     logger.warning(f"[LLMRagService] Failed to search Tenant VectorMemory: {ex}")
                     return []
@@ -448,14 +536,33 @@ class LLMRagService:
                 try:
                     from app.db.session import MasterSessionLocal
                     async with MasterSessionLocal() as master_db:
-                        distance_expr = VectorMemory.embedding.cosine_distance(embed)
-                        res = await master_db.execute(
-                            select(VectorMemory, distance_expr.label("distance"))
-                            .where(VectorMemory.report_id.is_(None))
-                            .order_by(distance_expr)
-                            .limit(limit)
-                        )
-                        return [(row[0], row[1], "Dokumen SOP Pusat (Nasional)") for row in res.all()]
+                        try:
+                            distance_expr = VectorMemory.embedding.cosine_distance(embed)
+                            res = await master_db.execute(
+                                select(VectorMemory, distance_expr.label("distance"))
+                                .where(VectorMemory.report_id.is_(None))
+                                .order_by(distance_expr)
+                                .limit(limit)
+                            )
+                            return [(row[0], row[1], "Dokumen SOP Pusat (Nasional)") for row in res.all()]
+                        except Exception as native_err:
+                            logger.info(f"[LLMRagService] Master native vector search fallback to python cosine: {native_err}")
+                            res = await master_db.execute(
+                                select(VectorMemory).where(VectorMemory.report_id.is_(None))
+                            )
+                            rows = res.scalars().all()
+                            scored = []
+                            for r in rows:
+                                r_emb = r.embedding
+                                if isinstance(r_emb, str):
+                                    try:
+                                        r_emb = json.loads(r_emb)
+                                    except Exception:
+                                        continue
+                                d = _compute_cosine_distance(embed, r_emb)
+                                scored.append((r, d, "Dokumen SOP Pusat (Nasional)"))
+                            scored.sort(key=lambda x: x[1])
+                            return scored[:limit]
                 except Exception as ex:
                     logger.warning(f"[LLMRagService] Failed to search Master VectorMemory for SOP: {ex}")
                     return []
@@ -466,14 +573,33 @@ class LLMRagService:
             if tenant_slug != "global":
                 async def search_tenant():
                     try:
-                        distance_expr = VectorMemory.embedding.cosine_distance(embed)
-                        res = await db.execute(
-                            select(VectorMemory, distance_expr.label("distance"))
-                            .where(VectorMemory.report_id.is_(None))
-                            .order_by(distance_expr)
-                            .limit(limit)
-                        )
-                        return [(row[0], row[1], f"Dokumen SOP Kantor SAR ({tenant_slug.upper()})") for row in res.all()]
+                        try:
+                            distance_expr = VectorMemory.embedding.cosine_distance(embed)
+                            res = await db.execute(
+                                select(VectorMemory, distance_expr.label("distance"))
+                                .where(VectorMemory.report_id.is_(None))
+                                .order_by(distance_expr)
+                                .limit(limit)
+                            )
+                            return [(row[0], row[1], f"Dokumen SOP Kantor SAR ({tenant_slug.upper()})") for row in res.all()]
+                        except Exception as native_err:
+                            logger.info(f"[LLMRagService] Tenant native vector search fallback to python cosine: {native_err}")
+                            res = await db.execute(
+                                select(VectorMemory).where(VectorMemory.report_id.is_(None))
+                            )
+                            rows = res.scalars().all()
+                            scored = []
+                            for r in rows:
+                                r_emb = r.embedding
+                                if isinstance(r_emb, str):
+                                    try:
+                                        r_emb = json.loads(r_emb)
+                                    except Exception:
+                                        continue
+                                d = _compute_cosine_distance(embed, r_emb)
+                                scored.append((r, d, f"Dokumen SOP Kantor SAR ({tenant_slug.upper()})"))
+                            scored.sort(key=lambda x: x[1])
+                            return scored[:limit]
                     except Exception as ex:
                         logger.warning(f"[LLMRagService] Failed to search Tenant VectorMemory for SOP: {ex}")
                         return []

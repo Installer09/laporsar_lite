@@ -54,7 +54,10 @@ services:
       - laporsar_lite_network
 
   db:
-    image: postgis/postgis:16-3.4
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    image: laporsar_lite_db:16-3.4-vector
     container_name: laporsar_lite_db
     restart: unless-stopped
     ports:

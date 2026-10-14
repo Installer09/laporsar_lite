@@ -1237,11 +1237,12 @@ async def vectorize_sop_document(
             last_embed_error = ""
             # Delete old chunks if any exist first
             try:
-                await master_db.execute(
-                    delete(VectorMemory).where(
-                        VectorMemory.metadata_json.like(f'%"doc_id": {doc_id}%')
+                async with master_db.begin_nested():
+                    await master_db.execute(
+                        delete(VectorMemory).where(
+                            VectorMemory.metadata_json.like(f'%"doc_id": {doc_id}%')
+                        )
                     )
-                )
             except Exception as d_err:
                 logger.warning(f"Failed to delete old chunks for global SOP {doc_id}: {d_err}")
                 
@@ -1266,11 +1267,17 @@ async def vectorize_sop_document(
                             embed = embed + [0.0] * (1024 - len(embed))
                         elif len(embed) > 1024:
                             embed = embed[:1024]
+
+                    # Safe embedding serialization for TEXT column or native Vector
+                    embed_val = embed
+                    col = VectorMemory.__table__.columns.get("embedding")
+                    if col is not None and not hasattr(col.type, "dim"):
+                        embed_val = json.dumps(embed) if isinstance(embed, (list, tuple)) else str(embed)
                             
                     new_vector = VectorMemory(
                         report_id=None,
                         content=chunk,
-                        embedding=embed,
+                        embedding=embed_val,
                         metadata_json=json.dumps({
                             "doc_id": doc_id,
                             "title": db_doc.title,
@@ -1302,7 +1309,7 @@ async def vectorize_sop_document(
             except Exception as e:
                 await master_db.rollback()
                 logger.error(f"Failed to save global document status: {e}")
-                raise HTTPException(status_code=500, detail="Gagal memperbarui status dokumen di database master")
+                raise HTTPException(status_code=500, detail=f"Gagal memperbarui status dokumen di database master: {str(e)}")
 
     # Auto-detect if document exists in Master DB
     from app.db.session import MasterSessionLocal
@@ -1394,9 +1401,20 @@ async def vectorize_sop_document(
         await db.commit()
         raise HTTPException(status_code=400, detail="Gagal membagi dokumen menjadi potongan-potongan teks")
 
-    # 5. Generate embeddings and save to VectorMemory (pgvector)
+    # 5. Generate embeddings and save to VectorMemory (pgvector / text fallback)
     tenant_settings = await get_tenant_settings(db)
     
+    # Delete old chunks for this document if re-indexing
+    try:
+        async with db.begin_nested():
+            await db.execute(
+                delete(VectorMemory).where(
+                    VectorMemory.metadata_json.like(f'%"doc_id": {doc_id}%')
+                )
+            )
+    except Exception as d_err:
+        logger.warning(f"Failed to delete old chunks for regional SOP {doc_id}: {d_err}")
+
     # Process chunks in batch
     vectorized_count = 0
     last_embed_error = ""
@@ -1424,12 +1442,18 @@ async def vectorize_sop_document(
             elif len(embed) > 1024:
                 embed = embed[:1024]
 
+        # Safe embedding serialization for TEXT column or native Vector
+        embed_val = embed
+        col = VectorMemory.__table__.columns.get("embedding")
+        if col is not None and not hasattr(col.type, "dim"):
+            embed_val = json.dumps(embed) if isinstance(embed, (list, tuple)) else str(embed)
+
         # Save to PostgreSQL pgvector
         try:
             new_vector = VectorMemory(
                 report_id=None,
                 content=chunk,
-                embedding=embed,
+                embedding=embed_val,
                 metadata_json=json.dumps({
                     "doc_id": doc_id,
                     "title": db_doc.title,
@@ -1461,4 +1485,4 @@ async def vectorize_sop_document(
     except Exception as e:
         await db.rollback()
         logger.error(f"Failed to save document status: {e}")
-        raise HTTPException(status_code=500, detail="Gagal memperbarui status dokumen di database")
+        raise HTTPException(status_code=500, detail=f"Gagal memperbarui status dokumen di database: {str(e)}")
