@@ -10,7 +10,7 @@ class GeocodingService:
 
     def __init__(self):
         self.base_url = "https://nominatim.openstreetmap.org/search"
-        self.user_agent = "SARBot/2.4 (Natuna SAR Operations)"
+        self.user_agent = "SARBot/2.4 (SAR Operations Indonesia)"
         self._geocode_cache = {}          # key: query_string -> value: (lat, lon, display_name) or None
         self._reverse_geocode_cache = {}  # key: (lat, lon) -> value: display_name or None
 
@@ -26,7 +26,7 @@ class GeocodingService:
         loc_clean = location_name.strip()
         
         # Get wilayah kerja from DB
-        wilayah_kerja = "Kabupaten Natuna, Kepulauan Riau, Indonesia"
+        wilayah_kerja = "Indonesia"
         if db is not None:
             try:
                 from sqlalchemy.future import select
@@ -40,7 +40,7 @@ class GeocodingService:
         
         # Prevent appending if the user already typed 'natuna' or 'kepri'
         query = loc_clean
-        if "natuna" not in loc_clean.lower() and "kepri" not in loc_clean.lower():
+        if wilayah_kerja and wilayah_kerja.lower() not in loc_clean.lower():
             query = f"{loc_clean}, {wilayah_kerja}"
 
         # Check Cache
@@ -202,7 +202,7 @@ class GeocodingService:
                     return f"Perairan {nearest['name']}"
                 else:
                     return nearest["name"]
-            elif nearest["name"] == "Ranai (Bunguran Besar)":
+            elif nearest["name"] == "Ranai (Bunguran Besar)" and min_dist <= 15.0:
                 if min_dist > 1.5:
                     return "Perairan Ranai, Natuna"
                 else:

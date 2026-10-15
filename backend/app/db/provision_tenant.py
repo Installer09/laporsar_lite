@@ -169,49 +169,36 @@ async def provision_tenant_db(
         except Exception as e:
             logger.warning(f"Classifications sync note for {tenant.slug}: {e}")
 
-        # Seed Default Regional Locations if empty
+        # Seed Default Locations if empty
         from app.models.settings_models import Location
         try:
             loc_res = await tenant_db.execute(select(Location))
             if not loc_res.scalars().first():
                 default_locations = []
-                if tenant.slug == "natuna":
+                if tenant.slug == "pusat":
                     default_locations = [
-                        Location(name="Kantor SAR Natuna", type="Kantor SAR", lat=3.9431, lng=108.3888, address="Jl. Bandara Ranai, Natuna", unsur="Rescuer KPP Natuna (15 personil), ABK KN SASIKIRANA (12 personil)", alut="KN SASIKIRANA 245, RIB 01 Natuna, D-Max Rescue Carrier"),
-                        Location(name="Pos SAR Anambas", type="Pos SAR", lat=3.2167, lng=106.2333, address="Tarempa, Kepulauan Anambas", unsur="Rescuer Pos SAR Anambas (6 personil)", alut="RIB 02 Anambas, Rubber Boat"),
-                        Location(name="Unit Siaga SAR Serasan", type="Unit Siaga", lat=2.5000, lng=109.0167, address="Serasan, Natuna", unsur="Rescuer Unit Siaga Serasan (5 personil)", alut="Rubber Boat, Rescue Carrier"),
-                        Location(name="Unit Siaga SAR Subi", type="Unit Siaga", lat=3.0500, lng=108.8500, address="Pulau Subi, Natuna", unsur="Unit Siaga Subi (4 personil)", alut="Rubber Boat")
-                    ]
-                elif tenant.slug == "jakarta":
-                    default_locations = [
-                        Location(name="Kantor SAR Jakarta", type="Kantor SAR", lat=-6.1264, lng=106.6534, address="Jl. Marsekal Suryadarma No.1, Tangerang", unsur="Tim Rescue Kansar Jakarta (25 personil)", alut="KN SAR Wisnu, Rescue Boat, Hovercraft")
-                    ]
-                elif tenant.slug == "surabaya":
-                    default_locations = [
-                        Location(name="Kantor SAR Surabaya", type="Kantor SAR", lat=-7.3756, lng=112.7753, address="Jl. Raya Juanda No.16, Sidoarjo", unsur="Tim Rescue Kansar Surabaya (25 personil)", alut="KN SAR 225, RIB 01 Surabaya, D-Max Rescue")
-                    ]
-                elif tenant.slug == "pusat":
-                    default_locations = [
-                        Location(name="Kantor Pusat BASARNAS", type="Kantor Pusat", lat=-6.1558, lng=106.8402, address="Jl. Angkasa Blok B.15 Kav. 2-3, Kemayoran, Jakarta Pusat", unsur="Command Center Siaga 24 Jam (30 personil)", alut="Helikopter Dauphin AS365N3+, Rescue Truck")
+                        Location(
+                            name="Kantor Pusat BASARNAS", 
+                            type="Kantor Pusat", 
+                            lat=-6.1558, 
+                            lng=106.8402, 
+                            address="Jl. Angkasa Blok B.15 Kav. 2-3, Kemayoran, Jakarta Pusat", 
+                            unsur="Command Center Siaga 24 Jam (30 personil)", 
+                            alut="Helikopter Dauphin AS365N3+, Rescue Truck"
+                        )
                     ]
                 if default_locations:
                     tenant_db.add_all(default_locations)
                     await tenant_db.commit()
-                    logger.info(f"Seeded {len(default_locations)} default locations for tenant '{tenant.slug}'")
+                    logger.info(f"Seeded {len(default_locations)} default location(s) for tenant '{tenant.slug}'")
         except Exception as e:
             await tenant_db.rollback()
             logger.warning(f"Location seeding note for {tenant.slug}: {e}")
 
-        # Seed / Ensure Administrator Accounts in Tenant DB
+        # Seed / Ensure Administrator Account in Tenant DB
         admin_emails = []
         if tenant.admin_email:
             admin_emails.append(tenant.admin_email.lower().strip())
-        
-        # Extra aliases for known tenants
-        if tenant.slug == "natuna":
-            for alias in ("sar.natuna@basarnas.go.id", "admin.natuna@basarnas.go.id", "natuna"):
-                if alias not in admin_emails:
-                    admin_emails.append(alias)
 
         for email_item in admin_emails:
             try:
@@ -222,7 +209,7 @@ async def provision_tenant_db(
                     new_u = User(
                         name=tenant.admin_name or f"Admin SAR {tenant.name}",
                         email=email_item,
-                        phone=tenant.admin_phone or "08123456789",
+                        phone=tenant.admin_phone or "",
                         role="Admin",
                         hashed_password=hashed_pwd,
                         is_active=True,

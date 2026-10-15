@@ -33,9 +33,9 @@ def get_tenant_identity_dirs(tenant_slug: str):
     return maps_dir, logo_dir
 
 DEFAULT_IDENTITAS = {
-    "identitas_nama_instansi": "Kantor Pencarian dan Pertolongan Natuna",
-    "identitas_motto": "We Are Family\nProfesional - Modern - Teruji",
-    "identitas_wilayah_kerja": "Kabupaten Natuna, Kepulauan Riau, Indonesia",
+    "identitas_nama_instansi": "Badan Nasional Pencarian dan Pertolongan",
+    "identitas_motto": "Avignam Jagat Samagram\nSelamatlah Alam Semesta",
+    "identitas_wilayah_kerja": "Republik Indonesia",
     "identitas_kml_path": "",
     "identitas_logo_path": ""
 }
@@ -60,6 +60,8 @@ async def get_identity(db: AsyncSession = Depends(get_db), tenant = Depends(get_
         if tenant.slug == "pusat":
             data["identitas_wilayah_kerja"] = "Republik Indonesia"
             data["identitas_motto"] = "Avignam Jagat Samagram\nSelamatlah Alam Semesta"
+        else:
+            data["identitas_wilayah_kerja"] = f"Wilayah Kerja {tenant.name}"
             
     for setting in settings:
         if setting.value is not None and setting.value.strip() != "":

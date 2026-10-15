@@ -190,6 +190,29 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                     )
                     await edit_message_text(chat_id, message_id, text=prompt_text, token=token)
                     return
+
+                if cb_data.startswith("menu_"):
+                    menu_map = {
+                        "menu_lapor_cepat": "Lapor SAR Cepat",
+                        "menu_lapor_kejadian": "Lapor SAR Kejadian",
+                        "menu_lapor_info": "Lapor SAR Info"
+                    }
+                    user_cmd = menu_map.get(cb_data, cb_data)
+                    response = await chatbot_engine.process_message(
+                        user_id=f"tg_{chat_id}",
+                        message_text=user_cmd,
+                        channel="telegram",
+                        db=db
+                    )
+                    if response and "text" in response:
+                        await reply_dispatcher.send_telegram_reply(
+                            chat_id=chat_id,
+                            text=response["text"],
+                            buttons=response.get("buttons"),
+                            inline_keyboard=response.get("inline_keyboard"),
+                            bot_token=token
+                        )
+                    return
      
             # 2. Check if update contains a regular chat message
             if "message" in data:
@@ -434,6 +457,7 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                             chat_id=chat_id,
                             text=response["text"],
                             buttons=response.get("buttons"),
+                            inline_keyboard=response.get("inline_keyboard"),
                             bot_token=token
                         )
         except Exception as e:

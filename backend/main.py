@@ -102,7 +102,7 @@ async def lifespan(app: FastAPI):
         logger.error("Failed to connect to PostgreSQL after 15 attempts. Exiting startup.")
         raise RuntimeError("PostgreSQL database unavailable")
 
-    # Seed Master Default Tenants if empty
+    # Ensure Master Default Tenant 'pusat' exists
     try:
         from app.db.session import SessionLocal
         from sqlalchemy.future import select
@@ -112,31 +112,32 @@ async def lifespan(app: FastAPI):
         async with SessionLocal() as db_master:
             res = await db_master.execute(select(Tenant).where(Tenant.slug == "pusat"))
             pusat_tenant = res.scalar_one_or_none()
+            admin_user = getattr(config_settings, "DEV_ADMIN_USERNAME", "admin") or "admin"
+            admin_pwd = getattr(config_settings, "DEV_ADMIN_PASSWORD", "admin") or "admin"
+
             if not pusat_tenant:
                 base_db_url = config_settings.DATABASE_URL
-                default_tenants = [
-                    Tenant(name="Basarnas Pusat Command Center", slug="pusat", db_url=base_db_url, s3_bucket="laporsar-attachments", is_active=True, admin_name="Admin Pusat BASARNAS", admin_email="admin"),
-                    Tenant(name="Kantor SAR Natuna", slug="natuna", db_url=base_db_url.replace("laporsar_master", "laporsar_natuna"), s3_bucket="laporsar-natuna", is_active=True, admin_name="Admin SAR Natuna", admin_email="admin.natuna@basarnas.go.id"),
-                    Tenant(name="Kantor SAR Jakarta", slug="jakarta", db_url=base_db_url.replace("laporsar_master", "laporsar_jakarta"), s3_bucket="laporsar-jakarta", is_active=True, admin_name="Admin SAR Jakarta", admin_email="admin.jakarta@basarnas.go.id"),
-                    Tenant(name="Kantor SAR Surabaya", slug="surabaya", db_url=base_db_url.replace("laporsar_master", "laporsar_surabaya"), s3_bucket="laporsar-surabaya", is_active=True, admin_name="Admin SAR Surabaya", admin_email="admin.surabaya@basarnas.go.id"),
-                ]
-                db_master.add_all(default_tenants)
+                pusat_tenant = Tenant(
+                    name="Basarnas Pusat Command Center",
+                    slug="pusat",
+                    db_url=base_db_url,
+                    s3_bucket="laporsar-attachments",
+                    is_active=True,
+                    admin_name="Admin Pusat BASARNAS",
+                    admin_email=admin_user
+                )
+                db_master.add(pusat_tenant)
                 await db_master.commit()
-                logger.info("Default Master Tenants (pusat, natuna, jakarta, surabaya) seeded successfully")
+                await db_master.refresh(pusat_tenant)
+                logger.info("Master Tenant 'pusat' seeded successfully")
 
-            # Ensure all registered tenants have active databases, tables, users, and mappings
-            res_all = await db_master.execute(select(Tenant))
-            all_tenants = res_all.scalars().all()
-            for t in all_tenants:
-                if t.slug in ("pusat", "natuna", "jakarta", "surabaya") and not t.is_active:
-                    t.is_active = True
-                    await db_master.commit()
-                try:
-                    await provision_tenant_db(t, admin_password="admin", db_master=db_master)
-                except Exception as prov_err:
-                    logger.warning(f"Auto-provision note for tenant '{t.slug}': {prov_err}")
+            # Provision pusat tenant (ensures operational schema, dictionary, classifications, and admin user)
+            try:
+                await provision_tenant_db(pusat_tenant, admin_password=admin_pwd, db_master=db_master)
+            except Exception as prov_err:
+                logger.warning(f"Auto-provision note for tenant 'pusat': {prov_err}")
     except Exception as e:
-        logger.error(f"Failed to seed/provision Master Default Tenants: {e}")
+        logger.error(f"Failed to seed/provision Master Tenant pusat: {e}")
 
     # Seed Master Dictionary Words
     try:
@@ -332,13 +333,26 @@ async def health_check():
 @app.get("/api/system/info")
 async def system_info():
     """System info endpoint for monitoring."""
+    from app.db.session import SessionLocal
+    from sqlalchemy.future import select
+    from app.models.master_models import Tenant
+    tenants_list = ["pusat"]
+    try:
+        async with SessionLocal() as db_master:
+            res = await db_master.execute(select(Tenant.slug).where(Tenant.is_active == True))
+            slugs = res.scalars().all()
+            if slugs:
+                tenants_list = list(slugs)
+    except Exception:
+        pass
+
     return {
         "project": "Lapor SAR Lite",
         "version": "3.1.0-lite",
         "status": "operational",
         "ai_engine": "cloud_multi_provider",
         "storage": "available" if storage_service.is_available() else "unavailable",
-        "tenants": ["pusat", "natuna", "jakarta", "surabaya"]
+        "tenants": tenants_list
     }
 
 @app.get("/health/live")

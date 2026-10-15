@@ -42,6 +42,50 @@ export default function ChatPage() {
   const [operatorMessage, setOperatorMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showRawJson, setShowRawJson] = useState(false);
+  const [sessionFilter, setSessionFilter] = useState<'all' | 'emergency' | 'info'>('all');
+
+  const renderStateBadge = (state: string) => {
+    if (!state || state === 'MAIN_MENU') {
+      return (
+        <span className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wide border border-slate-200">
+          Menu Utama
+        </span>
+      );
+    }
+    if (state === 'MODE_BANTUAN') {
+      return (
+        <span className="text-[9px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wide border border-indigo-200">
+          Info SAR
+        </span>
+      );
+    }
+    if (state.startsWith('AWAITING_')) {
+      return (
+        <span className="text-[9px] bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wide border border-amber-200">
+          {state.replace('AWAITING_', 'Perlu ')}
+        </span>
+      );
+    }
+    if (state === 'CONFIRMING') {
+      return (
+        <span className="text-[9px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wide border border-blue-200">
+          Konfirmasi
+        </span>
+      );
+    }
+    if (state === 'COMPLETED') {
+      return (
+        <span className="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wide border border-emerald-200">
+          Selesai
+        </span>
+      );
+    }
+    return (
+      <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wide border border-slate-200">
+        {state}
+      </span>
+    );
+  };
 
   // Hydrate states from localStorage on mount
   useEffect(() => {
@@ -165,13 +209,23 @@ export default function ChatPage() {
     }
   };
 
-  // Filter sessions based on search
+  // Filter sessions based on search & category
   const filteredSessions = sessions.filter((s: any) => {
     const searchLower = searchQuery.toLowerCase();
     const nameMatch = (s.contact_name || '').toLowerCase().includes(searchLower);
     const idMatch = (s.user_id || '').toLowerCase().includes(searchLower);
     const phoneMatch = (s.contact_phone || '').toLowerCase().includes(searchLower);
-    return nameMatch || idMatch || phoneMatch;
+    const matchesSearch = nameMatch || idMatch || phoneMatch;
+    if (!matchesSearch) return false;
+
+    const state = s.state || 'MAIN_MENU';
+    if (sessionFilter === 'emergency') {
+      return state.startsWith('AWAITING_') || state === 'CONFIRMING' || state === 'COMPLETED';
+    }
+    if (sessionFilter === 'info') {
+      return state === 'MAIN_MENU' || state === 'MODE_BANTUAN';
+    }
+    return true;
   });
 
   const formatDataKorban = (dataKorban: any): string => {
@@ -251,6 +305,40 @@ export default function ChatPage() {
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 font-medium"
             />
           </div>
+
+          {/* Filter Tabs */}
+          <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+            <button
+              onClick={() => setSessionFilter('all')}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded-lg transition-all ${
+                sessionFilter === 'all'
+                  ? 'bg-white text-slate-800 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Semua
+            </button>
+            <button
+              onClick={() => setSessionFilter('emergency')}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded-lg transition-all ${
+                sessionFilter === 'emergency'
+                  ? 'bg-white text-amber-800 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Darurat
+            </button>
+            <button
+              onClick={() => setSessionFilter('info')}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded-lg transition-all ${
+                sessionFilter === 'info'
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Menu & Info
+            </button>
+          </div>
         </div>
 
         {/* Sessions scrollable list */}
@@ -317,9 +405,7 @@ export default function ChatPage() {
                     </p>
                     <div className="flex gap-1.5 items-center mt-2 flex-wrap">
                       {getPlatformBadge(session.channel)}
-                      <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-semibold uppercase truncate max-w-[120px]">
-                        {session.state.replace('AWAITING_', 'PERLU ')}
-                      </span>
+                      {renderStateBadge(session.state)}
                     </div>
                   </div>
                 </button>
@@ -345,9 +431,7 @@ export default function ChatPage() {
                       {activeSession.contact_name || 'Pelapor Anonim'}
                     </h3>
                     {getPlatformBadge(activeSession.channel)}
-                    <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 uppercase tracking-wide">
-                      {activeSession.state.replace('AWAITING_', 'PERLU ')}
-                    </span>
+                    {renderStateBadge(activeSession.state)}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5 flex-wrap">
                     {activeSession.contact_phone && (
@@ -564,7 +648,11 @@ export default function ChatPage() {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {/* Verification Status */}
             <div className={`p-3.5 rounded-xl border flex gap-2.5 ${
-              activeSession.state === 'CONFIRMING'
+              activeSession.state === 'MAIN_MENU'
+                ? 'bg-slate-50 border-slate-200 text-slate-800'
+                : activeSession.state === 'MODE_BANTUAN'
+                ? 'bg-indigo-50 border-indigo-200 text-indigo-900'
+                : activeSession.state === 'CONFIRMING'
                 ? 'bg-blue-50 border-blue-200 text-blue-900'
                 : activeSession.state === 'COMPLETED'
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
@@ -574,7 +662,11 @@ export default function ChatPage() {
               <div className="space-y-0.5">
                 <p className="text-[10px] font-bold uppercase tracking-wider">Tahap Penanganan</p>
                 <p className="text-xs font-semibold leading-relaxed">
-                  {activeSession.state === 'CONFIRMING'
+                  {activeSession.state === 'MAIN_MENU'
+                    ? 'Pengguna berada di Menu Utama. Menunggu pemilihan layanan atau penyampaian musibah.'
+                    : activeSession.state === 'MODE_BANTUAN'
+                    ? 'Pengguna sedang berkonsultasi mengenai informasi dan SOP SAR melalui asisten AI.'
+                    : activeSession.state === 'CONFIRMING'
                     ? 'Parameter lengkap. Menunggu konfirmasi verifikasi pelapor.'
                     : activeSession.state === 'COMPLETED'
                     ? 'Laporan terverifikasi dan tercatat ke sistem operasi.'
@@ -583,53 +675,72 @@ export default function ChatPage() {
               </div>
             </div>
 
-            {/* Extracted Fields Cards */}
-            <div className="space-y-2.5">
-              {/* Field: Waktu */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex gap-3 items-start">
-                <div className="p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0">
-                  <Calendar className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Waktu Kejadian (PDTW)</span>
-                  <p className={`text-xs font-semibold mt-0.5 break-words ${
-                    activeSession.extracted_data.waktu ? 'text-slate-800' : 'text-slate-400 italic'
-                  }`}>
-                    {activeSession.extracted_data.waktu || 'Belum diperoleh'}
-                  </p>
-                </div>
+            {/* Context-Aware Content */}
+            {activeSession.state === 'MAIN_MENU' ? (
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-2 text-slate-500">
+                <Clock className="w-8 h-8 text-slate-400 mx-auto" />
+                <p className="text-xs font-semibold text-slate-700">Pelaporan Belum Dimulai</p>
+                <p className="text-[11px] leading-relaxed">
+                  Pengguna baru mengakses menu utama dan belum memilih layanan pelaporan darurat.
+                </p>
               </div>
+            ) : activeSession.state === 'MODE_BANTUAN' ? (
+              <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl text-center space-y-2 text-indigo-700">
+                <HelpCircle className="w-8 h-8 text-indigo-400 mx-auto" />
+                <p className="text-xs font-semibold text-indigo-900">Konsultasi Informasi SAR</p>
+                <p className="text-[11px] leading-relaxed text-indigo-600">
+                  Pengguna sedang mencari informasi regulasi atau SOP SAR. Bot melayani secara otomatis (Autopilot AI).
+                </p>
+              </div>
+            ) : (
+              /* Extracted Fields Cards */
+              <div className="space-y-2.5">
+                {/* Field: Waktu */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex gap-3 items-start">
+                  <div className="p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0">
+                    <Calendar className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Waktu Kejadian (PDTW)</span>
+                    <p className={`text-xs font-semibold mt-0.5 break-words ${
+                      activeSession.extracted_data.waktu ? 'text-slate-800' : 'text-slate-400 italic'
+                    }`}>
+                      {activeSession.extracted_data.waktu || 'Belum diperoleh'}
+                    </p>
+                  </div>
+                </div>
 
-              {/* Field: Lokasi */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex gap-3 items-start">
-                <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg shrink-0">
-                  <MapPin className="w-3.5 h-3.5" />
+                {/* Field: Lokasi */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex gap-3 items-start">
+                  <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg shrink-0">
+                    <MapPin className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Lokasi Kejadian</span>
+                    <p className={`text-xs font-semibold mt-0.5 break-words ${
+                      activeSession.extracted_data.lokasi_teks ? 'text-slate-800' : 'text-slate-400 italic'
+                    }`}>
+                      {activeSession.extracted_data.lokasi_teks || 'Belum diperoleh'}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Lokasi Kejadian</span>
-                  <p className={`text-xs font-semibold mt-0.5 break-words ${
-                    activeSession.extracted_data.lokasi_teks ? 'text-slate-800' : 'text-slate-400 italic'
-                  }`}>
-                    {activeSession.extracted_data.lokasi_teks || 'Belum diperoleh'}
-                  </p>
-                </div>
-              </div>
 
-              {/* Field: Data Korban */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex gap-3 items-start">
-                <div className="p-2 bg-rose-100 text-rose-700 rounded-lg shrink-0">
-                  <Users2 className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Kondisi & Korban</span>
-                  <p className={`text-xs font-semibold mt-0.5 break-words ${
-                    activeSession.extracted_data.data_korban || activeSession.extracted_data.korban ? 'text-slate-800' : 'text-slate-400 italic'
-                  }`}>
-                    {formatDataKorban(activeSession.extracted_data.data_korban || activeSession.extracted_data.korban)}
-                  </p>
+                {/* Field: Data Korban */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex gap-3 items-start">
+                  <div className="p-2 bg-rose-100 text-rose-700 rounded-lg shrink-0">
+                    <Users2 className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Kondisi & Korban</span>
+                    <p className={`text-xs font-semibold mt-0.5 break-words ${
+                      activeSession.extracted_data.data_korban || activeSession.extracted_data.korban ? 'text-slate-800' : 'text-slate-400 italic'
+                    }`}>
+                      {formatDataKorban(activeSession.extracted_data.data_korban || activeSession.extracted_data.korban)}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Extracted JSON Collapsible Block */}
             <div className="pt-2 border-t border-slate-200">

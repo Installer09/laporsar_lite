@@ -633,6 +633,44 @@ class MessageFormatterService:
         """Alias for format_data_korban for test backwards compatibility."""
         return self.format_data_korban(data_korban, total_korban=total_korban)
 
+    def format_rincian_korban(self, data_korban) -> str:
+        """Memformat data korban secara ringkas untuk placeholder RINCIAN_KORBAN."""
+        if isinstance(data_korban, str):
+            try:
+                data_korban = json.loads(data_korban)
+            except Exception:
+                pass
+                
+        if isinstance(data_korban, dict) and "daftar_korban" in data_korban:
+            data_korban = data_korban["daftar_korban"]
+            
+        if not isinstance(data_korban, list) or len(data_korban) == 0:
+            return "- Belum ada data korban."
+            
+        blocks = []
+        for v in data_korban:
+            if isinstance(v, dict):
+                nama = v.get("nama") or v.get("nama_korban") or ""
+                jk = v.get("jenis_kelamin") or v.get("jk") or ""
+                umur = v.get("umur") or ""
+                alamat = v.get("alamat") or ""
+                
+                details = []
+                if jk:
+                    details.append(str(jk).strip())
+                if umur:
+                    u_str = str(umur).strip()
+                    if not u_str.endswith("Thn") and not u_str.endswith("tahun"):
+                        u_str = f"{u_str} Thn"
+                    details.append(u_str)
+                    
+                detail_str = f" ({'/'.join(details)})" if details else ""
+                blocks.append(f"- Nama : {nama}{detail_str}\n- Alamat : {alamat}")
+            elif isinstance(v, str):
+                blocks.append(f"- Nama : {v.strip()}\n- Alamat : ")
+                
+        return "\n\n".join(blocks)
+
     def format_data_korban(self, data_korban: list, is_kmm_bencana: bool = True, total_korban: int = None) -> str:
         """Memformat data korban secara dinamis dengan format berpenomoran resmi Basarnas."""
         # Determine if it's empty
@@ -1104,12 +1142,10 @@ class MessageFormatterService:
                 lokasi_upper = re.sub(r'\b(?:KAB\.?|KABUPATEN)\s+[A-Z\s]+', f"KABUPATEN {kab_name}", lokasi_upper)
             else:
                 pos_sar = data.get("pos_sar_terdekat") or ""
-                detected_kab = "KABUPATEN NATUNA"
                 if "ANAMBAS" in lokasi_upper or "JEMAJA" in lokasi_upper or "ANAMBAS" in pos_sar.upper() or "JEMAJA" in pos_sar.upper():
-                    detected_kab = "KABUPATEN ANAMBAS"
+                    lokasi_upper = f"{lokasi_upper} KABUPATEN KEPULAUAN ANAMBAS"
                 elif "NATUNA" in lokasi_upper or "NATUNA" in pos_sar.upper():
-                    detected_kab = "KABUPATEN NATUNA"
-                lokasi_upper = f"{lokasi_upper} {detected_kab}"
+                    lokasi_upper = f"{lokasi_upper} KABUPATEN NATUNA"
             
             # Bersihkan spasi ganda, hilangkan koma sebelum KABUPATEN
             lokasi_upper = re.sub(r'\s+', ' ', lokasi_upper).strip()
@@ -1152,25 +1188,25 @@ class MessageFormatterService:
             
             # Dynamic identity placeholders
             if key == "NAMA_INSTANSI":
-                return data.get("NAMA_INSTANSI") or "Kantor Pencarian dan Pertolongan Natuna"
+                return data.get("NAMA_INSTANSI") or "Badan Nasional Pencarian dan Pertolongan"
             if key == "MOTTO_BARIS_1":
-                motto = data.get("MOTTO_INSTANSI") or "We Are Family\nProfesional -  Modern - Teruji"
+                motto = data.get("MOTTO_INSTANSI") or "Avignam Jagat Samagram\nSelamatlah Alam Semesta"
                 lines = [line.strip().strip("*_ ") for line in motto.split("\n") if line.strip()]
-                return lines[0] if lines else "We Are Family"
+                return lines[0] if lines else "Avignam Jagat Samagram"
             if key == "MOTTO_BARIS_2":
-                motto = data.get("MOTTO_INSTANSI") or "We Are Family\nProfesional -  Modern - Teruji"
+                motto = data.get("MOTTO_INSTANSI") or "Avignam Jagat Samagram\nSelamatlah Alam Semesta"
                 lines = [line.strip().strip("*_ ") for line in motto.split("\n") if line.strip()]
-                return lines[1] if len(lines) > 1 else "Profesional -  Modern - Teruji"
+                return lines[1] if len(lines) > 1 else "Selamatlah Alam Semesta"
             if key == "MOTTO_INSTANSI":
-                motto = data.get("MOTTO_INSTANSI") or "We Are Family\nProfesional -  Modern - Teruji"
+                motto = data.get("MOTTO_INSTANSI") or "Avignam Jagat Samagram\nSelamatlah Alam Semesta"
                 lines = [line.strip().strip("*_ ") for line in motto.split("\n") if line.strip()]
                 if len(lines) >= 2:
                     return f"*{lines[0]}*\n_{lines[1]}_"
                 return "\n".join(f"*{line}*" for line in lines)
             if key == "TTD_KEPALA":
-                ttd = data.get("TTD_KEPALA") or "KPP NATUNA 01"
+                ttd = data.get("TTD_KEPALA") or "SIAGA SAR 01"
                 ttd_str = str(ttd).strip()
-                if "01" in ttd_str and not ttd_str.upper().startswith("KPP "):
+                if "01" in ttd_str and not ttd_str.upper().startswith("KPP ") and not ttd_str.upper().startswith("SIAGA "):
                     ttd_str = f"KPP {ttd_str}"
                 return ttd_str
             
@@ -1236,7 +1272,13 @@ class MessageFormatterService:
                 return str(korban_total_val)
 
             # 3. Penanganan Korban Detail
-            if key in ("DATA_KORBAN", "RINCIAN_KORBAN"):
+            if key == "RINCIAN_KORBAN":
+                korban_list = data.get("data_korban")
+                if korban_list is None:
+                    korban_list = data.get("metadata_kejadian", {}).get("data_korban")
+                return self.format_rincian_korban(korban_list)
+
+            if key == "DATA_KORBAN":
                 korban_list = data.get("data_korban")
                 if korban_list is None:
                     korban_list = data.get("metadata_kejadian", {}).get("data_korban")

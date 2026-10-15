@@ -1320,11 +1320,11 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
         # Fast path for exact button clicks / common commands
         if msg_clean in ("/start", "/reset", "/mulai", "reset", "menu", "menu utama"):
             return "RESET"
-        if msg_clean in ("lapor sar cepat", "lapor cepat", "1", "1.", "saya di lokasi", "sos", "lapor cepat (sos)"):
+        if msg_clean in ("lapor sar cepat", "lapor cepat", "1", "1.", "saya di lokasi", "sos", "lapor cepat (sos)", "menu_lapor_cepat"):
             return "LAPOR_CEPAT"
-        if msg_clean in ("lapor sar kejadian", "lapor kejadian", "laporkan kejadian", "2", "2.", "saya saksi", "lapor kejadian (saksi)"):
+        if msg_clean in ("lapor sar kejadian", "lapor kejadian", "laporkan kejadian", "2", "2.", "saya saksi", "lapor kejadian (saksi)", "menu_lapor_kejadian"):
             return "LAPOR_KEJADIAN"
-        if msg_clean in ("lapor sar info", "info sar", "bantuan sar", "bantuan sar lainnya", "info", "3", "3.", "/bantuan", "tanya sar", "bantuan"):
+        if msg_clean in ("lapor sar info", "info sar", "bantuan sar", "bantuan sar lainnya", "info", "3", "3.", "/bantuan", "tanya sar", "bantuan", "menu_lapor_info"):
             return "LAPOR_INFO"
         if (
             msg_clean in ("/status", "/cek", "cek status", "cek status laporan", "status", "status laporan")

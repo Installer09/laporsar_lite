@@ -168,17 +168,16 @@ SKIP_WORDS = {
 MAIN_MENU_TEXT = (
     "*LAYANAN SIAGA PENCARIAN DAN PERTOLONGAN (SAR)*\n"
     "Badan Nasional Pencarian dan Pertolongan (BASARNAS)\n\n"
-    "Pilih jenis layanan yang Anda butuhkan:\n\n"
-    "1. *Lapor SAR Cepat*\n"
-    "   Pelaporan musibah untuk kondisi Anda berada langsung di lokasi kejadian.\n\n"
-    "2. *Lapor SAR Kejadian*\n"
-    "   Pelaporan musibah yang lokasinya terpisah atau jauh dari posisi Anda saat ini.\n\n"
-    "3. *Lapor SAR Info*\n"
-    "   Pusat informasi resmi SOP, regulasi, dan data kedaruratan SAR.\n\n"
-    "Pilih salah satu tombol di bawah atau ketik layanan yang Anda butuhkan."
+    "Silakan pilih layanan yang Anda butuhkan:"
 )
 
 MAIN_MENU_BUTTONS = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
+
+MAIN_MENU_INLINE_KEYBOARD = [
+    [{"text": "1. Lapor SAR Cepat", "callback_data": "menu_lapor_cepat"}],
+    [{"text": "2. Lapor SAR Kejadian", "callback_data": "menu_lapor_kejadian"}],
+    [{"text": "3. Lapor SAR Info", "callback_data": "menu_lapor_info"}]
+]
 
 GREETING_MSG = MAIN_MENU_TEXT
 
@@ -198,7 +197,7 @@ class ChatbotEngine:
         result = await db.execute(select(ChatSession).where(ChatSession.user_id == user_id))
         session = result.scalars().first()
         if not session:
-            session = ChatSession(user_id=user_id, channel=channel, state="AWAITING_REPORT")
+            session = ChatSession(user_id=user_id, channel=channel, state="MAIN_MENU")
             
             # Auto-populate contact info from database if available (especially WhatsApp users)
             phone = None
@@ -461,6 +460,30 @@ class ChatbotEngine:
                 await db.commit()
                 await self._broadcast_session(session, autopilot, extracted_data, db=db)
                 return {"text": rag_answer, "buttons": buttons}
+
+        # If in MAIN_MENU state:
+        if session.state == "MAIN_MENU":
+            if intent in ("DATA_PELAPORAN", "LAPOR_CEPAT", "LAPOR_KEJADIAN"):
+                session.state = "AWAITING_REPORT"
+                # Fall through to the reporting state handler below
+            elif intent in ("LAPOR_INFO", "BANTUAN_SAR"):
+                session.state = "MODE_BANTUAN"
+                rag_answer = await llm_rag_service.answer_bantuan_sar(message_text, db)
+                buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
+                self._update_history(session, "assistant", rag_answer, buttons=buttons)
+                await db.commit()
+                await self._broadcast_session(session, autopilot, extracted_data, db=db)
+                return {"text": rag_answer, "buttons": buttons}
+            else:
+                reply = MAIN_MENU_TEXT
+                self._update_history(session, "assistant", reply, buttons=MAIN_MENU_BUTTONS)
+                await db.commit()
+                await self._broadcast_session(session, autopilot, extracted_data, db=db)
+                return {
+                    "text": reply,
+                    "buttons": MAIN_MENU_BUTTONS,
+                    "inline_keyboard": MAIN_MENU_INLINE_KEYBOARD
+                }
 
         # Check rate limit before entering report state machine for new chronology
         if session.state == "AWAITING_REPORT":
@@ -882,7 +905,7 @@ class ChatbotEngine:
         return {"text": reply, "buttons": buttons}
 
     async def _reset_session(self, session: ChatSession, db: AsyncSession, autopilot: bool) -> dict:
-        session.state = "AWAITING_REPORT"
+        session.state = "MAIN_MENU"
         
         # Ensure contact_phone is populated from user_id for WhatsApp
         if session.channel == "whatsapp" and session.user_id.startswith("wa_") and not session.contact_phone:
@@ -913,12 +936,13 @@ class ChatbotEngine:
 
         reply = MAIN_MENU_TEXT
         buttons = MAIN_MENU_BUTTONS
+        inline_kb = MAIN_MENU_INLINE_KEYBOARD
             
         self._update_history(session, "assistant", reply, buttons=buttons)
         await db.commit()
         await self._broadcast_session(session, autopilot, initial_data, db=db)
 
-        return {"text": reply, "buttons": buttons}
+        return {"text": reply, "buttons": buttons, "inline_keyboard": inline_kb}
 
     async def _is_rate_limited(self, session: ChatSession, extracted_data: dict, db: AsyncSession) -> tuple[bool, str]:
         now = datetime.now(timezone.utc)
@@ -979,34 +1003,70 @@ class ChatbotEngine:
             if coords:
                 lat, lng = coords
 
+        tenant_slug = "pusat"
+        if db is not None:
+            db_info = getattr(db, "info", None)
+            if isinstance(db_info, dict):
+                tenant_slug = db_info.get("tenant_slug", "pusat")
+            else:
+                tenant_slug = "natuna"
+
         if lat and lng:
-            if not (0.5 <= float(lat) <= 5.5 and 104.5 <= float(lng) <= 110.0):
-                return True
-                
             try:
-                from app.models.settings_models import Location
-                from app.services.geo_service import find_nearest_location
-                loc_result = await db.execute(select(Location))
-                locations = loc_result.scalars().all()
-                nearest = find_nearest_location(float(lat), float(lng), locations)
-                if nearest and nearest.get("distance_nm", 0) > 150.0:
+                lat_f = float(lat)
+                lng_f = float(lng)
+            except (ValueError, TypeError):
+                lat_f, lng_f = None, None
+
+            if lat_f is not None and lng_f is not None:
+                # 1. Wilayah Teritorial Indonesia (-12 to 8 LU/LS, 94 to 142 BT)
+                is_indonesia = (-12.0 <= lat_f <= 8.0 and 94.0 <= lng_f <= 142.0)
+                if not is_indonesia:
                     return True
-            except Exception:
-                pass
-                
-            return False
+
+                # Tenant Pusat meng-cover seluruh Indonesia
+                if tenant_slug == "pusat":
+                    return False
+
+                # 2. Cek jarak ke pos SAR terdekat dari tenant ini jika ada
+                try:
+                    from app.models.settings_models import Location
+                    from app.services.geo_service import find_nearest_location
+                    loc_result = await db.execute(select(Location))
+                    locations = loc_result.scalars().all()
+                    if isinstance(locations, list) and len(locations) > 0:
+                        nearest = find_nearest_location(lat_f, lng_f, locations)
+                        if nearest:
+                            return nearest.get("distance_nm", 0) > 150.0
+                except Exception:
+                    pass
+
+                # Fallback untuk tenant wilayah (misal mock / natuna) tanpa pos SAR di DB
+                if tenant_slug in ("natuna", "test"):
+                    if not (0.5 <= lat_f <= 5.5 and 104.5 <= lng_f <= 110.0):
+                        return True
+
+                return False
             
         lokasi_teks = str(extracted_data.get("lokasi_teks") or "").lower()
         if lokasi_teks:
-            out_keywords = [
-                "jakarta", "pontianak", "singkawang", "ketapang", "sambas", "batam", "tanjungpinang", 
-                "bintan", "karimun", "lingga", "riau daratan", "pekanbaru", "padang", "medan", "aceh", 
-                "jawa", "bali", "surabaya", "semarang", "bandung", "lampung", "palembang", "bengkulu", 
-                "jambi", "bangka", "belitung", "kalimantan", "sulawesi", "maluku", "papua"
-            ]
-            if any(kw in lokasi_teks for kw in out_keywords):
-                if "natuna" not in lokasi_teks and "anambas" not in lokasi_teks and "jemaja" not in lokasi_teks:
+            # Tenant Pusat tidak membatasi kota dalam negeri
+            if tenant_slug == "pusat":
+                out_foreign = ["singapura", "singapore", "malaysia", "thailand", "vietnam", "australia", "filipina"]
+                if any(kw in lokasi_teks for kw in out_foreign):
                     return True
+                return False
+
+            if tenant_slug in ("natuna", "test"):
+                out_keywords = [
+                    "jakarta", "pontianak", "singkawang", "ketapang", "sambas", "batam", "tanjungpinang", 
+                    "bintan", "karimun", "lingga", "riau daratan", "pekanbaru", "padang", "medan", "aceh", 
+                    "jawa", "bali", "surabaya", "semarang", "bandung", "lampung", "palembang", "bengkulu", 
+                    "jambi", "bangka", "belitung", "kalimantan", "sulawesi", "maluku", "papua"
+                ]
+                if any(kw in lokasi_teks for kw in out_keywords):
+                    if "natuna" not in lokasi_teks and "anambas" not in lokasi_teks and "jemaja" not in lokasi_teks:
+                        return True
                     
         return False
 

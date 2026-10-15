@@ -23,7 +23,7 @@ class ChatSession(Base):
     channel = Column(String(20), default="web")
 
     # Current state machine position
-    state = Column(String(50), default="AWAITING_REPORT")
+    state = Column(String(50), default="MAIN_MENU")
 
     # JSON blob storing partially-extracted report fields
     # e.g. {"waktu": "tadi pagi", "lokasi_teks": "Tidak diketahui", ...}

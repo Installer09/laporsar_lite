@@ -2,6 +2,8 @@ class StateManager:
     """Manages chat session state transitions."""
     
     # Define valid states
+    STATE_MAIN_MENU = "MAIN_MENU"
+    STATE_MODE_BANTUAN = "MODE_BANTUAN"
     STATE_AWAITING_REPORT = "AWAITING_REPORT"
     STATE_AWAITING_WAKTU = "AWAITING_WAKTU"
     STATE_AWAITING_LOKASI = "AWAITING_LOKASI"
