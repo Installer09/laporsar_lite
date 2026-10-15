@@ -310,7 +310,7 @@ async def background_kml_and_evidence(report_id: int, db_url: str):
                 kml_str = kml.kml()
                 kml_bytes = kml_str.encode('utf-8')
                 kml_filename = f"Peta_Kejadian_{report.no_laporan.replace('/', '_')}.kml"
-                kml_caption = f"📍 Peta Lokasi Kejadian & Garis Lurus Jarak\nBuka di aplikasi pemetaan (Google Earth/Maps) untuk melihat detail titik.\nNo: {report.no_laporan}"
+                kml_caption = f"Peta Lokasi Kejadian & Garis Lurus Jarak\nBuka di aplikasi pemetaan (Google Earth/Maps) untuk melihat detail titik.\nNo: {report.no_laporan}"
                 
                 await reply_dispatcher.forward_file_to_telegram_sar_group(
                     kml_bytes, kml_filename, kml_caption,

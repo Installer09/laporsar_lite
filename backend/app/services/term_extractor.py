@@ -43,7 +43,10 @@ SAR_GLOSSARY: dict[str, str] = {
 # Kamus Kategori Standar SAR (Titik mula NLP)
 SEED_CATEGORIES = {
     "VESSEL_PREFIX": ["KM", "KMN", "KRI", "TB", "RIB", "RHIB", "MV", "MT", "LCT", "TK", "BG"],
-    "VESSEL_TYPE": ["kapal", "pompong", "perahu", "speedboat", "tongkang", "tugboat", "tanker", "yacht"],
+    "VESSEL_TYPE": [
+        "kapal", "pompong", "perahu", "speedboat", "tongkang", "tugboat", "tanker", "yacht",
+        "kelong", "bagan", "sampan", "ketinting", "jukung", "pancung", "boat pancung", "perahu karet", "speed lidah", "kapal kayu"
+    ],
     "VICTIM_STATUS_S": ["selamat", "dievakuasi", "terselamatkan", "sehat", "hidup", "aman"],
     "VICTIM_STATUS_MD": ["meninggal", "tewas", "md", "mati", "jasad", "jenazah", "meninggal dunia"],
     "VICTIM_STATUS_DP": ["hilang", "dp", "belum ditemukan", "dalam pencarian", "masih dalam pencarian", "tenggelam", "hanyut", "dicari", "terbawa arus"],
@@ -298,6 +301,48 @@ async def seed_sar_glossary(db) -> dict:
                     )
                     db.add(new_word)
                     inserted += 1
+
+        # 3. Seed Regional Maritime Slang & Dialects
+        SLANG_MAPPINGS = {
+            "karam": {"synonym": "tenggelam", "def": "Kondisi kapal atau perahu masuk ke dalam air"},
+            "enjin": {"synonym": "mesin", "def": "Mesin penggerak kapal atau kendaraan"},
+            "mati enjin": {"synonym": "mati mesin", "def": "Kerusakan motor penggerak perahu di laut"},
+            "hanyot": {"synonym": "hanyut", "def": "Terbawa arus air atau gelombang"},
+            "pakcik": {"synonym": "paman", "def": "Paman atau kerabat laki-laki"},
+            "makcik": {"synonym": "bibi", "def": "Bibi atau kerabat perempuan"},
+            "ketinting": {"synonym": "perahu ketinting", "def": "Perahu kayu bermesin tempel poros panjang"},
+            "pompong": {"synonym": "kapal pompong", "def": "Perahu motor kayu tradisional nelayan pesisir"},
+            "kelong": {"synonym": "bagan kelong", "def": "Bangunan apung atau pancang penangkap ikan di laut"},
+            "unjam": {"synonym": "rumpon unjam", "def": "Rumpon atau karang buatan tempat berkumpulnya ikan"},
+            "tenggelem": {"synonym": "tenggelam", "def": "Bentuk typo atau cakapan dari tenggelam"},
+        }
+        for slang, meta in SLANG_MAPPINGS.items():
+            result = await db.execute(
+                select(DictionaryWord).where(
+                    sa_func.upper(DictionaryWord.word) == slang.upper()
+                )
+            )
+            existing = result.scalar_one_or_none()
+            if existing:
+                skipped += 1
+            else:
+                new_word = DictionaryWord(
+                    word=slang,
+                    definition=meta["def"],
+                    synonym_target=meta["synonym"],
+                    is_typo_or_slang=True,
+                    category="SLANG_DIALEK",
+                    context_example="Dialek lokal pesisir maritim",
+                    source_message="Seed dialek maritim SARBot",
+                    source_user="system",
+                    status=DictionaryStatus.APPROVED,
+                    frequency=0,
+                    word_type="SLANG",
+                    ner_type="SLANG_DIALEK",
+                    is_auto_detected=False,
+                )
+                db.add(new_word)
+                inserted += 1
 
         await db.commit()
         logger.info(f"[TermExtractor] Glossary seed: {inserted} inserted, {skipped} skipped")

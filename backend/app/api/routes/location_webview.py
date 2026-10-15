@@ -90,7 +90,7 @@ async def submit_webview_location(
     
     # 4. Notify user on Telegram/WhatsApp asynchronously
     dispatch_msg = (
-        "📍 *Lokasi kejadian berhasil disimpan melalui Peta Lapor SAR.*\n\n"
+        "*Lokasi kejadian berhasil disimpan melalui Peta Lapor SAR.*\n\n"
         f"{next_question}"
     )
     

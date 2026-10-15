@@ -66,7 +66,7 @@ async def process_whatsapp_background(tenant_slug: str, db_url: str, s3_bucket: 
                                                 logger.warning("WhatsApp audio size limit exceeded")
                                                 await reply_dispatcher.send_whatsapp_reply(
                                                     recipient_phone=from_phone,
-                                                    text="⚠️ *Rekaman Suara Terlalu Besar*\n\nUkuran rekaman suara Anda melebihi batas maksimum 15MB.",
+                                                    text="*Rekaman Suara Melebihi Batas*\n\nUkuran rekaman suara Anda melebihi batas maksimum 15MB.",
                                                     wa_token=wa_token,
                                                     phone_id=phone_id
                                                 )
@@ -81,7 +81,7 @@ async def process_whatsapp_background(tenant_slug: str, db_url: str, s3_bucket: 
                                                     logger.warning("WhatsApp audio transcription returned empty result.")
                                                     await reply_dispatcher.send_whatsapp_reply(
                                                         recipient_phone=from_phone,
-                                                        text="⚠️ *Pesan Suara Kurang Jelas*\n\nSistem kami tidak dapat mendeteksi ucapan pada rekaman suara Anda dengan jelas. Silakan kirim pesan suara baru atau ketik pesan Anda secara manual.",
+                                                        text="*Pesan Suara Kurang Jelas*\n\nSistem kami tidak dapat mendeteksi ucapan pada rekaman suara Anda dengan jelas. Silakan kirim pesan suara baru atau ketik pesan Anda secara manual.",
                                                         wa_token=wa_token,
                                                         phone_id=phone_id
                                                     )
@@ -90,7 +90,7 @@ async def process_whatsapp_background(tenant_slug: str, db_url: str, s3_bucket: 
                                                 logger.error("Failed to download WhatsApp audio.")
                                                 await reply_dispatcher.send_whatsapp_reply(
                                                     recipient_phone=from_phone,
-                                                    text="⚠️ *Koneksi Bermasalah*\n\nGagal mengunduh rekaman suara Anda. Silakan kirim ulang pesan suara atau ketik pesan secara manual.",
+                                                    text="*Koneksi Bermasalah*\n\nGagal mengunduh rekaman suara Anda. Silakan kirim ulang pesan suara atau ketik pesan secara manual.",
                                                     wa_token=wa_token,
                                                     phone_id=phone_id
                                                 )
@@ -116,7 +116,7 @@ async def process_whatsapp_background(tenant_slug: str, db_url: str, s3_bucket: 
                                                 logger.warning("WhatsApp attachment size limit exceeded")
                                                 await reply_dispatcher.send_whatsapp_reply(
                                                     recipient_phone=from_phone,
-                                                    text="⚠️ *Berkas Terlalu Besar*\n\nUkuran berkas Anda melebihi batas maksimum 15MB. Silakan kirim berkas dengan ukuran yang lebih kecil.",
+                                                    text="*Berkas Melebihi Batas*\n\nUkuran berkas Anda melebihi batas maksimum 15MB. Silakan kirim berkas dengan ukuran yang lebih kecil.",
                                                     wa_token=wa_token,
                                                     phone_id=phone_id
                                                 )
@@ -200,7 +200,7 @@ async def process_whatsapp_background(tenant_slug: str, db_url: str, s3_bucket: 
                                     
                                     # Prepend transcription feedback if it was a voice message
                                     if is_voice and response and "text" in response:
-                                        response["text"] = f"🗣️ *[Transkripsi Voice Note]:*\n_\"{text}\"_\n\n{response['text']}"
+                                        response["text"] = f"*[Transkripsi Pesan Suara]:*\n_\"{text}\"_\n\n{response['text']}"
                                     
                                     # Send WhatsApp Reply
                                     if response and "text" in response:

@@ -47,6 +47,7 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [address, setAddress] = useState("");
   const [detecting, setDetecting] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
   
   const mapRef = useRef<any>(null);
 
@@ -82,7 +83,9 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
   }, [sessionId]);
 
   const detectCurrentLocation = () => {
+    setGpsError(null);
     if (typeof window === "undefined" || !navigator.geolocation) {
+      setGpsError("Browser Anda tidak mendukung deteksi lokasi otomatis.");
       setLoading(false);
       return;
     }
@@ -96,16 +99,23 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
         setCenter([lat, lng]);
         setDetecting(false);
         setLoading(false);
+        setGpsError(null);
         reverseGeocode(lat, lng);
       },
       (err) => {
         console.warn("Geolocation permission denied or error:", err);
-        // Keep default Natuna coords
-        setPosition([3.95, 108.35]);
+        if (err.code === 1) {
+          setGpsError("Izin lokasi ditolak. Silakan izinkan akses lokasi pada pengaturan browser/ponsel Anda, lalu tekan 'Deteksi Ulang GPS'.");
+        } else if (err.code === 2) {
+          setGpsError("Layanan GPS ponsel belum aktif atau posisi tidak terjangkau satelit. Silakan aktifkan Layanan Lokasi/GPS di ponsel Anda, lalu tekan 'Deteksi Ulang GPS'.");
+        } else {
+          setGpsError("Waktu deteksi GPS habis. Silakan periksa koneksi GPS ponsel Anda atau tentukan titik di peta secara manual.");
+        }
+        setPosition((prev) => prev || [3.95, 108.35]);
         setDetecting(false);
         setLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
   };
 
@@ -202,30 +212,52 @@ export default function LocationPickerMap({ sessionId }: LocationPickerMapProps)
       {/* Top Banner */}
       <div className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-base font-bold flex items-center gap-2 text-slate-500">
-            <span className="h-2 w-2 rounded-full bg-red-500"></span>
-            PETA LOKASI LAPOR SAR
+          <h1 className="text-base font-bold flex items-center gap-2 text-slate-100">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse"></span>
+            PETA LOKASI DARURAT SAR
           </h1>
           <p className="text-[11px] text-slate-400">
-            Ketuk/geser peta untuk menentukan posisi kejadian musibah
+            Ketuk atau geser penanda pada peta untuk mengunci titik koordinat musibah
           </p>
         </div>
         <button 
           onClick={detectCurrentLocation}
           disabled={detecting}
-          className="p-2 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg border border-slate-700 transition-all text-slate-500 text-xs flex items-center gap-1.5"
+          className="p-2 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg border border-slate-700 transition-all text-slate-200 text-xs flex items-center gap-1.5 shrink-0"
         >
           {detecting ? (
             <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-transparent"></div>
           ) : (
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           )}
-          GPS Saya
+          {detecting ? "Mencari..." : "Deteksi GPS"}
         </button>
       </div>
+
+      {/* GPS Warning Banner */}
+      {gpsError && (
+        <div className="bg-amber-950/80 border-b border-amber-500/30 p-3 px-4 text-xs flex items-start justify-between gap-3 shrink-0">
+          <div className="flex items-start gap-2.5">
+            <svg className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <p className="font-semibold text-amber-300">Akses GPS Diperlukan</p>
+              <p className="text-amber-200/90 mt-0.5 leading-relaxed">{gpsError}</p>
+            </div>
+          </div>
+          <button
+            onClick={detectCurrentLocation}
+            disabled={detecting}
+            className="shrink-0 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 text-amber-200 border border-amber-500/40 rounded-lg text-xs font-medium transition-colors"
+          >
+            {detecting ? "Mendeteksi..." : "Coba Lagi"}
+          </button>
+        </div>
+      )}
 
       {/* Map Container */}
       <div className="grow relative overflow-hidden">

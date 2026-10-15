@@ -81,6 +81,7 @@ FIELD_QUESTIONS = {
     "pakai_kapal": {
         "text": (
             "*Apakah korban menggunakan kapal atau perahu?*\n"
+            "Pilih Ya jika melibatkan sarana perahu (seperti pompong, sampan, ketinting, speedboat, kelong, atau kapal nelayan) atau Tidak."
         ),
         "buttons": ["Ya", "Tidak", "Belum Tahu"]
     },
@@ -359,8 +360,8 @@ class ChatbotEngine:
             return await self._reset_session(session, db, autopilot)
 
         # Handle Cek Status
-        if intent == "CEK_STATUS":
-            return await self._handle_status_check(session, db, autopilot, extracted_data)
+        if intent == "CEK_STATUS" or session.state == "AWAITING_STATUS_QUERY":
+            return await self._handle_status_check(session, db, autopilot, extracted_data, message_text=message_text)
 
         # Handle Lapor SAR Cepat
         if intent == "LAPOR_CEPAT":
@@ -368,17 +369,27 @@ class ChatbotEngine:
             base_url = settings.FRONTEND_URL.rstrip('/')
             webview_url = f"{base_url}/location-picker?session_id={session.id}"
             
+            # Telegram supports native location sharing button
+            if session.channel == "telegram":
+                buttons = [
+                    {"text": "Bagikan Lokasi GPS Sekarang", "request_location": True},
+                    "Lapor SAR Kejadian",
+                    "Lapor SAR Info"
+                ]
+            else:
+                buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
+
             reply = (
                 "*LAPOR SAR CEPAT*\n"
-                "Prioritas penanganan: Penentuan titik koordinat darurat pelapor.\n\n"
-                "Kirimkan titik koordinat GPS perangkat Anda saat ini:\n"
-                "1. Melalui fitur Lampiran (Klip Kertas) di aplikasi pesan ini, pilih Lokasi, lalu bagikan Lokasi Terkini (Current Location).\n"
-                f"2. Atau buka tautan peta darurat berikut untuk menandai posisi Anda:\n"
-                f"[Peta Titik Darurat SAR]({webview_url})\n\n"
+                "Prioritas penanganan: Penguncian titik koordinat darurat pelapor.\n\n"
+                "Petunjuk Berbagi Titik Lokasi:\n"
+                "1. Pastikan fitur GPS (Layanan Lokasi) di ponsel Anda telah AKTIF dan izin lokasi diberikan.\n"
+                "2. Melalui aplikasi pesan ini: Ketuk tombol Lampiran (Klip Kertas) -> Pilih Lokasi -> Kirim Lokasi Terkini (Current Location).\n"
+                f"3. Atau buka tautan Peta Darurat SAR untuk mengunci posisi Anda secara akurat:\n"
+                f"[Buka Peta Titik Darurat SAR]({webview_url})\n\n"
                 "Setelah lokasi terkirim, sebutkan secara singkat musibah yang dialami."
             )
             session.state = "AWAITING_REPORT"
-            buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
             self._update_history(session, "assistant", reply, buttons=buttons)
             await db.commit()
             await self._broadcast_session(session, autopilot, extracted_data, db=db)
@@ -406,11 +417,26 @@ class ChatbotEngine:
         # Handle Lapor SAR Info
         if intent == "LAPOR_INFO":
             session.state = "MODE_BANTUAN"
+
+            # Check if user asked a direct substantive question rather than just clicking the menu
+            info_menu_keywords = {
+                "lapor sar info", "info sar", "bantuan sar", "bantuan sar lainnya", 
+                "info", "3", "3.", "/bantuan", "tanya sar", "bantuan", "menu info"
+            }
+            if message_text.strip().lower() not in info_menu_keywords and len(message_text.strip().split()) >= 2:
+                # Direct conversational answering without intermediate menu friction
+                rag_answer = await llm_rag_service.answer_bantuan_sar(message_text, db)
+                buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
+                self._update_history(session, "assistant", rag_answer, buttons=buttons)
+                await db.commit()
+                await self._broadcast_session(session, autopilot, extracted_data, db=db)
+                return {"text": rag_answer, "buttons": buttons}
+
             reply = (
                 "*LAPOR SAR INFO*\n"
-                "Layanan Informasi dan Standar Operasional Prosedur SAR.\n\n"
+                "Layanan Informasi Resmi dan Standar Operasional Prosedur SAR.\n\n"
                 "Ajukan pertanyaan Anda mengenai regulasi SAR, prosedur penyelamatan, istilah kedaruratan, atau kontak unit operasional BASARNAS.\n\n"
-                "Seluruh jawaban disusun secara faktual hanya berdasarkan basis data resmi yang terdaftar pada sistem.\n\n"
+                "Seluruh jawaban disusun secara faktual berdasarkan dokumen resmi sistem dan sumber internet terverifikasi.\n\n"
                 "Contoh pertanyaan:\n"
                 "• Bagaimana prosedur pelaporan orang hilang di laut?\n"
                 "• Apa kriteria musibah yang termasuk Kondisi Membahayakan Manusia?\n"
@@ -422,14 +448,19 @@ class ChatbotEngine:
             await self._broadcast_session(session, autopilot, extracted_data, db=db)
             return {"text": reply, "buttons": buttons}
 
-        # If already in MODE_BANTUAN, answer user question via Grounded RAG QA
+        # If already in MODE_BANTUAN:
         if session.state == "MODE_BANTUAN":
-            rag_answer = await llm_rag_service.answer_bantuan_sar(message_text, db)
-            buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
-            self._update_history(session, "assistant", rag_answer, buttons=buttons)
-            await db.commit()
-            await self._broadcast_session(session, autopilot, extracted_data, db=db)
-            return {"text": rag_answer, "buttons": buttons}
+            # Emergency Context Hijack: If user reports an incident while in info mode, immediately switch to report triage!
+            if intent in ("DATA_PELAPORAN", "LAPOR_CEPAT", "LAPOR_KEJADIAN"):
+                session.state = "AWAITING_REPORT"
+                # Fall through to the reporting state handler below
+            else:
+                rag_answer = await llm_rag_service.answer_bantuan_sar(message_text, db)
+                buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
+                self._update_history(session, "assistant", rag_answer, buttons=buttons)
+                await db.commit()
+                await self._broadcast_session(session, autopilot, extracted_data, db=db)
+                return {"text": rag_answer, "buttons": buttons}
 
         # Check rate limit before entering report state machine for new chronology
         if session.state == "AWAITING_REPORT":
@@ -731,60 +762,107 @@ class ChatbotEngine:
         return {"text": reply, "buttons": ["Ya", "Lengkapi", "Batalkan"]}
 
     async def _handle_status_check(
-        self, session: ChatSession, db: AsyncSession, autopilot: bool, extracted_data: dict
+        self, session: ChatSession, db: AsyncSession, autopilot: bool, extracted_data: dict, message_text: str = ""
     ) -> dict:
-        phone = session.contact_phone
-        if not phone:
-            if session.user_id.startswith("wa_"):
-                phone = session.user_id[3:]
-            elif session.user_id.startswith("tg_"):
-                phone = extracted_data.get("pelapor_hp")
-
-        if not phone:
-            reply = (
-                "*Data Nomor Telepon Anda Belum Terdaftar*\n\n"
-                "Kami tidak menemukan nomor telepon aktif pada profil Anda untuk melakukan pelacakan status laporan.\n"
-                "Silakan kirimkan laporan musibah terlebih dahulu."
-            )
-            self._update_history(session, "assistant", reply)
-            await db.commit()
-            return {"text": reply}
-
         from app.models.report import Report
-        result = await db.execute(
-            select(Report).where(Report.pelapor_nomor == phone).order_by(Report.id.desc()).limit(3)
-        )
-        reports = result.scalars().all()
+        
+        raw_text = (message_text or "").strip()
+        report_no_match = re.search(r'\b(SAR-[A-Z0-9\-]+)\b', raw_text, re.IGNORECASE)
+        target_report_no = report_no_match.group(1).upper() if report_no_match else None
+        
+        phone_match = re.search(r'\b(08\d{8,12}|62\d{8,12}|\+62\d{8,12})\b', raw_text)
+        searched_phone = phone_match.group(1) if phone_match else None
+        
+        reports = []
 
-        if not reports:
-            reply = (
-                "*Tidak Ada Laporan Ditemukan*\n\n"
-                f"Kami tidak menemukan adanya laporan darurat aktif yang terdaftar menggunakan nomor telepon Anda (*{phone}*)."
+        if target_report_no:
+            result = await db.execute(
+                select(Report).where(Report.no_laporan.ilike(target_report_no)).order_by(Report.id.desc())
             )
-            self._update_history(session, "assistant", reply)
-            await db.commit()
-            return {"text": reply}
+            reports = result.scalars().all()
+            if not reports:
+                session.state = "AWAITING_STATUS_QUERY"
+                reply = (
+                    "*Laporan Tidak Ditemukan*\n\n"
+                    f"Tidak ditemukan laporan SAR dengan nomor registrasi `{target_report_no}`.\n\n"
+                    "Mohon periksa kembali nomor laporan Anda, atau ketik nomor handphone yang Anda gunakan saat melapor."
+                )
+                buttons = ["Buat Laporan Baru", "Menu Utama"]
+                self._update_history(session, "assistant", reply, buttons=buttons)
+                await db.commit()
+                await self._broadcast_session(session, autopilot, extracted_data, db=db)
+                return {"text": reply, "buttons": buttons}
+        else:
+            # Resolve phone from message, session, or extracted_data
+            phone = searched_phone or session.contact_phone
+            if not phone:
+                if session.user_id.startswith("wa_"):
+                    phone = session.user_id[3:]
+                elif session.user_id.startswith("tg_"):
+                    phone = extracted_data.get("pelapor_hp")
+            
+            last_report_no = extracted_data.get("_last_report_no")
+            
+            if searched_phone or phone:
+                target_phone = searched_phone or phone
+                result = await db.execute(
+                    select(Report).where(Report.pelapor_nomor == target_phone).order_by(Report.id.desc()).limit(3)
+                )
+                reports = result.scalars().all()
+                if not reports:
+                    session.state = "AWAITING_STATUS_QUERY"
+                    reply = (
+                        "*Tidak Ada Laporan Ditemukan*\n\n"
+                        f"Kami tidak menemukan adanya laporan darurat aktif yang terdaftar menggunakan nomor telepon (*{target_phone}*).\n\n"
+                        "Silakan ketik **Nomor Registrasi Laporan** Anda jika ada (contoh: `SAR-202610-001`), atau ketik */start* untuk membuat laporan baru."
+                    )
+                    buttons = ["Buat Laporan Baru", "Menu Utama"]
+                    self._update_history(session, "assistant", reply, buttons=buttons)
+                    await db.commit()
+                    await self._broadcast_session(session, autopilot, extracted_data, db=db)
+                    return {"text": reply, "buttons": buttons}
+            elif last_report_no:
+                result = await db.execute(
+                    select(Report).where(Report.no_laporan.ilike(last_report_no)).order_by(Report.id.desc())
+                )
+                reports = result.scalars().all()
+            else:
+                session.state = "AWAITING_STATUS_QUERY"
+                reply = (
+                    "*PELACAKAN STATUS LAPORAN SAR*\n\n"
+                    "Silakan ketik **Nomor Registrasi Laporan** Anda (contoh: `SAR-202610-001`) atau kirimkan **Nomor Handphone** yang digunakan saat melapor.\n\n"
+                    "Petugas piket siaga memperbarui status penanganan secara berkala."
+                )
+                buttons = ["Menu Utama"]
+                self._update_history(session, "assistant", reply, buttons=buttons)
+                await db.commit()
+                await self._broadcast_session(session, autopilot, extracted_data, db=db)
+                return {"text": reply, "buttons": buttons}
 
+        # If reports found, show formatted status and reset state to AWAITING_REPORT
+        session.state = "AWAITING_REPORT"
         reply_lines = ["*STATUS PENANGANAN LAPORAN SAR*\n"]
         
         status_friendly = {
-            "PENDING": "*PENDING* (Sedang Diverifikasi oleh Petugas Piket)",
-            "AKTIF": "*AKTIF* (Operasi SAR Sedang Berlangsung)",
+            "PENDING": "*PENDING* (Sedang Diverifikasi Petugas Piket)",
+            "AKTIF": "*AKTIF* (Operasi SAR Sedang Berlangsung / Tim Dikerahkan)",
             "TIDAK_AKTIF": "*TIDAK AKTIF / SELESAI* (Operasi SAR Telah Ditutup)",
-            "SALAH_LAPORAN": "*BATAL / DUPLIKAT* (Laporan Selesai/Dibatalkan)"
+            "SALAH_LAPORAN": "*BATAL / DUPLIKAT* (Laporan Dibatalkan/Duplikat)"
         }
 
         for i, rep in enumerate(reports, 1):
             status_text = status_friendly.get(rep.status, f"*{rep.status}*")
-            pos_sar = rep.pos_sar_terdekat or "Kantor Pencarian dan Pertolongan Natuna"
+            pos_sar = rep.pos_sar_terdekat or "Command Center Kantor SAR"
             
             dt = rep.created_at
             date_str = dt.strftime("%d %B %Y pukul %H:%M WIB") if dt else "Waktu tidak tercatat"
+            lokasi = rep.lokasi_teks or "Perairan"
             
             rep_block = (
                 f"{i}. *No Laporan:* `{rep.no_laporan}`\n"
                 f"   • *Jenis Musibah:* {rep.jenis_kejadian or 'KMM'}\n"
                 f"   • *Tanggal Lapor:* {date_str}\n"
+                f"   • *Lokasi:* {lokasi}\n"
                 f"   • *Unit Menangani:* {pos_sar}\n"
                 f"   • *Status:* {status_text}\n"
             )

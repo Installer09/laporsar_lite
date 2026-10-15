@@ -72,7 +72,13 @@ class DefaultFieldProcessor(BaseFieldProcessor):
         # Specific handling for pakai_kapal
         if self.field_name == "pakai_kapal":
             val_lower = answer_clean.lower()
-            if any(yes_w in val_lower for yes_w in ["ya", "y", "betul", "benar", "ada", "pakai", "pake", "pompong", "perahu", "kapal", "boat", "jongkong"]):
+            vessel_terms = [
+                "ya", "y", "betul", "benar", "ada", "pakai", "pake",
+                "pompong", "perahu", "kapal", "boat", "jongkong",
+                "sampan", "ketinting", "kelong", "bagan", "jukung",
+                "pancung", "speedboat", "speed lidah"
+            ]
+            if any(yes_w in val_lower for yes_w in vessel_terms):
                 extracted_data["pakai_kapal"] = "Ya"
                 prev_jenis = extracted_data.get("jenis_kejadian")
                 if not prev_jenis or prev_jenis in ("KMM", "Kondisi Membahayakan Manusia", "Kecelakaan Kapal", "Laka Kapal"):

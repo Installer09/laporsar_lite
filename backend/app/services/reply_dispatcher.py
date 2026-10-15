@@ -235,7 +235,8 @@ class ReplyDispatcher:
 
     @staticmethod
     async def forward_to_sar_group(
-        report_text: str, bot_token: str = None, group_id: str = None, return_details: bool = False
+        report_text: str, bot_token: str = None, group_id: str = None, return_details: bool = False,
+        lat: float = None, lng: float = None
     ):
         """
         Forward a completed Info Awal report to the SAR command group
@@ -254,14 +255,21 @@ class ReplyDispatcher:
 
         try:
             safe_text = _sanitize_telegram_markdown(report_text)
+            payload = {
+                "chat_id": group,
+                "text": safe_text,
+                "parse_mode": "Markdown",
+            }
+            if lat is not None and lng is not None:
+                payload["reply_markup"] = {
+                    "inline_keyboard": [
+                        [{"text": "Buka Lokasi di Google Maps", "url": f"https://maps.google.com/?q={lat},{lng}"}]
+                    ]
+                }
             async with httpx.AsyncClient(timeout=15.0) as client:
                 resp = await client.post(
                     f"https://api.telegram.org/bot{token}/sendMessage",
-                    json={
-                        "chat_id": group,
-                        "text": safe_text,
-                        "parse_mode": "Markdown",
-                    },
+                    json=payload,
                 )
                 if resp.status_code == 200:
                     logger.info(f"Report forwarded to Telegram SAR group {group}")
@@ -273,12 +281,19 @@ class ReplyDispatcher:
                     logger.warning(
                         "SAR group forward Markdown error, retrying as plain text"
                     )
+                    fallback_payload = {
+                        "chat_id": group,
+                        "text": report_text,
+                    }
+                    if lat is not None and lng is not None:
+                        fallback_payload["reply_markup"] = {
+                            "inline_keyboard": [
+                                [{"text": "Buka Lokasi di Google Maps", "url": f"https://maps.google.com/?q={lat},{lng}"}]
+                            ]
+                        }
                     resp2 = await client.post(
                         f"https://api.telegram.org/bot{token}/sendMessage",
-                        json={
-                            "chat_id": group,
-                            "text": report_text,
-                        },
+                        json=fallback_payload,
                     )
                     if resp2.status_code == 200:
                         logger.info(
@@ -304,7 +319,10 @@ class ReplyDispatcher:
     # ----------------------------------------------------------------
 
     @staticmethod
-    async def forward_to_whatsapp_sar_group(report_text: str, wa_token: str = None, phone_id: str = None, group_id: str = None) -> bool:
+    async def forward_to_whatsapp_sar_group(
+        report_text: str, wa_token: str = None, phone_id: str = None, group_id: str = None,
+        lat: float = None, lng: float = None
+    ) -> bool:
         """
         Forward a completed Info Awal report to the WhatsApp SAR group.
         Uses WHATSAPP_SAR_GROUP_ID — this is the phone number or group
@@ -322,6 +340,10 @@ class ReplyDispatcher:
             return False
 
         try:
+            wa_body = report_text
+            if lat is not None and lng is not None:
+                wa_body = f"{report_text}\n\n*Peta Lokasi:* https://maps.google.com/?q={lat},{lng}"
+
             async with httpx.AsyncClient(timeout=15.0) as client:
                 resp = await client.post(
                     f"https://graph.facebook.com/v19.0/{phone}/messages",
@@ -333,7 +355,7 @@ class ReplyDispatcher:
                         "messaging_product": "whatsapp",
                         "to": group,
                         "type": "text",
-                        "text": {"body": report_text},
+                        "text": {"body": wa_body},
                     },
                 )
                 if resp.status_code == 200:
@@ -462,7 +484,9 @@ class ReplyDispatcher:
         tg_group_id: str = None,
         wa_token: str = None,
         wa_phone_id: str = None,
-        wa_group_id: str = None
+        wa_group_id: str = None,
+        lat: float = None,
+        lng: float = None
     ) -> dict:
         """
         Forward a completed report to both Telegram and WhatsApp SAR
@@ -473,7 +497,8 @@ class ReplyDispatcher:
 
         tg_task = asyncio.create_task(
             ReplyDispatcher.forward_to_sar_group(
-                report_text, bot_token=bot_token, group_id=tg_group_id, return_details=True
+                report_text, bot_token=bot_token, group_id=tg_group_id, return_details=True,
+                lat=lat, lng=lng
             )
         )
         wa_task = asyncio.create_task(
@@ -481,7 +506,9 @@ class ReplyDispatcher:
                 report_text,
                 wa_token=wa_token,
                 phone_id=wa_phone_id,
-                group_id=wa_group_id
+                group_id=wa_group_id,
+                lat=lat,
+                lng=lng
             )
         )
 

@@ -5,11 +5,11 @@ Unified interface for LLM, Embedding, and STT (Speech-to-Text) across
 multiple cloud and local AI providers.
 
 Supported Providers:
-  - Ollama  (local)   : LLM ✅  Embedding ✅  STT ✅
-  - OpenAI  (cloud)   : LLM ✅  Embedding ✅  STT ✅
-  - Gemini  (cloud)   : LLM ✅  Embedding ✅  STT ✅
-  - Claude  (cloud)   : LLM ✅  Embedding ❌  STT ❌
-  - Groq    (cloud)   : LLM ✅  Embedding ❌  STT ✅
+  - Ollama  (local)   : LLM [YES]  Embedding [YES]  STT [YES]
+  - OpenAI  (cloud)   : LLM [YES]  Embedding [YES]  STT [YES]
+  - Gemini  (cloud)   : LLM [YES]  Embedding [YES]  STT [YES]
+  - Claude  (cloud)   : LLM [YES]  Embedding [NO]   STT [NO]
+  - Groq    (cloud)   : LLM [YES]  Embedding [NO]   STT [YES]
 
 All HTTP calls use httpx (already a project dependency).
 No additional SDK packages are required.
@@ -751,10 +751,13 @@ class AIProviderManager:
                             w = item.get("word", "").strip()
                             if w and len(w) > 2 and w not in prompt_words:
                                 prompt_words.append(w)
-                if prompt_words:
-                    std_hotwords = ["BASARNAS", "Kantor SAR", "Laka Kapal", "KMM", "Laka Air", "Kecelakaan Laut", "Kapal Tenggelam", "Perahu Terbalik"]
-                    prompt_words = std_hotwords + [w for w in prompt_words if w not in std_hotwords]
-                    prompt = ", ".join(prompt_words[:100])
+                std_hotwords = [
+                    "BASARNAS", "Kantor SAR", "Laka Kapal", "KMM", "Laka Air", "Kecelakaan Laut",
+                    "Kapal Tenggelam", "Perahu Terbalik", "Mati Mesin", "Pompong", "Kelong", "Bagan",
+                    "Sampan", "Ketinting", "Jukung", "Speedboat", "LKP"
+                ]
+                all_words = std_hotwords + [w for w in prompt_words if w not in std_hotwords]
+                prompt = ", ".join(all_words[:100])
             except Exception as cache_err:
                 logger.warning(f"[AIProvider] Failed to extract dictionary cache for Whisper prompt: {cache_err}")
 

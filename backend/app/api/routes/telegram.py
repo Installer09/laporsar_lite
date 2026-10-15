@@ -152,7 +152,7 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                     await edit_message_text(
                         chat_id=chat_id,
                         message_id=message_id,
-                        text="❌ *Pilihan kalender dibatalkan.*\n\nAnda dapat mengetikkan perkiraan waktu kejadian secara manual (contoh: _Pukul 08.00 WIB_, _tadi pagi_, _10 menit yang lalu_).",
+                        text="*Pilihan Kalender Dibatalkan.*\n\nAnda dapat mengetikkan perkiraan waktu kejadian secara manual (contoh: _Pukul 08.00 WIB_, _tadi pagi_, _10 menit yang lalu_).",
                         token=token
                     )
                     return
@@ -184,8 +184,8 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                     await db.commit()
                     
                     prompt_text = (
-                        f"📅 *Tanggal Kejadian Terpilih:* {formatted_date}\n\n"
-                        f"⏰ *Pukul berapa kejadian tersebut berlangsung?*\n"
+                        f"*Tanggal Kejadian Terpilih:* {formatted_date}\n\n"
+                        f"*Pukul berapa kejadian tersebut berlangsung?*\n"
                         f"Silakan ketik perkiraan jam kejadian secara bebas (contoh: _Pukul 08.00 WIB_, _1 jam yang lalu_, _tadi pagi_, _semalam_)."
                     )
                     await edit_message_text(chat_id, message_id, text=prompt_text, token=token)
@@ -225,7 +225,7 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                         if local_path == "size_limit_exceeded":
                             await reply_dispatcher.send_telegram_reply(
                                 chat_id=chat_id,
-                                text="⚠️ *Rekaman Suara Terlalu Besar*\n\nUkuran rekaman suara Anda melebihi batas maksimum 15MB.",
+                                text="*Rekaman Suara Melebihi Batas*\n\nUkuran rekaman suara Anda melebihi batas maksimum 15MB.",
                                 bot_token=token
                             )
                             return
@@ -239,7 +239,7 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                                 logger.warning("Telegram voice transcription returned empty result.")
                                 await reply_dispatcher.send_telegram_reply(
                                     chat_id=chat_id,
-                                    text="⚠️ *Pesan Suara Kurang Jelas*\n\nSistem kami tidak dapat mendeteksi ucapan pada rekaman suara Anda dengan jelas. Silakan kirim pesan suara baru atau ketik pesan Anda secara manual.",
+                                    text="*Pesan Suara Kurang Jelas*\n\nSistem kami tidak dapat mendeteksi ucapan pada rekaman suara Anda dengan jelas. Silakan kirim pesan suara baru atau ketik pesan Anda secara manual.",
                                     bot_token=token
                                 )
                                 return
@@ -247,7 +247,7 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                             logger.error("Failed to download Telegram voice note.")
                             await reply_dispatcher.send_telegram_reply(
                                 chat_id=chat_id,
-                                text="⚠️ *Koneksi Bermasalah*\n\nGagal mengunduh rekaman suara Anda. Silakan kirim ulang pesan suara atau ketik pesan secara manual.",
+                                text="*Koneksi Bermasalah*\n\nGagal mengunduh rekaman suara Anda. Silakan kirim ulang pesan suara atau ketik pesan secara manual.",
                                 bot_token=token
                             )
                             return
@@ -295,7 +295,7 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                         if file_size and file_size > 15 * 1024 * 1024:
                             await reply_dispatcher.send_telegram_reply(
                                 chat_id=chat_id,
-                                text="⚠️ *Berkas Terlalu Besar*\n\nUkuran berkas Anda melebihi batas maksimum 15MB. Silakan kirim berkas dengan ukuran yang lebih kecil.",
+                                text="*Berkas Melebihi Batas*\n\nUkuran berkas Anda melebihi batas maksimum 15MB. Silakan kirim berkas dengan ukuran yang lebih kecil.",
                                 bot_token=token
                             )
                             return
@@ -315,7 +315,7 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                         if local_path == "size_limit_exceeded":
                             await reply_dispatcher.send_telegram_reply(
                                 chat_id=chat_id,
-                                text="⚠️ *Berkas Terlalu Besar*\n\nUkuran berkas Anda melebihi batas maksimum 15MB. Silakan kirim berkas dengan ukuran yang lebih kecil.",
+                                text="*Berkas Melebihi Batas*\n\nUkuran berkas Anda melebihi batas maksimum 15MB. Silakan kirim berkas dengan ukuran yang lebih kecil.",
                                 bot_token=token
                             )
                             return
@@ -403,7 +403,7 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                 
                 # Prepend transcription feedback to the response text if it was a voice message
                 if is_voice and response and "text" in response:
-                    response["text"] = f"🗣️ *[Transkripsi Voice Note]:*\n_\"{text}\"_\n\n{response['text']}"
+                    response["text"] = f"*[Transkripsi Pesan Suara]:*\n_\"{text}\"_\n\n{response['text']}"
                 
                 # Dispatch the reply back to Telegram
                 if response and "text" in response:

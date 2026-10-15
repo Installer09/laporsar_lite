@@ -1,6 +1,7 @@
 import json
 import re
 import logging
+import httpx
 
 logger = logging.getLogger(__name__)
 from typing import Dict, Any, List
@@ -1093,45 +1094,114 @@ Keluarkan HANYA JSON hasil penyempurnaan, dengan struktur kunci yang sama sepert
             
         return extracted_data
 
-    async def answer_bantuan_sar(self, question: str, db: AsyncSession) -> str:
-        """Answers general user questions about SAR SOPs, terms, and guidelines using RAG & Knowledge Base grounded on official documents."""
-        try:
-            dict_context = await self.get_dictionary_context(db, query_text=question)
-            sop_chunks = await self.search_sop_chunks(question, db, limit=6)
-            
-            # Fetch available registered SOP documents from Master & Tenant DB
-            sop_docs_list = []
+    async def search_trusted_internet(self, query: str) -> list[dict]:
+        """
+        Query trusted and verified external sources from the internet:
+        1. BMKG Open Data (live earthquake, tsunami, and marine meteorological data)
+        2. Indonesian Wikipedia Search API (encyclopedic, regulatory, and maritime terminology)
+        """
+        results = []
+        low_q = query.lower()
+
+        # 1. BMKG check for seismic / meteorological indicators
+        if any(k in low_q for k in ["gempa", "tsunami", "seismik", "guncangan", "gempa bumi"]):
             try:
-                from app.models.knowledge_models import SOPDocument, SOPDocStatus
-                from sqlalchemy.future import select
-                
-                info = getattr(db, "info", None)
-                tenant_slug = info.get("tenant_slug", "global") if isinstance(info, dict) else "global"
-                
-                # Master SOPs
+                async with httpx.AsyncClient(timeout=6.0, verify=False) as client:
+                    resp = await client.get("https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json")
+                    if resp.status_code == 200:
+                        g = resp.json().get("Infogempa", {}).get("gempa", {})
+                        if g:
+                            results.append({
+                                "title": f"BMKG - Informasi Gempa Terkini ({g.get('Tanggal')} {g.get('Jam')})",
+                                "snippet": f"Magnitudo: {g.get('Magnitude')} | Kedalaman: {g.get('Kedalaman')} | Wilayah: {g.get('Wilayah')} | Potensi: {g.get('Potensi')}",
+                                "url": "https://www.bmkg.go.id"
+                            })
+            except Exception as e:
+                logger.warning(f"BMKG internet fetch failed: {e}")
+
+        # 2. Indonesian Wikipedia Search API for knowledge grounding
+        try:
+            from urllib.parse import quote_plus
+            headers = {"User-Agent": "LaporSARNatunaBot/1.0 (https://basarnas.go.id; sar_natuna@basarnas.go.id)"}
+            async with httpx.AsyncClient(headers=headers, timeout=8.0) as client:
+                resp = await client.get(
+                    f"https://id.wikipedia.org/w/api.php?action=query&list=search&srsearch={quote_plus(query)}&srlimit=3&format=json"
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    for item in data.get("query", {}).get("search", []):
+                        title = item.get("title", "")
+                        clean_snippet = re.sub(r'<[^>]+>', '', item.get("snippet", "")).strip()
+                        clean_snippet = re.sub(r'\s+', ' ', clean_snippet)
+                        page_url = f"https://id.wikipedia.org/wiki/{quote_plus(title.replace(' ', '_'))}"
+                        results.append({
+                            "title": f"Wikipedia Indonesia: {title}",
+                            "snippet": clean_snippet,
+                            "url": page_url
+                        })
+        except Exception as e:
+            logger.warning(f"Wikipedia search fetch failed: {e}")
+
+        return results
+
+    async def answer_bantuan_sar(self, question: str, db: AsyncSession = None, allow_internet: bool = True) -> str:
+        """
+        Answer informational user queries about SAR SOP, regulations, and operational contacts.
+        Combines local SOP documents, vector memory, dictionary context, and trusted internet search.
+        Strictly zero emojis, professional institutional format, and mandatory source citations.
+        """
+        try:
+            sop_chunks = []
+            dict_context = ""
+            sop_docs_list = []
+            
+            if db is not None:
                 try:
-                    from app.db.session import MasterSessionLocal
-                    async with MasterSessionLocal() as master_db:
-                        m_res = await master_db.execute(
-                            select(SOPDocument).order_by(SOPDocument.id.desc()).limit(10)
+                    sop_chunks = await self.search_sop_chunks(question, db, limit=4)
+                except Exception as se:
+                    logger.warning(f"SOP chunk search failed: {se}")
+                try:
+                    dict_context = await self.get_dictionary_context(question, db)
+                except Exception as de:
+                    logger.warning(f"Dictionary context fetch failed: {de}")
+
+            # Assemble registered SOP documents list
+            if db is not None:
+                try:
+                    tenant_slug = db.info.get("tenant_slug", "global") if hasattr(db, "info") else "global"
+                    from app.models.sop_document import SOPDocument
+                    from app.models.master_models import MasterSOPDocument
+
+                    # Master SOPs
+                    try:
+                        m_res = await db.execute(
+                            select(MasterSOPDocument).order_by(MasterSOPDocument.id.desc()).limit(10)
                         )
                         for d in m_res.scalars().all():
                             sop_docs_list.append(f"• [Pusat/Nasional] {d.title} (Berkas: {d.filename}, Tipe: {d.doc_type})")
-                except Exception as mex:
-                    logger.warning(f"Failed to fetch master SOP list: {mex}")
+                    except Exception as mex:
+                        logger.warning(f"Failed to fetch master SOP list: {mex}")
 
-                # Tenant SOPs
-                if tenant_slug != "global":
-                    try:
-                        t_res = await db.execute(
-                            select(SOPDocument).order_by(SOPDocument.id.desc()).limit(10)
-                        )
-                        for d in t_res.scalars().all():
-                            sop_docs_list.append(f"• [Kantor SAR {tenant_slug.upper()}] {d.title} (Berkas: {d.filename}, Tipe: {d.doc_type})")
-                    except Exception as tex:
-                        logger.warning(f"Failed to fetch tenant SOP list: {tex}")
-            except Exception as ex:
-                logger.warning(f"Failed to fetch registered SOP documents list: {ex}")
+                    # Tenant SOPs
+                    if tenant_slug != "global":
+                        try:
+                            t_res = await db.execute(
+                                select(SOPDocument).order_by(SOPDocument.id.desc()).limit(10)
+                            )
+                            for d in t_res.scalars().all():
+                                sop_docs_list.append(f"• [Kantor SAR {tenant_slug.upper()}] {d.title} (Berkas: {d.filename}, Tipe: {d.doc_type})")
+                        except Exception as tex:
+                            logger.warning(f"Failed to fetch tenant SOP list: {tex}")
+                except Exception as ex:
+                    logger.warning(f"Failed to fetch registered SOP documents list: {ex}")
+
+            # Search trusted internet sources for supplemental verification
+            internet_results = []
+            if allow_internet:
+                try:
+                    internet_results = await self.search_trusted_internet(question)
+                except Exception as net_err:
+                    logger.warning(f"Internet search failed: {net_err}")
 
             # Assemble structured context
             context_blocks = []
@@ -1158,6 +1228,12 @@ Keluarkan HANYA JSON hasil penyempurnaan, dengan struktur kunci yang sama sepert
             if dict_context:
                 context_blocks.append(dict_context)
 
+            if internet_results:
+                net_lines = []
+                for idx, r in enumerate(internet_results, 1):
+                    net_lines.append(f"[Sumber Internet {idx}] Judul: \"{r['title']}\"\nTautan: {r['url']}\nKutipan Ringkasan: {r['snippet']}\n")
+                context_blocks.append("INFORMASI TERVERIFIKASI DARI INTERNET & SUMBER EKSTERNAL:\n" + "\n".join(net_lines))
+
             full_context_str = "\n\n".join(context_blocks)
 
             prompt = f"""
@@ -1172,19 +1248,22 @@ PERTANYAAN PENGGUNA:
 
 PETUNJUK FORMAT JAWABAN (WAJIB DIIKUTI SECARA KETAT):
 1. KEAKURATAN & STRICT GROUNDING:
-   - Jawaban Anda WAJIB HANYA didasarkan pada konteks dokumen resmi, regulasi SAR, SOP, dan basis data sistem di atas.
-   - JIKA informasi yang ditanyakan TIDAK TERCANTUM atau TIDAK RELEVAN dengan konteks dokumen di atas, Anda DILARANG berhalusinasi atau mengarang jawaban.
+   - Jawaban Anda WAJIB HANYA didasarkan pada konteks dokumen resmi, regulasi SAR, SOP, basis data sistem, atau informasi terverifikasi dari internet di atas.
+   - JIKA informasi yang ditanyakan sama sekali TIDAK TERCANTUM atau TIDAK RELEVAN dengan konteks di atas, Anda DILARANG berhalusinasi atau mengarang jawaban.
    - Dalam kondisi informasi tidak tercantum, berikan jawaban standar berikut:
      "Informasi tersebut tidak tercantum dalam basis data resmi sistem SAR.
 
 Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi Call Center BASARNAS di nomor 115 (Bebas Pulsa 24 Jam) atau kunjungi website resmi BASARNAS di https://basarnas.go.id."
 2. TANPA EMOJI ATAU IKON DEKORATIF (DILARANG KERAS):
-   - JANGAN menggunakan emoji atau ikon dekoratif apapun (seperti 📞, 🚨, 📚, ℹ️, 📋, 💡, ⚠️, 🤖, dan sejenisnya).
+   - JANGAN menggunakan emoji atau ikon dekoratif apapun (seperti telepon, sirene, buku, tanda seru, robot, dan sejenisnya).
    - Format jawaban harus formal, bersih, profesional, dan bergaya institusional kedinasan resmi.
-3. KETERANGAN SELURUH SUMBER YANG DIKUTIP (LEBIH BANYAK SUMBER LEBIH BAGUS):
-   - Jika menjawab berdasarkan dokumen pada konteks, cantumkan di bagian akhir jawaban:
+3. KETERANGAN SUMBER YANG DIKUTIP (MANDATORI):
+   - Jika menjawab berdasarkan dokumen internal/regulasi, cantumkan di bagian akhir jawaban:
      "**Referensi Dokumen & Sumber Resmi:**"
      - [Nama Dokumen / Regulasi / SOP yang relevan]
+   - Jika menggunakan data dari "INFORMASI TERVERIFIKASI DARI INTERNET", cantumkan tautan sumbernya secara eksplisit:
+     "**Sumber Informasi Terverifikasi (Internet):**"
+     - [Nama Sumber / Judul] ([URL])
 4. INFORMASI KONTAK & SITUS RESMI:
    - Sebutkan Call Center BASARNAS: 115 (Bebas Pulsa 24 Jam) dan Website Resmi: https://basarnas.go.id.
 5. Gunakan Bahasa Indonesia yang baku, sopan, formal, dan presisi.
@@ -1199,7 +1278,7 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
 
             response = await ai_provider_manager.llm_generate(
                 prompt=prompt,
-                system_prompt="Anda adalah asisten Lapor SAR Info BASARNAS resmi. Jawab secara formal, presisi, HANYA berbasis dokumen resmi dan regulasi sistem, tanpa emoji dekoratif apapun. Bila tidak tercantum, tolak dengan mengarahkan ke Call Center 115 dan https://basarnas.go.id.",
+                system_prompt="Anda adalah asisten Lapor SAR Info BASARNAS resmi. Jawab secara formal, presisi, HANYA berbasis dokumen resmi, regulasi, dan informasi internet terverifikasi yang diberikan, tanpa emoji dekoratif apapun. Bila tidak tercantum, tolak dengan mengarahkan ke Call Center 115 dan https://basarnas.go.id.",
                 temperature=0.2,
                 timeout=25.0,
                 tenant_settings=tenant_settings
@@ -1247,12 +1326,17 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
             return "LAPOR_KEJADIAN"
         if msg_clean in ("lapor sar info", "info sar", "bantuan sar", "bantuan sar lainnya", "info", "3", "3.", "/bantuan", "tanya sar", "bantuan"):
             return "LAPOR_INFO"
-        if msg_clean in ("/status", "/cek", "cek status", "cek status laporan", "status", "status laporan"):
+        if (
+            msg_clean in ("/status", "/cek", "cek status", "cek status laporan", "status", "status laporan")
+            or msg_clean.startswith("cek ")
+            or msg_clean.startswith("status ")
+            or bool(re.search(r'\bSAR-[A-Z0-9\-]+\b', message, re.IGNORECASE))
+        ):
             return "CEK_STATUS"
 
         # If user is in the middle of answering a specific field question,
         # route message directly to the field processor without unnecessary LLM latency
-        if current_state and current_state.startswith("AWAITING_") and current_state != "AWAITING_REPORT":
+        if current_state and current_state.startswith("AWAITING_") and current_state not in ("AWAITING_REPORT", "AWAITING_STATUS_QUERY"):
             return "DATA_PELAPORAN"
 
         # Quick indicator check for obvious incident reports or info questions

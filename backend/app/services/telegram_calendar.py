@@ -88,14 +88,14 @@ def create_calendar(start_date_str: str = None) -> list:
     has_future = next_week_start.date() > wib_now.date()
     
     nav_row = [
-        {"text": "⬅️ Minggu Lalu", "callback_data": f"calendar_week_prev:{prev_str}"},
-        {"text": "❌ Batal", "callback_data": "calendar_cancel"}
+        {"text": "<< Minggu Lalu", "callback_data": f"calendar_week_prev:{prev_str}"},
+        {"text": "Batal", "callback_data": "calendar_cancel"}
     ]
     if not has_future:
-        nav_row.append({"text": "Minggu Depan ➡️", "callback_data": f"calendar_week_next:{next_str}"})
+        nav_row.append({"text": "Minggu Depan >>", "callback_data": f"calendar_week_next:{next_str}"})
     else:
         # If it hits today, we disable the future navigation button to keep it clean
-        nav_row.append({"text": "⏹️", "callback_data": "calendar_ignore"})
+        nav_row.append({"text": "-", "callback_data": "calendar_ignore"})
         
     markup.append(nav_row)
     return markup

@@ -17,5 +17,5 @@ class CompletedStateHandler(BaseStateHandler):
         self, engine: "ChatbotEngine", session: ChatSession, message: str, extracted_data: dict, db: AsyncSession, autopilot: bool
     ) -> dict:
         await engine._reset_session(session, db, autopilot)
-        reply = "✅ *Sesi Laporan Telah Selesai.*\n\nTerima kasih atas laporan Anda. Tim SAR telah dikerahkan. Untuk membuat laporan baru, silakan ketik /start."
+        reply = "*Sesi Laporan Telah Selesai.*\n\nTerima kasih atas laporan Anda. Tim SAR telah dikerahkan. Untuk membuat laporan baru, silakan ketik /start."
         return {"text": reply}

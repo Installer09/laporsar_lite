@@ -36,44 +36,52 @@ class ConfirmingStateHandler(BaseStateHandler):
             completed_reports = extracted_data.get("_completed_reports", [])
             completed_reports.append(datetime.now(timezone.utc).isoformat())
             extracted_data["_completed_reports"] = completed_reports
+            if saved_report and getattr(saved_report, "no_laporan", None):
+                extracted_data["_last_report_no"] = saved_report.no_laporan
+            
+            # Ensure contact_phone is synced with pelapor_hp if not set
+            if not session.contact_phone and extracted_data.get("pelapor_hp"):
+                session.contact_phone = extracted_data.get("pelapor_hp")
+                
             session.extracted_data = json.dumps(extracted_data)
             
             # Check if location is outside working area of Natuna SAR (Natuna/Anambas)
             is_outside = await engine._is_outside_working_area(extracted_data, db)
             
-            widget_url = "/widget-registration"
-            if session.channel != "web":
-                base_url = settings.FRONTEND_URL.rstrip('/')
-                widget_url = f"{base_url}/widget-registration"
-
-            widget_info = (
-                f"\n\n*Integrasi Widget Lapor SAR:*\n"
-                f"Ingin memasang tombol Lapor SAR di website Anda? Dapatkan widget gratis secara mandiri untuk disematkan di website instansi atau portal berita Anda. [Daftar Widget Lapor SAR]({widget_url})"
-            )
+            no_lap = saved_report.no_laporan if (saved_report and getattr(saved_report, "no_laporan", None)) else "-"
+            pos_sar = getattr(saved_report, "pos_sar_terdekat", None) or "Command Center Kantor SAR"
 
             if is_outside:
                 reply = (
                     "*Laporan Anda Telah Diterima secara Resmi*\n\n"
-                    "Info Penting: Lokasi kejadian berada di luar wilayah kerja operasional unit lokal. "
-                    "Laporan Anda dikoordinasikan langsung ke Kantor SAR terdekat yang berwenang.\n\n"
-                    "PENTING: Pastikan nomor telepon/WhatsApp Anda selalu aktif. Petugas rescue/SAR akan segera menghubungi Anda untuk memandu tindakan penyelamatan.\n\n"
-                    "Call Center BASARNAS: 115 (Bebas Pulsa 24 Jam)\n"
-                    "Website Resmi: https://basarnas.go.id\n\n"
-                    "Untuk membuat laporan baru, silakan ketik */start* atau pilih tombol di bawah."
-                    f"{widget_info}"
+                    f"*Nomor Laporan:* `{no_lap}`\n"
+                    "*Catatan Wilayah:* Lokasi kejadian berada di luar wilayah kerja operasional unit lokal ini. "
+                    "Laporan darurat Anda telah dikoordinasikan langsung ke Kantor SAR terdekat yang berwenang.\n\n"
+                    "*PANDUAN KESELAMATAN SEMENTARA:*\n"
+                    "1. Tetap tenang dan usahakan berada di titik aman/terapung.\n"
+                    "2. Gunakan pelampung (*life jacket*) atau benda terapung darurat.\n"
+                    "3. Hemat daya baterai ponsel Anda untuk komunikasi darurat.\n\n"
+                    "*PENTING:* Pastikan nomor telepon/WhatsApp Anda selalu aktif. Petugas rescue/SAR akan segera menghubungi Anda untuk memandu tindakan penyelamatan.\n\n"
+                    "*Call Center BASARNAS:* 115 (Bebas Pulsa 24 Jam)\n"
+                    "*Website Resmi:* https://basarnas.go.id\n\n"
+                    "Untuk membuat laporan baru atau mengecek status, silakan ketik */start* atau pilih tombol di bawah."
                 )
             else:
                 reply = (
                     "*Laporan Anda Telah Diterima secara Resmi*\n\n"
-                    "Laporan ini telah diteruskan langsung ke Command Center Kantor SAR.\n\n"
-                    "PENTING: Pastikan nomor telepon/WhatsApp Anda selalu aktif. Petugas rescue/SAR akan segera menghubungi Anda untuk memandu tindakan penyelamatan.\n\n"
-                    "Call Center BASARNAS: 115 (Bebas Pulsa 24 Jam)\n"
-                    "Website Resmi: https://basarnas.go.id\n\n"
-                    "Untuk membuat laporan baru, silakan ketik */start* atau pilih tombol di bawah."
-                    f"{widget_info}"
+                    f"*Nomor Laporan:* `{no_lap}`\n"
+                    f"Laporan darurat ini telah diteruskan langsung ke *{pos_sar}* dan tim siaga rescue.\n\n"
+                    "*PANDUAN KESELAMATAN SEMENTARA:*\n"
+                    "1. Tetap tenang dan usahakan bertahan di tempat aman/titik terapung.\n"
+                    "2. Gunakan pelampung (*life jacket*) atau alat apung darurat.\n"
+                    "3. Hemat daya baterai ponsel Anda untuk komunikasi darurat.\n\n"
+                    "*PENTING:* Pastikan nomor telepon/WhatsApp Anda selalu aktif. Petugas rescue/SAR akan segera menghubungi Anda untuk memandu tindakan penyelamatan.\n\n"
+                    "*Call Center BASARNAS:* 115 (Bebas Pulsa 24 Jam)\n"
+                    "*Website Resmi:* https://basarnas.go.id\n\n"
+                    "Untuk membuat laporan baru atau mengecek status, silakan ketik */start* atau pilih tombol di bawah."
                 )
                 
-            buttons = ["Buat Laporan Baru", "Cek Status Laporan", "Daftar Widget Lapor SAR"]
+            buttons = ["Buat Laporan Baru", "Cek Status Laporan"]
             engine._update_history(session, "assistant", reply, buttons=buttons)
             
             # Consolidate all database operations (report, attachments, session, state) into exactly one commit
@@ -144,9 +152,9 @@ class ConfirmingStateHandler(BaseStateHandler):
             
         elif answer in deny:
             await engine._reset_session(session, db, autopilot)
-            reply = "❌ *Laporan Batal.*\n\nSilakan kirimkan laporan baru jika Anda mengalami atau melihat keadaan darurat."
+            reply = "*Laporan Batal.*\n\nSilakan kirimkan laporan baru jika Anda mengalami atau melihat keadaan darurat."
             return {"text": reply}
             
         else:
-            reply = "🔄 Mohon jawab *Ya* untuk mengirim laporan, *Lengkapi* untuk merevisi data, atau *Batalkan* untuk menghapus draf."
+            reply = "Mohon jawab *Ya* untuk mengirim laporan, *Lengkapi* untuk merevisi data, atau *Batalkan* untuk menghapus draf."
             return {"text": reply, "buttons": ["Ya", "Lengkapi", "Batalkan"]}

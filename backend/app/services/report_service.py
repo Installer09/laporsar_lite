@@ -382,36 +382,50 @@ class ReportService:
                     tenant_settings = await get_tenant_settings(db)
                     
                     # Find chat sessions for this reporter
+                    meta = report.metadata_kejadian or {}
+                    reporter_uid = meta.get("reporter_user_id") if isinstance(meta, dict) else None
+                    
+                    from sqlalchemy import or_
+                    conditions = []
+                    if report.pelapor_nomor:
+                        conditions.append(ChatSession.contact_phone == report.pelapor_nomor)
+                        conditions.append(ChatSession.user_id == f"wa_{report.pelapor_nomor}")
+                        conditions.append(ChatSession.user_id == f"tg_{report.pelapor_nomor}")
+                    if reporter_uid:
+                        conditions.append(ChatSession.user_id == reporter_uid)
+
                     session_res = await db.execute(
-                        select(ChatSession).where(
-                            (ChatSession.contact_phone == report.pelapor_nomor) |
-                            (ChatSession.user_id == f"wa_{report.pelapor_nomor}") |
-                            (ChatSession.user_id == f"tg_{report.pelapor_nomor}")
-                        )
+                        select(ChatSession).where(or_(*conditions))
                     )
                     chat_sessions = session_res.scalars().all()
                     
                     if chat_sessions:
                         # Construct proactive notification message
                         status_friendly = {
-                            ReportStatus.PENDING: "🕒 *PENDING* (Sedang Diverifikasi oleh Petugas Piket)",
-                            ReportStatus.AKTIF: "🔴 *AKTIF* (Operasi SAR Sedang Berlangsung)",
-                            ReportStatus.TIDAK_AKTIF: "🟢 *TIDAK AKTIF / SELESAI* (Operasi SAR Telah Ditutup)",
-                            ReportStatus.SALAH_LAPORAN: "⚠️ *BATAL / DUPLIKAT* (Laporan Selesai/Dibatalkan)"
+                            ReportStatus.PENDING: "*PENDING* (Sedang Diverifikasi Petugas Piket)",
+                            ReportStatus.AKTIF: "*AKTIF* (Operasi SAR Sedang Berlangsung / Tim Dikerahkan)",
+                            ReportStatus.TIDAK_AKTIF: "*TIDAK AKTIF / SELESAI* (Operasi SAR Telah Ditutup)",
+                            ReportStatus.SALAH_LAPORAN: "*BATAL / DUPLIKAT* (Laporan Selesai/Dibatalkan)"
                         }
                         
-                        status_text = status_friendly.get(new_status, f"❓ *{new_status.value}*")
-                        pos_sar = report.pos_sar_terdekat or "Kantor Pencarian dan Pertolongan Natuna"
+                        status_text = status_friendly.get(new_status, f"*{new_status.value}*")
+                        pos_sar = report.pos_sar_terdekat or "Command Center BASARNAS"
                         
+                        status_detail = ""
+                        if new_status == ReportStatus.AKTIF:
+                            status_detail = "\n*Keterangan Operasi:* Tim Rescuer dan armada SAR telah diberangkatkan menuju koordinat LKP. Mohon pastikan alat komunikasi tetap aktif dan tetap berada di tempat aman."
+                        elif new_status == ReportStatus.TIDAK_AKTIF:
+                            status_detail = "\n*Keterangan Operasi:* Penyelenggaraan Operasi SAR untuk laporan ini telah selesai/ditutup secara resmi oleh SMC."
+
                         notification_msg = (
-                            "🔔 *PEMBARUAN STATUS OPERASI SAR* 🔔\n\n"
-                            "Yth. Bapak/Ibu pelapor, status laporan musibah Anda telah diperbarui oleh operator Command Center BASARNAS.\n\n"
+                            "*PEMBARUAN STATUS OPERASI SAR*\n\n"
+                            "Yth. Bapak/Ibu pelapor, status laporan musibah Anda telah diperbarui oleh operator Command Center BASARNAS:\n\n"
                             f"• *No Laporan:* `{report.no_laporan}`\n"
                             f"• *Jenis Musibah:* {report.jenis_kejadian or 'Darurat Umum'}\n"
                             f"• *Unit Penanganan:* {pos_sar}\n"
-                            f"• *Status Terbaru:* {status_text}\n\n"
+                            f"• *Status Terbaru:* {status_text}{status_detail}\n\n"
                             "━━━━━━━━━━━━━━━━━━━━━\n"
-                            "Petugas kami akan terus melakukan penanganan terbaik. Terima kasih atas kerja sama Anda."
+                            "Petugas kami terus mengupayakan tindakan tanggap darurat terbaik. Terima kasih atas kerja sama Anda."
                         )
                         
                         buttons = ["Buat Laporan Baru", "Cek Status Laporan"]

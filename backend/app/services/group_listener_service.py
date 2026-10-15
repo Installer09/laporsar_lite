@@ -541,11 +541,11 @@ FORMAT JSON OUTPUT HARUS TEPAT SEPERTI INI:
 
         # ── 4. Send Confirmation into Telegram Group ─────────────────
         reply_message = (
-            f"✅ *Pembaruan Data Operasi SAR Tercatat*\n\n"
-            f"📋 *No Laporan:* `{updated_report.no_laporan}`\n"
-            f"📍 *Lokasi:* {updated_report.lokasi_teks or '-'}\n"
-            f"👥 *Status Korban:* Selamat: {updated_report.korban_selamat or 0} | MD: {updated_report.korban_meninggal or 0} | Hilang: {updated_report.korban_hilang or 0}\n\n"
-            f"📝 *Ringkasan:* {summary_text}\n"
+            f"*Pembaruan Data Operasi SAR Tercatat*\n\n"
+            f"*No Laporan:* `{updated_report.no_laporan}`\n"
+            f"*Lokasi:* {updated_report.lokasi_teks or '-'}\n"
+            f"*Status Korban:* Selamat: {updated_report.korban_selamat or 0} | MD: {updated_report.korban_meninggal or 0} | Hilang: {updated_report.korban_hilang or 0}\n\n"
+            f"*Ringkasan:* {summary_text}\n"
             f"_{now_utc()}_"
         )
 

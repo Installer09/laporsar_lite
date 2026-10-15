@@ -271,7 +271,8 @@ class ActionHandler:
                 "data_kapal": data_kapal_payload,
                 "data_pesawat": data_pesawat_payload,
                 "data_alat": data_alat_payload,
-                "koordinat_teks": extracted.get("koordinat")
+                "koordinat_teks": extracted.get("koordinat"),
+                "reporter_user_id": session_data.get("user_id")
             }
         )
         
@@ -522,7 +523,9 @@ class ActionHandler:
             tg_group_id=tenant_settings.TELEGRAM_SAR_GROUP_ID,
             wa_token=tenant_settings.WHATSAPP_API_TOKEN,
             wa_phone_id=tenant_settings.WHATSAPP_PHONE_NUMBER_ID,
-            wa_group_id=tenant_settings.WHATSAPP_SAR_GROUP_ID
+            wa_group_id=tenant_settings.WHATSAPP_SAR_GROUP_ID,
+            lat=saved_report.koordinat_lat,
+            lng=saved_report.koordinat_lng
         )
         if isinstance(dispatch_res, dict) and dispatch_res.get("tg_message_id") and saved_report:
             try:
