@@ -326,7 +326,7 @@ export default function ChatPage() {
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Darurat
+              Laporan SAR
             </button>
             <button
               onClick={() => setSessionFilter('info')}
@@ -336,7 +336,7 @@ export default function ChatPage() {
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Menu & Info
+              Info SAR & Menu
             </button>
           </div>
         </div>
@@ -663,9 +663,9 @@ export default function ChatPage() {
                 <p className="text-[10px] font-bold uppercase tracking-wider">Tahap Penanganan</p>
                 <p className="text-xs font-semibold leading-relaxed">
                   {activeSession.state === 'MAIN_MENU'
-                    ? 'Pengguna berada di Menu Utama. Menunggu pemilihan layanan atau penyampaian musibah.'
+                    ? 'Pengguna berada di Menu Utama. Menunggu pemilihan layanan (Lapor SAR / Info SAR) atau laporan musibah.'
                     : activeSession.state === 'MODE_BANTUAN'
-                    ? 'Pengguna sedang berkonsultasi mengenai informasi dan SOP SAR melalui asisten AI.'
+                    ? 'Pengguna sedang berkonsultasi mengenai informasi dan SOP SAR melalui layanan Info SAR.'
                     : activeSession.state === 'CONFIRMING'
                     ? 'Parameter lengkap. Menunggu konfirmasi verifikasi pelapor.'
                     : activeSession.state === 'COMPLETED'
@@ -681,13 +681,13 @@ export default function ChatPage() {
                 <Clock className="w-8 h-8 text-slate-400 mx-auto" />
                 <p className="text-xs font-semibold text-slate-700">Pelaporan Belum Dimulai</p>
                 <p className="text-[11px] leading-relaxed">
-                  Pengguna baru mengakses menu utama dan belum memilih layanan pelaporan darurat.
+                  Pengguna baru mengakses menu utama dan belum memilih layanan Lapor SAR.
                 </p>
               </div>
             ) : activeSession.state === 'MODE_BANTUAN' ? (
               <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl text-center space-y-2 text-indigo-700">
                 <HelpCircle className="w-8 h-8 text-indigo-400 mx-auto" />
-                <p className="text-xs font-semibold text-indigo-900">Konsultasi Informasi SAR</p>
+                <p className="text-xs font-semibold text-indigo-900">Konsultasi Info SAR</p>
                 <p className="text-[11px] leading-relaxed text-indigo-600">
                   Pengguna sedang mencari informasi regulasi atau SOP SAR. Bot melayani secara otomatis (Autopilot AI).
                 </p>

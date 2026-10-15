@@ -193,9 +193,12 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
 
                 if cb_data.startswith("menu_"):
                     menu_map = {
-                        "menu_lapor_cepat": "Lapor SAR Cepat",
-                        "menu_lapor_kejadian": "Lapor SAR Kejadian",
-                        "menu_lapor_info": "Lapor SAR Info"
+                        "menu_lapor_sar": "Lapor SAR",
+                        "menu_info_sar": "Info SAR",
+                        # Backward-compatibility aliases
+                        "menu_lapor_cepat": "Lapor SAR",
+                        "menu_lapor_kejadian": "Lapor SAR",
+                        "menu_lapor_info": "Info SAR"
                     }
                     user_cmd = menu_map.get(cb_data, cb_data)
                     response = await chatbot_engine.process_message(

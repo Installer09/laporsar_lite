@@ -1300,7 +1300,7 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
             "3. Pengerahan Tim Rescue & Alut: SAR Mission Coordinator (SMC) mengoordinasikan pengerahan personel dan alat utama penyelamatan.\n\n"
             "Call Center Darurat BASARNAS: 115 (Bebas Pulsa 24 Jam)\n"
             "Website Resmi: https://basarnas.go.id\n"
-            "Untuk pelaporan musibah darurat saat ini, silakan gunakan menu Lapor SAR Cepat atau Lapor SAR Kejadian.\n\n"
+            "Untuk pelaporan musibah darurat saat ini, silakan gunakan menu Lapor SAR.\n\n"
             "**Referensi Dokumen & Sumber Resmi:**\n"
             "- Undang-Undang Republik Indonesia Nomor 29 Tahun 2014 tentang Pencarian dan Pertolongan\n"
             "- Peraturan Badan Nasional Pencarian dan Pertolongan tentang Tata Cara Penyelenggaraan Operasi SAR\n"
@@ -1320,11 +1320,18 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
         # Fast path for exact button clicks / common commands
         if msg_clean in ("/start", "/reset", "/mulai", "reset", "menu", "menu utama"):
             return "RESET"
-        if msg_clean in ("lapor sar cepat", "lapor cepat", "1", "1.", "saya di lokasi", "sos", "lapor cepat (sos)", "menu_lapor_cepat"):
-            return "LAPOR_CEPAT"
-        if msg_clean in ("lapor sar kejadian", "lapor kejadian", "laporkan kejadian", "2", "2.", "saya saksi", "lapor kejadian (saksi)", "menu_lapor_kejadian"):
-            return "LAPOR_KEJADIAN"
-        if msg_clean in ("lapor sar info", "info sar", "bantuan sar", "bantuan sar lainnya", "info", "3", "3.", "/bantuan", "tanya sar", "bantuan", "menu_lapor_info"):
+        if msg_clean in (
+            "lapor sar", "lapor", "1", "1.", "menu_lapor_sar", 
+            "lapor sar cepat", "lapor cepat", "lapor sar kejadian", "lapor kejadian", 
+            "laporkan kejadian", "saya di lokasi", "sos", "lapor cepat (sos)", 
+            "menu_lapor_cepat", "menu_lapor_kejadian"
+        ):
+            return "LAPOR_SAR"
+        if msg_clean in (
+            "info sar", "info", "2", "2.", "menu_info_sar", 
+            "lapor sar info", "bantuan sar", "bantuan sar lainnya", 
+            "/bantuan", "tanya sar", "bantuan", "menu_lapor_info", "3", "3."
+        ):
             return "LAPOR_INFO"
         if (
             msg_clean in ("/status", "/cek", "cek status", "cek status laporan", "status", "status laporan")
@@ -1353,24 +1360,23 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
             return "LAPOR_INFO"
 
         if any(w in msg_clean for w in ["di lokasi", "posisi saya", "tenggelam sekarang", "tolong saya", "terjebak"]):
-            return "LAPOR_CEPAT"
+            return "LAPOR_SAR"
 
         # AI-driven intent classification for free text
         prompt = f"""Tentukan maksud (intent) dari pesan pengguna untuk sistem Chatbot SAR Resmi.
 
 Pilihan intent:
-1. LAPOR_CEPAT: Pengguna menyatakan berada langsung di lokasi musibah/TKP, mengalami keadaan darurat/tenggelam/terjebak sekarang juga, atau ingin lapor cepat darurat.
-2. LAPOR_KEJADIAN: Pengguna ingin melaporkan kejadian musibah yang terjadi di tempat lain (ia adalah saksi/keluarga/melihat dari jauh/menceritakan kecelakaan).
-3. LAPOR_INFO: Pengguna menanyakan informasi, SOP, prosedur penyelamatan, regulasi, definisi istilah SAR, atau kontak resmi BASARNAS.
-4. CEK_STATUS: Pengguna ingin mengetahui progres atau status penanganan laporan yang telah dikirim sebelumnya.
-5. RESET: Pengguna ingin kembali ke menu utama, membatalkan, atau mulai dari awal.
-6. DATA_PELAPORAN: Pengguna sedang memberikan rincian data musibah (seperti koordinat, waktu, jumlah korban, lokasi, atau nama kapal).
-7. UNKNOWN: Maksud pesan tidak jelas atau sekadar sapaan umum tanpa rincian.
+1. LAPOR_SAR: Pengguna ingin melaporkan kejadian musibah/kedaruratan, orang hilang/tenggelam, kecelakaan kapal/pesawat/bencana, berada di lokasi kejadian, atau butuh bantuan penyelamatan SAR.
+2. LAPOR_INFO: Pengguna menanyakan informasi, SOP, prosedur penyelamatan, regulasi, definisi istilah SAR, atau kontak resmi BASARNAS.
+3. CEK_STATUS: Pengguna ingin mengetahui progres atau status penanganan laporan yang telah dikirim sebelumnya.
+4. RESET: Pengguna ingin kembali ke menu utama, membatalkan, atau mulai dari awal.
+5. DATA_PELAPORAN: Pengguna sedang memberikan rincian data musibah (seperti koordinat, waktu, jumlah korban, lokasi, atau nama kapal).
+6. UNKNOWN: Maksud pesan tidak jelas atau sekadar sapaan umum tanpa rincian.
 
 Status sesi saat ini: {current_state}
 Pesan pengguna: "{message}"
 
-Jawab HANYA satu kata intent di atas (contoh: LAPOR_CEPAT, LAPOR_KEJADIAN, LAPOR_INFO, CEK_STATUS, RESET, DATA_PELAPORAN, atau UNKNOWN)."""
+Jawab HANYA satu kata intent di atas (contoh: LAPOR_SAR, LAPOR_INFO, CEK_STATUS, RESET, DATA_PELAPORAN, atau UNKNOWN)."""
 
         tenant_settings = None
         if db is not None:
@@ -1390,20 +1396,18 @@ Jawab HANYA satu kata intent di atas (contoh: LAPOR_CEPAT, LAPOR_KEJADIAN, LAPOR
             )
             if resp:
                 intent_candidate = resp.strip().upper()
-                valid_intents = {"LAPOR_CEPAT", "LAPOR_KEJADIAN", "LAPOR_INFO", "CEK_STATUS", "RESET", "DATA_PELAPORAN", "UNKNOWN"}
+                valid_intents = {"LAPOR_SAR", "LAPOR_CEPAT", "LAPOR_KEJADIAN", "LAPOR_INFO", "CEK_STATUS", "RESET", "DATA_PELAPORAN", "UNKNOWN"}
                 for vi in valid_intents:
                     if vi in intent_candidate:
-                        return vi
+                        return "LAPOR_SAR" if vi in ("LAPOR_CEPAT", "LAPOR_KEJADIAN") else vi
         except Exception as e:
             logger.warning(f"AI intent classification failed fallback: {e}")
 
         # Fallback heuristic if LLM call is unavailable
-        if any(w in msg_clean for w in ["di lokasi", "posisi saya", "tenggelam sekarang", "tolong saya", "terjebak"]):
-            return "LAPOR_CEPAT"
+        if any(w in msg_clean for w in ["di lokasi", "posisi saya", "tenggelam sekarang", "tolong saya", "terjebak", "ada kapal", "keluarga saya", "tabrakan", "pesawat jatuh", "banjir di"]):
+            return "LAPOR_SAR"
         if any(w in msg_clean for w in ["sop", "bagaimana cara", "apa itu", "kriteria", "prosedur", "kamus", "website", "call center"]):
             return "LAPOR_INFO"
-        if any(w in msg_clean for w in ["ada kapal", "keluarga saya", "tabrakan", "pesawat jatuh", "banjir di"]):
-            return "LAPOR_KEJADIAN"
 
         return "UNKNOWN"
 

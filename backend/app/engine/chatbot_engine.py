@@ -171,12 +171,11 @@ MAIN_MENU_TEXT = (
     "Silakan pilih layanan yang Anda butuhkan:"
 )
 
-MAIN_MENU_BUTTONS = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
+MAIN_MENU_BUTTONS = ["Lapor SAR", "Info SAR"]
 
 MAIN_MENU_INLINE_KEYBOARD = [
-    [{"text": "1. Lapor SAR Cepat", "callback_data": "menu_lapor_cepat"}],
-    [{"text": "2. Lapor SAR Kejadian", "callback_data": "menu_lapor_kejadian"}],
-    [{"text": "3. Lapor SAR Info", "callback_data": "menu_lapor_info"}]
+    [{"text": "1. Lapor SAR", "callback_data": "menu_lapor_sar"}],
+    [{"text": "2. Info SAR", "callback_data": "menu_info_sar"}]
 ]
 
 GREETING_MSG = MAIN_MENU_TEXT
@@ -362,8 +361,8 @@ class ChatbotEngine:
         if intent == "CEK_STATUS" or session.state == "AWAITING_STATUS_QUERY":
             return await self._handle_status_check(session, db, autopilot, extracted_data, message_text=message_text)
 
-        # Handle Lapor SAR Cepat
-        if intent == "LAPOR_CEPAT":
+        # Handle Lapor SAR (Unified Incident Reporting)
+        if intent in ("LAPOR_SAR", "LAPOR_CEPAT", "LAPOR_KEJADIAN"):
             from app.core.config import settings
             base_url = settings.FRONTEND_URL.rstrip('/')
             webview_url = f"{base_url}/location-picker?session_id={session.id}"
@@ -372,68 +371,50 @@ class ChatbotEngine:
             if session.channel == "telegram":
                 buttons = [
                     {"text": "Bagikan Lokasi GPS Sekarang", "request_location": True},
-                    "Lapor SAR Kejadian",
-                    "Lapor SAR Info"
+                    "Info SAR",
+                    "Cek Status Laporan"
                 ]
             else:
-                buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
+                buttons = ["Lapor SAR", "Info SAR", "Cek Status Laporan"]
 
             reply = (
-                "*LAPOR SAR CEPAT*\n"
-                "Prioritas penanganan: Penguncian titik koordinat darurat pelapor.\n\n"
-                "Petunjuk Berbagi Titik Lokasi:\n"
-                "1. Pastikan fitur GPS (Layanan Lokasi) di ponsel Anda telah AKTIF dan izin lokasi diberikan.\n"
-                "2. Melalui aplikasi pesan ini: Ketuk tombol Lampiran (Klip Kertas) -> Pilih Lokasi -> Kirim Lokasi Terkini (Current Location).\n"
-                f"3. Atau buka tautan Peta Darurat SAR untuk mengunci posisi Anda secara akurat:\n"
-                f"[Buka Peta Titik Darurat SAR]({webview_url})\n\n"
-                "Setelah lokasi terkirim, sebutkan secara singkat musibah yang dialami."
-            )
-            session.state = "AWAITING_REPORT"
-            self._update_history(session, "assistant", reply, buttons=buttons)
-            await db.commit()
-            await self._broadcast_session(session, autopilot, extracted_data, db=db)
-            return {"text": reply, "buttons": buttons}
-
-        # Handle Lapor SAR Kejadian
-        if intent == "LAPOR_KEJADIAN":
-            reply = (
-                "*LAPOR SAR KEJADIAN*\n"
-                "Layanan pelaporan musibah di luar posisi pelapor.\n\n"
-                "Jelaskan rincian kejadian dengan menyertakan:\n"
-                "• Jenis musibah (contoh: kecelakaan kapal, kondisi orang tenggelam/hilang, bencana)\n"
-                "• Perkiraan lokasi kejadian\n"
+                "*LAPOR SAR*\n"
+                "Layanan Siaga Pelaporan Kedaruratan dan Musibah.\n\n"
+                "Silakan jelaskan musibah yang dialami atau disaksikan:\n"
+                "• Jenis kejadian (contoh: kapal mati mesin/tenggelam, orang hilang/hanyut, bencana)\n"
+                "• Lokasi kejadian (atau bagikan titik lokasi GPS jika Anda berada di lokasi)\n"
                 "• Waktu kejadian\n"
                 "• Estimasi jumlah korban yang membutuhkan pertolongan\n\n"
-                "Ketik keterangan kejadian secara singkat atau kirimkan pesan suara."
+                f"Jika Anda berada langsung di lokasi kejadian, Anda juga dapat membuka [Peta Titik Darurat SAR]({webview_url}) untuk mengunci koordinat secara akurat.\n\n"
+                "Ketik keterangan kejadian secara singkat atau kirimkan pesan suara/lokasi."
             )
             session.state = "AWAITING_REPORT"
-            buttons = ["Lapor SAR Cepat", "Lapor SAR Info", "Cek Status Laporan"]
             self._update_history(session, "assistant", reply, buttons=buttons)
             await db.commit()
             await self._broadcast_session(session, autopilot, extracted_data, db=db)
             return {"text": reply, "buttons": buttons}
 
-        # Handle Lapor SAR Info
+        # Handle Info SAR
         if intent == "LAPOR_INFO":
             session.state = "MODE_BANTUAN"
 
             # Check if user asked a direct substantive question rather than just clicking the menu
             info_menu_keywords = {
-                "lapor sar info", "info sar", "bantuan sar", "bantuan sar lainnya", 
-                "info", "3", "3.", "/bantuan", "tanya sar", "bantuan", "menu info"
+                "info sar", "lapor sar info", "bantuan sar", "bantuan sar lainnya", 
+                "info", "2", "2.", "/bantuan", "tanya sar", "bantuan", "menu info", "menu_info_sar"
             }
             if message_text.strip().lower() not in info_menu_keywords and len(message_text.strip().split()) >= 2:
                 # Direct conversational answering without intermediate menu friction
                 rag_answer = await llm_rag_service.answer_bantuan_sar(message_text, db)
-                buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
+                buttons = ["Lapor SAR", "Info SAR"]
                 self._update_history(session, "assistant", rag_answer, buttons=buttons)
                 await db.commit()
                 await self._broadcast_session(session, autopilot, extracted_data, db=db)
                 return {"text": rag_answer, "buttons": buttons}
 
             reply = (
-                "*LAPOR SAR INFO*\n"
-                "Layanan Informasi Resmi dan Standar Operasional Prosedur SAR.\n\n"
+                "*INFO SAR*\n"
+                "Layanan Informasi Resmi, Regulasi, dan Standar Operasional Prosedur BASARNAS.\n\n"
                 "Ajukan pertanyaan Anda mengenai regulasi SAR, prosedur penyelamatan, istilah kedaruratan, atau kontak unit operasional BASARNAS.\n\n"
                 "Seluruh jawaban disusun secara faktual berdasarkan dokumen resmi sistem dan sumber internet terverifikasi.\n\n"
                 "Contoh pertanyaan:\n"
@@ -441,7 +422,7 @@ class ChatbotEngine:
                 "• Apa kriteria musibah yang termasuk Kondisi Membahayakan Manusia?\n"
                 "• Berapa nomor kontak resmi siaga darurat BASARNAS?"
             )
-            buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Cek Status Laporan"]
+            buttons = ["Lapor SAR", "Cek Status Laporan"]
             self._update_history(session, "assistant", reply, buttons=buttons)
             await db.commit()
             await self._broadcast_session(session, autopilot, extracted_data, db=db)
@@ -450,12 +431,12 @@ class ChatbotEngine:
         # If already in MODE_BANTUAN:
         if session.state == "MODE_BANTUAN":
             # Emergency Context Hijack: If user reports an incident while in info mode, immediately switch to report triage!
-            if intent in ("DATA_PELAPORAN", "LAPOR_CEPAT", "LAPOR_KEJADIAN"):
+            if intent in ("DATA_PELAPORAN", "LAPOR_SAR", "LAPOR_CEPAT", "LAPOR_KEJADIAN"):
                 session.state = "AWAITING_REPORT"
                 # Fall through to the reporting state handler below
             else:
                 rag_answer = await llm_rag_service.answer_bantuan_sar(message_text, db)
-                buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
+                buttons = ["Lapor SAR", "Info SAR"]
                 self._update_history(session, "assistant", rag_answer, buttons=buttons)
                 await db.commit()
                 await self._broadcast_session(session, autopilot, extracted_data, db=db)
@@ -463,13 +444,13 @@ class ChatbotEngine:
 
         # If in MAIN_MENU state:
         if session.state == "MAIN_MENU":
-            if intent in ("DATA_PELAPORAN", "LAPOR_CEPAT", "LAPOR_KEJADIAN"):
+            if intent in ("DATA_PELAPORAN", "LAPOR_SAR", "LAPOR_CEPAT", "LAPOR_KEJADIAN"):
                 session.state = "AWAITING_REPORT"
                 # Fall through to the reporting state handler below
             elif intent in ("LAPOR_INFO", "BANTUAN_SAR"):
                 session.state = "MODE_BANTUAN"
                 rag_answer = await llm_rag_service.answer_bantuan_sar(message_text, db)
-                buttons = ["Lapor SAR Cepat", "Lapor SAR Kejadian", "Lapor SAR Info"]
+                buttons = ["Lapor SAR", "Info SAR"]
                 self._update_history(session, "assistant", rag_answer, buttons=buttons)
                 await db.commit()
                 await self._broadcast_session(session, autopilot, extracted_data, db=db)
