@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     
     # AI Services — LLM Engine (Default: Gemini Flash or Groq)
     AI_LLM_PROVIDER: str = "gemini"           # gemini | groq | openai | ollama | claude
-    AI_LLM_MODEL: str = "gemini-1.5-flash"    # Model name per provider
+    AI_LLM_MODEL: str = "gemini-3.5-flash-lite"    # Model name per provider
     AI_LLM_BASE_URL: str = ""                 # Base URL (for custom/local endpoint if needed)
     AI_LLM_API_KEY: str = ""                   # API key for cloud providers
 

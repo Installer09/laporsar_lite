@@ -135,6 +135,13 @@ async def _openai_compatible_llm_generate(
         return data["choices"][0]["message"]["content"].strip()
 
 
+GEMINI_FALLBACK_MODELS = [
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-3.1-flash-lite-preview",
+]
+
+
 async def _gemini_llm_generate(
     prompt: str,
     model: str,
@@ -143,13 +150,9 @@ async def _gemini_llm_generate(
     system_prompt: str = "",
     temperature: float = 0.0,
     json_mode: bool = False,
-    timeout: float = 120.0,
+    timeout: float = 15.0,
 ) -> str:
-    """Generate text via Google Gemini generateContent REST API."""
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model}"
-        f":generateContent?key={api_key}"
-    )
+    """Generate text via Google Gemini generateContent REST API with automatic model fallback."""
     contents = []
     if system_prompt:
         contents.append({"role": "user", "parts": [{"text": system_prompt}]})
@@ -165,16 +168,41 @@ async def _gemini_llm_generate(
     if json_mode:
         payload["generationConfig"]["responseMimeType"] = "application/json"
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        candidates = data.get("candidates", [])
-        if candidates:
-            parts = candidates[0].get("content", {}).get("parts", [])
-            if parts:
-                return parts[0].get("text", "").strip()
-        return ""
+    # Order of models to try: requested model first, then fallbacks
+    models_to_try = [model]
+    for fb in GEMINI_FALLBACK_MODELS:
+        if fb not in models_to_try:
+            models_to_try.append(fb)
+
+    last_error = None
+    for target_model in models_to_try:
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}"
+            f":generateContent?key={api_key}"
+        )
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                response = await client.post(url, json=payload)
+                response.raise_for_status()
+                data = response.json()
+                candidates = data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        text_res = parts[0].get("text", "").strip()
+                        if text_res:
+                            if target_model != model:
+                                logger.info(f"[AIProvider] Fallback Gemini model '{target_model}' succeeded (primary '{model}' failed).")
+                            return text_res
+                return ""
+        except Exception as e:
+            last_error = e
+            logger.warning(f"[AIProvider] Gemini generateContent failed on model '{target_model}': {e}. Trying next fallback...")
+            continue
+
+    if last_error:
+        raise last_error
+    return ""
 
 
 async def _claude_llm_generate(
@@ -512,7 +540,7 @@ class AIProviderManager:
         system_prompt: str = "",
         temperature: float = 0.0,
         json_mode: bool = False,
-        timeout: float = 120.0,
+        timeout: float = 15.0,
         model_override: str = "",
         tenant_settings = None,
     ) -> str:

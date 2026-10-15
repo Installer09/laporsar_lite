@@ -297,6 +297,7 @@ class LLMRagService:
                             )
                             return [(row[0], row[1], "global") for row in res.all()]
                         except Exception as native_err:
+                            await master_db.rollback()
                             res = await master_db.execute(
                                 select(DictionaryWord).where(
                                     DictionaryWord.embedding.isnot(None),
@@ -337,6 +338,7 @@ class LLMRagService:
                         )
                         return [(row[0], row[1], tenant_slug) for row in res.all()]
                     except Exception as native_err:
+                        await db.rollback()
                         res = await db.execute(
                             select(DictionaryWord).where(
                                 DictionaryWord.embedding.isnot(None),
@@ -428,6 +430,7 @@ class LLMRagService:
                             return [(row[0], row[1], "global") for row in res.all()]
                         except Exception as native_err:
                             logger.info(f"[LLMRagService] Master reports vector fallback to python cosine: {native_err}")
+                            await master_db.rollback()
                             res = await master_db.execute(select(VectorMemory))
                             rows = res.scalars().all()
                             scored = []
@@ -461,6 +464,7 @@ class LLMRagService:
                         return [(row[0], row[1], tenant_slug) for row in res.all()]
                     except Exception as native_err:
                         logger.info(f"[LLMRagService] Tenant reports vector fallback to python cosine: {native_err}")
+                        await db.rollback()
                         res = await db.execute(select(VectorMemory))
                         rows = res.scalars().all()
                         scored = []
@@ -547,6 +551,7 @@ class LLMRagService:
                             return [(row[0], row[1], "Dokumen SOP Pusat (Nasional)") for row in res.all()]
                         except Exception as native_err:
                             logger.info(f"[LLMRagService] Master native vector search fallback to python cosine: {native_err}")
+                            await master_db.rollback()
                             res = await master_db.execute(
                                 select(VectorMemory).where(VectorMemory.report_id.is_(None))
                             )
@@ -584,6 +589,7 @@ class LLMRagService:
                             return [(row[0], row[1], f"Dokumen SOP Kantor SAR ({tenant_slug.upper()})") for row in res.all()]
                         except Exception as native_err:
                             logger.info(f"[LLMRagService] Tenant native vector search fallback to python cosine: {native_err}")
+                            await db.rollback()
                             res = await db.execute(
                                 select(VectorMemory).where(VectorMemory.report_id.is_(None))
                             )
@@ -710,7 +716,7 @@ Tugas: Perbaiki draf JSON di atas sesuai dengan konteks bahasa pelapor. Output h
                 system_prompt=system_prompt,
                 temperature=0.0,
                 json_mode=True,
-                timeout=120.0,
+                timeout=10.0,
                 tenant_settings=tenant_settings
             )
             if not response_text:
@@ -778,7 +784,7 @@ Respond ONLY with the JSON object. No explanation."""
                 system_prompt="Anda adalah ahli bahasa SAR dan RAG BASARNAS. Kembalikan HANYA JSON.",
                 temperature=0.0,
                 json_mode=True,
-                timeout=300.0,
+                timeout=12.0,
                 tenant_settings=tenant_settings
             )
             if not response_text:
