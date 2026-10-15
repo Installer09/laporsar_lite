@@ -7,7 +7,7 @@ from app.engine.field_processors.base import BaseFieldProcessor
 logger = logging.getLogger(__name__)
 
 class ReporterLocationFieldProcessor(BaseFieldProcessor):
-    """Processes and validates the mandatory reporter GPS location verification ('reporter_location') field."""
+    """Processes and validates the reporter GPS location verification ('reporter_location') field."""
 
     async def validate_and_extract(
         self, message: str, session: ChatSession, extracted_data: dict, db: AsyncSession
@@ -15,14 +15,22 @@ class ReporterLocationFieldProcessor(BaseFieldProcessor):
         answer_clean = message.strip()
         answer_lower = answer_clean.lower()
         
-        # Check if they skipped/denied security check
+        # Check if they skipped or are not at location
         from app.engine.chatbot_engine import SKIP_WORDS
-        if answer_lower in SKIP_WORDS:
-            reply = (
-                "*Lokasi GPS Wajib Dibagikan*\n\n"
-                "Kami memerlukan lokasi GPS Anda untuk memetakan titik penyelamatan. Silakan ketuk tombol **Share Location**."
-            )
-            return False, {"text": reply, "buttons": self._get_buttons()}
+        not_at_location_words = [
+            "tidak di lokasi", "bukan di lokasi", "di rumah", "posisi di rumah", 
+            "jauh dari lokasi", "tidak berada di lokasi", "bukan korban", "keluarga"
+        ]
+        is_skip = (
+            answer_lower in SKIP_WORDS 
+            or any(w in answer_lower for w in not_at_location_words)
+            or answer_lower in ("saya tidak di lokasi", "lewati", "skip", "tidak ada")
+        )
+
+        if is_skip:
+            extracted_data["is_current_location_shared"] = True
+            extracted_data["reporter_location"] = "Pelapor tidak berada di lokasi kejadian"
+            return True, extracted_data
 
         # Look for real location shared via backend/webhook or formatted text
         has_coords = False
@@ -31,8 +39,8 @@ class ReporterLocationFieldProcessor(BaseFieldProcessor):
         if extracted_data.get("pelapor_lat") is not None and extracted_data.get("pelapor_lng") is not None:
             has_coords = True
             
-        # 2. Check if message starts with Lokasi GPS:
-        elif message.startswith("Lokasi GPS:"):
+        # 2. Check if message starts with Lokasi GPS: or has coordinates
+        else:
             from app.services.rule_extractor import RuleExtractor
             coords = RuleExtractor.extract_koordinat(message)
             if coords:
@@ -53,15 +61,25 @@ class ReporterLocationFieldProcessor(BaseFieldProcessor):
                 extracted_data["_explicit_koordinat"] = True
             return True, extracted_data
         else:
-            reply = "Harap ketuk tombol **Share Location** di bawah untuk membagikan lokasi Anda saat ini."
+            reply = (
+                "*Verifikasi Lokasi Pelapor*\n\n"
+                "Silakan ketuk tombol **Share Location** (*📍 Bagikan Lokasi Saya*) jika Anda berada di lokasi kejadian, "
+                "atau pilih tombol *Saya Tidak di Lokasi* jika Anda melapor dari rumah/darat."
+            )
             return False, {"text": reply, "buttons": self._get_buttons()}
 
     def get_question(self, session: ChatSession, extracted_data: dict) -> tuple[str, list]:
         q_text = (
-            "*Bagikan Lokasi GPS Anda (Wajib)*\n\n"
-            "Kami membutuhkan lokasi GPS aktif Anda untuk mengarahkan tim penyelamat ke tempat Anda dengan tepat. Silakan ketuk tombol **Share Location** di bawah."
+            "*Verifikasi Posisi Pelapor*\n\n"
+            "Apakah Anda saat ini berada di lokasi kejadian?\n"
+            "• Jika *Ya*, silakan bagikan titik lokasi GPS perangkat Anda.\n"
+            "• Jika *Tidak* (misal melapor dari darat/rumah), pilih tombol *Saya Tidak di Lokasi*."
         )
         return q_text, self._get_buttons()
 
     def _get_buttons(self) -> list:
-        return [{"text": "Share Location", "request_location": True}]
+        return [
+            {"text": "📍 Bagikan Lokasi Saya", "request_location": True},
+            "Saya Tidak di Lokasi",
+            "Lewati"
+        ]

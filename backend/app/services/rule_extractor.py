@@ -805,6 +805,18 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
             except (ValueError, IndexError) as e:
                 logger.warning(f"[RuleExtractor] DMS parse error: {e}")
 
+        # Try Google Maps data URL format: !3d-3.391282!4d106.241521
+        gdata_match = re.search(r"!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)", message)
+        if gdata_match:
+            try:
+                lat = float(gdata_match.group(1))
+                lng = float(gdata_match.group(2))
+                if -90 <= lat <= 90 and -180 <= lng <= 180:
+                    logger.info(f"[RuleExtractor] Coordinates from Google Maps data URL: {lat}, {lng}")
+                    return (lat, lng)
+            except ValueError:
+                pass
+
         # Try decimal format
         dec_match = RuleExtractor._DECIMAL_COORD_PATTERN.search(message)
         if dec_match:
@@ -820,6 +832,22 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
                 
                 if -90 <= lat <= 90 and -180 <= lng <= 180:
                     logger.info(f"[RuleExtractor] Coordinates from decimal: {lat}, {lng}")
+                    return (lat, lng)
+            except ValueError:
+                pass
+
+        # Try space-separated decimal format: -3.391282 106.241521
+        space_match = re.search(r"(-?\d{1,3}\.\d{3,8})[°º]?\s+(-?\d{1,3}\.\d{3,8})[°º]?", message)
+        if space_match:
+            try:
+                val1 = float(space_match.group(1))
+                val2 = float(space_match.group(2))
+                if (not (-90 <= val1 <= 90)) and (-90 <= val2 <= 90) and (-180 <= val1 <= 180):
+                    lat, lng = val2, val1
+                else:
+                    lat, lng = val1, val2
+                if -90 <= lat <= 90 and -180 <= lng <= 180:
+                    logger.info(f"[RuleExtractor] Coordinates from space-separated decimal: {lat}, {lng}")
                     return (lat, lng)
             except ValueError:
                 pass

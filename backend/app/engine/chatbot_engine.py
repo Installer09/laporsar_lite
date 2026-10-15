@@ -44,10 +44,14 @@ FIELD_QUESTIONS = {
     },
     "koordinat": {
         "text": (
-            "*Apakah Anda memiliki koordinat GPS lokasi kejadian?*\n"
-            "Jika ada, kirimkan koordinatnya (contoh: _-3.391282, 106.241521_) atau bagikan lokasi GPS Anda."
+            "*Apakah Anda memiliki titik koordinat GPS kejadian?*\n\n"
+            "Anda dapat memberikan titik lokasi kejadian dengan cara:\n"
+            "1. Ketuk tombol *📍 Bagikan Lokasi Kejadian* di bawah (jika Anda berada di lokasi kejadian).\n"
+            "2. Atau kirim via menu Telegram: ikon klip kertas (📎) -> *Lokasi* (bisa geser pin ke posisi musibah).\n"
+            "3. Atau ketik angka koordinat / tautan Google Maps (contoh: _-3.391282, 106.241521_).\n"
+            "4. Jika tidak tahu titik koordinatnya, pilih tombol *Belum Tahu* (cukup nama lokasi yang sudah Anda sebutkan)."
         ),
-        "buttons": [{"text": "Bagikan Lokasi Kejadian", "request_location": True}, "Belum Tahu"]
+        "buttons": [{"text": "📍 Bagikan Lokasi Kejadian", "request_location": True}, "Belum Tahu"]
     },
     "korban": {
         "text": (
@@ -361,16 +365,27 @@ class ChatbotEngine:
         if intent == "CEK_STATUS" or session.state == "AWAITING_STATUS_QUERY":
             return await self._handle_status_check(session, db, autopilot, extracted_data, message_text=message_text)
 
-        # Handle Lapor SAR (Unified Incident Reporting)
-        if intent in ("LAPOR_SAR", "LAPOR_CEPAT", "LAPOR_KEJADIAN"):
+        # Check if user explicitly clicked/typed a Lapor SAR menu command
+        lapor_menu_triggers = {
+            "lapor sar", "lapor", "1", "1.", "menu_lapor_sar",
+            "lapor sar cepat", "lapor cepat", "lapor sar kejadian", "lapor kejadian",
+            "laporkan kejadian", "sos", "lapor cepat (sos)",
+            "menu_lapor_cepat", "menu_lapor_kejadian", "/lapor"
+        }
+        msg_clean = message_text.strip().lower()
+        is_lapor_menu_click = msg_clean in lapor_menu_triggers
+
+        # Handle Lapor SAR Menu Selection (Only on explicit menu button clicks or commands)
+        if is_lapor_menu_click:
             from app.core.config import settings
             base_url = settings.FRONTEND_URL.rstrip('/')
+            is_public_url = base_url.startswith("https://") or (not any(h in base_url for h in [".lan", "localhost", "127.0.0.1"]))
             webview_url = f"{base_url}/location-picker?session_id={session.id}"
             
             # Telegram supports native location sharing button
             if session.channel == "telegram":
                 buttons = [
-                    {"text": "Bagikan Lokasi GPS Sekarang", "request_location": True},
+                    {"text": "📍 Bagikan Lokasi GPS Sekarang", "request_location": True},
                     "Info SAR",
                     "Cek Status Laporan"
                 ]
@@ -382,7 +397,7 @@ class ChatbotEngine:
                 "Layanan Siaga Pelaporan Kedaruratan dan Musibah.\n\n"
                 "Silakan jelaskan musibah yang dialami atau disaksikan:\n"
                 "• Jenis kejadian (contoh: kapal mati mesin/tenggelam, orang hilang/hanyut, bencana)\n"
-                "• Lokasi kejadian (atau bagikan titik lokasi GPS jika Anda berada di lokasi)\n"
+                "• Lokasi kejadian (nama perairan/pantai/desa, atau kirim titik GPS jika di lokasi)\n"
                 "• Waktu kejadian\n"
                 "• Estimasi jumlah korban yang membutuhkan pertolongan\n\n"
                 f"Jika Anda berada langsung di lokasi kejadian, Anda juga dapat membuka [Peta Titik Darurat SAR]({webview_url}) untuk mengunci koordinat secara akurat.\n\n"

@@ -70,15 +70,29 @@ class ReplyDispatcher:
                         "remove_keyboard": True
                     }
                 else:
-                    keyboard_row = []
+                    keyboard = []
+                    current_row = []
                     for b in buttons:
-                        if isinstance(b, dict):
-                            keyboard_row.append(b)
+                        btn_obj = b if isinstance(b, dict) else {"text": b}
+                        is_special = isinstance(b, dict) and (b.get("request_location") or b.get("request_contact"))
+                        btn_text_len = len(btn_obj.get("text", ""))
+                        
+                        # Special buttons (location/contact) or very long buttons (> 22 chars) get their own row
+                        if is_special or btn_text_len > 22:
+                            if current_row:
+                                keyboard.append(current_row)
+                                current_row = []
+                            keyboard.append([btn_obj])
                         else:
-                            keyboard_row.append({"text": b})
+                            current_row.append(btn_obj)
+                            if len(current_row) >= 2:
+                                keyboard.append(current_row)
+                                current_row = []
+                    if current_row:
+                        keyboard.append(current_row)
 
                     payload["reply_markup"] = {
-                        "keyboard": [keyboard_row],
+                        "keyboard": keyboard,
                         "one_time_keyboard": True,
                         "resize_keyboard": True,
                     }

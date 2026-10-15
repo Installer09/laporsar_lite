@@ -30,11 +30,19 @@ class KoordinatFieldProcessor(BaseFieldProcessor):
     def get_question(self, session: ChatSession, extracted_data: dict) -> tuple[str, list]:
         from app.core.config import settings
         base_url = settings.FRONTEND_URL.rstrip('/')
+        is_public_url = base_url.startswith("https://") or (not any(h in base_url for h in [".lan", "localhost", "127.0.0.1"]))
         webview_url = f"{base_url}/location-picker?session_id={session.id}"
         
+        map_link_line = f"• Atau buka [Peta Titik Darurat SAR]({webview_url}) untuk menandai posisi kejadian.\n" if is_public_url else ""
+        
         q_text = (
-            "*Apakah Anda memiliki koordinat GPS lokasi kejadian?*\n"
-            f"Kirimkan koordinatnya, bagikan lokasi GPS Anda, atau gunakan [Peta Lapor SAR]({webview_url}) untuk menandai lokasi kejadian secara presisi."
+            "*Apakah Anda memiliki titik koordinat GPS kejadian?*\n\n"
+            "Anda dapat memberikan titik lokasi kejadian dengan cara:\n"
+            "1. Ketuk tombol *📍 Bagikan Lokasi Kejadian* di bawah (jika Anda berada di lokasi kejadian).\n"
+            "2. Atau kirim via menu pesan: ikon klip kertas (📎) -> *Lokasi* (bisa geser pin ke posisi musibah).\n"
+            "3. Atau ketik angka koordinat / tautan Google Maps (contoh: _-3.391282, 106.241521_).\n"
+            f"{map_link_line}"
+            "4. Jika tidak tahu titik koordinatnya, pilih tombol *Belum Tahu* (cukup nama perairan/tempat yang sudah Anda sebutkan)."
         )
-        buttons = [{"text": "Share Location", "request_location": True}, "Belum Tahu"]
+        buttons = [{"text": "📍 Bagikan Lokasi Kejadian", "request_location": True}, "Belum Tahu"]
         return q_text, buttons

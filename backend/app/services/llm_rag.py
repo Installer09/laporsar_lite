@@ -1350,7 +1350,11 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
         incident_indicators = [
             "tenggelam", "kapal", "pesawat", "korban", "hilang", "hanyut", "kebakaran", "jatuh", 
             "mati mesin", "terbalik", "terbakar", "bencana", "banjir", "gempa", "longsor", 
-            "tabrakan", "laka", "kmm", "kpk", "meninggal", "selamat", "koordinat", "perairan"
+            "tabrakan", "laka", "kmm", "kpk", "meninggal", "selamat", "koordinat", "perairan",
+            "melaut", "nelayan", "perahu", "sampan", "pompong", "speedboat", "kelong", "mancing",
+            "belum pulang", "belum kembali", "tidak ada kabar", "hilang kontak", "lost contact",
+            "terjebak", "terseret", "ombak", "badai", "hancur", "bocor", "karam", "terdampar",
+            "lokasi gps:", "titik lokasi", "koordinat gps"
         ]
         if any(w in msg_clean for w in incident_indicators):
             return "DATA_PELAPORAN"
@@ -1360,17 +1364,17 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
             return "LAPOR_INFO"
 
         if any(w in msg_clean for w in ["di lokasi", "posisi saya", "tenggelam sekarang", "tolong saya", "terjebak"]):
-            return "LAPOR_SAR"
+            return "DATA_PELAPORAN"
 
         # AI-driven intent classification for free text
         prompt = f"""Tentukan maksud (intent) dari pesan pengguna untuk sistem Chatbot SAR Resmi.
 
 Pilihan intent:
-1. LAPOR_SAR: Pengguna ingin melaporkan kejadian musibah/kedaruratan, orang hilang/tenggelam, kecelakaan kapal/pesawat/bencana, berada di lokasi kejadian, atau butuh bantuan penyelamatan SAR.
+1. LAPOR_SAR: Pengguna ingin membuka/masuk ke menu pelaporan musibah SAR (klik tombol menu atau perintah /lapor) tanpa memberikan rincian kejadian.
 2. LAPOR_INFO: Pengguna menanyakan informasi, SOP, prosedur penyelamatan, regulasi, definisi istilah SAR, atau kontak resmi BASARNAS.
 3. CEK_STATUS: Pengguna ingin mengetahui progres atau status penanganan laporan yang telah dikirim sebelumnya.
 4. RESET: Pengguna ingin kembali ke menu utama, membatalkan, atau mulai dari awal.
-5. DATA_PELAPORAN: Pengguna sedang memberikan rincian data musibah (seperti koordinat, waktu, jumlah korban, lokasi, atau nama kapal).
+5. DATA_PELAPORAN: Pengguna sedang menceritakan musibah atau memberikan keterangan rincian kejadian (contoh: kapal mati mesin/tenggelam, orang hilang/hanyut/belum pulang dari melaut, koordinat, lokasi, waktu, jumlah korban).
 6. UNKNOWN: Maksud pesan tidak jelas atau sekadar sapaan umum tanpa rincian.
 
 Status sesi saat ini: {current_state}
@@ -1404,10 +1408,14 @@ Jawab HANYA satu kata intent di atas (contoh: LAPOR_SAR, LAPOR_INFO, CEK_STATUS,
             logger.warning(f"AI intent classification failed fallback: {e}")
 
         # Fallback heuristic if LLM call is unavailable
-        if any(w in msg_clean for w in ["di lokasi", "posisi saya", "tenggelam sekarang", "tolong saya", "terjebak", "ada kapal", "keluarga saya", "tabrakan", "pesawat jatuh", "banjir di"]):
-            return "LAPOR_SAR"
+        if any(w in msg_clean for w in ["di lokasi", "posisi saya", "tenggelam sekarang", "tolong saya", "terjebak", "ada kapal", "keluarga saya", "tabrakan", "pesawat jatuh", "banjir di", "melaut", "belum pulang", "hilang"]):
+            return "DATA_PELAPORAN"
         if any(w in msg_clean for w in ["sop", "bagaimana cara", "apa itu", "kriteria", "prosedur", "kamus", "website", "call center"]):
             return "LAPOR_INFO"
+
+        # If user is in AWAITING_REPORT and types a sentence, default to DATA_PELAPORAN
+        if current_state == "AWAITING_REPORT" and len(msg_clean.split()) >= 2:
+            return "DATA_PELAPORAN"
 
         return "UNKNOWN"
 
