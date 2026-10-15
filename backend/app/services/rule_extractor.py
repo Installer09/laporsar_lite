@@ -87,21 +87,25 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
         merged_dict = {}
         # Load master first
         for w in master_words:
-            if not w.ner_type or not w.word:
+            ner_type = getattr(w, "ner_type", None)
+            word = getattr(w, "word", None)
+            if not ner_type or not word:
                 continue
-            key = (w.ner_type, w.word.lower())
+            key = (ner_type, word.lower())
             merged_dict[key] = {
-                "word": w.word,
-                "ner_target": w.ner_target
+                "word": word,
+                "ner_target": getattr(w, "ner_target", None)
             }
         # Load tenant words (overrides master if duplicate)
         for w in tenant_words:
-            if not w.ner_type or not w.word:
+            ner_type = getattr(w, "ner_type", None)
+            word = getattr(w, "word", None)
+            if not ner_type or not word:
                 continue
-            key = (w.ner_type, w.word.lower())
+            key = (ner_type, word.lower())
             merged_dict[key] = {
-                "word": w.word,
-                "ner_target": w.ner_target
+                "word": word,
+                "ner_target": getattr(w, "ner_target", None)
             }
 
         # Structure cache: { ner_type: [ {word, ner_target} ] }

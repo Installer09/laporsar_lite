@@ -348,8 +348,8 @@ Ttd
 
 class MessageFormatterService:
     @staticmethod
-    def angka_ke_kata(n: int) -> str:
-        """Menerjemahkan angka integer menjadi kata huruf Indonesia."""
+    def number_to_words(n: int) -> str:
+        """Translates an integer into official Indonesian words."""
         if n == 0:
             return "NIHIL"
         
@@ -357,7 +357,7 @@ class MessageFormatterService:
         if n < 12:
             return satuan[n]
         elif n < 20:
-            return MessageFormatterService.angka_ke_kata(n - 10) + " BELAS"
+            return MessageFormatterService.number_to_words(n - 10) + " BELAS"
         elif n < 100:
             utama = n // 10
             sisa = n % 10
@@ -366,19 +366,22 @@ class MessageFormatterService:
                 hasil += " " + satuan[sisa]
             return hasil
         elif n < 200:
-            return "SERATUS " + MessageFormatterService.angka_ke_kata(n - 100)
+            return "SERATUS " + MessageFormatterService.number_to_words(n - 100)
         elif n < 1000:
             utama = n // 100
             sisa = n % 100
             hasil = satuan[utama] + " RATUS"
             if sisa > 0:
-                hasil += " " + MessageFormatterService.angka_ke_kata(sisa)
+                hasil += " " + MessageFormatterService.number_to_words(sisa)
             return hasil
         return str(n)
 
+    # Backward compatibility alias
+    angka_ke_kata = number_to_words
+
     @staticmethod
-    def format_hari_tanggal(dt: datetime, upper: bool = False) -> str:
-        """Memformat datetime objek menjadi string Hari, Tanggal Bulan Tahun Indonesia."""
+    def format_day_date(dt: datetime, upper: bool = False) -> str:
+        """Formats datetime into Indonesian Day, Date Month Year string."""
         hari_map = {
             "Monday": "Senin", "Tuesday": "Selasa", "Wednesday": "Rabu",
             "Thursday": "Kamis", "Friday": "Jumat", "Saturday": "Sabtu", "Sunday": "Minggu"
@@ -397,6 +400,9 @@ class MessageFormatterService:
             return f"{hari.upper()}, {tanggal} {bulan} {tahun}"
         else:
             return f"{hari}, {tanggal} {bulan} {tahun}"
+
+    # Backward compatibility alias
+    format_hari_tanggal = format_day_date
 
     @staticmethod
     def decimal_to_dms(lat: float, lng: float) -> str:
@@ -428,8 +434,8 @@ class MessageFormatterService:
         return f"{lat_str} / {lng_str}"
 
     @staticmethod
-    def hitung_sarana(data: dict, klasifikasi: str) -> int:
-        """Menghitung jumlah sarana (kapal/pesawat/alat) yang terlibat secara aman."""
+    def calculate_vehicle_count(data: dict, classification: str) -> int:
+        """Calculates the count of vehicles/assets involved safely."""
         if "jumlah_sarana" in data and data["jumlah_sarana"]:
             try:
                 return int(data["jumlah_sarana"])
@@ -437,24 +443,29 @@ class MessageFormatterService:
                 pass
         
         key_map = {
-            "KAPAL": "data_kapal",
-            "PESAWAT": "data_pesawat",
-            "ALAT": "data_alat"
+            "KAPAL": ["data_kapal", "vessel_data"],
+            "PESAWAT": ["data_pesawat", "aircraft_data"],
+            "ALAT": ["data_alat", "equipment_data"]
         }
         
-        target_key = None
+        target_keys = ["data_kapal", "vessel_data"]
         for k, v in key_map.items():
-            if k in klasifikasi.upper():
-                target_key = v
+            if k in classification.upper():
+                target_keys = v
                 break
-        
-        if not target_key:
-            target_key = "data_kapal"
             
-        vessel_data = data.get(target_key)
+        vessel_data = None
+        for tk in target_keys:
+            if tk in data and data[tk]:
+                vessel_data = data[tk]
+                break
         if not vessel_data:
-            # check inside metadata_kejadian
-            vessel_data = data.get("metadata_kejadian", {}).get(target_key)
+            # check inside metadata_kejadian / incident_metadata
+            meta = data.get("incident_metadata") or data.get("metadata_kejadian", {})
+            for tk in target_keys:
+                if tk in meta and meta[tk]:
+                    vessel_data = meta[tk]
+                    break
             
         if vessel_data:
             if isinstance(vessel_data, str):
@@ -471,7 +482,10 @@ class MessageFormatterService:
                 
         return 1
 
-    def format_data_kapal(self, data_kapal) -> str:
+    # Backward compatibility alias
+    hitung_sarana = calculate_vehicle_count
+
+    def format_vessel_data(self, data_kapal) -> str:
         """Memformat data kapal secara terperinci sesuai format formal Basarnas."""
         nama = "-"
         gt = "-"
@@ -542,7 +556,10 @@ class MessageFormatterService:
 
         return "\n".join(base_lines)
 
-    def format_data_pesawat(self, data_pesawat) -> str:
+    # Backward compatibility alias
+    format_data_kapal = format_vessel_data
+
+    def format_aircraft_data(self, data_pesawat) -> str:
         """Memformat data pesawat secara terperinci sesuai format formal Basarnas."""
         nama = "-"
         call_sign = "-"
@@ -595,7 +612,10 @@ class MessageFormatterService:
 
         return "\n".join(base_lines)
 
-    def format_data_alat(self, data_alat) -> str:
+    # Backward compatibility alias
+    format_data_pesawat = format_aircraft_data
+
+    def format_equipment_data(self, data_alat) -> str:
         """Memformat data sarana / kendaraan KPK secara terperinci."""
         nama = "-"
         jenis = "-"
@@ -629,11 +649,10 @@ class MessageFormatterService:
             f"* Pemilik : {nama}".rstrip()
         )
 
-    def format_korban(self, data_korban: list, total_korban: int = None) -> str:
-        """Alias for format_data_korban for test backwards compatibility."""
-        return self.format_data_korban(data_korban, total_korban=total_korban)
+    # Backward compatibility alias
+    format_data_alat = format_equipment_data
 
-    def format_rincian_korban(self, data_korban) -> str:
+    def format_victim_details(self, data_korban) -> str:
         """Memformat data korban secara ringkas untuk placeholder RINCIAN_KORBAN."""
         if isinstance(data_korban, str):
             try:
@@ -671,7 +690,10 @@ class MessageFormatterService:
                 
         return "\n\n".join(blocks)
 
-    def format_data_korban(self, data_korban: list, is_kmm_bencana: bool = True, total_korban: int = None) -> str:
+    # Backward compatibility alias
+    format_rincian_korban = format_victim_details
+
+    def format_victim_data(self, data_korban: list, is_kmm_bencana: bool = True, total_korban: int = None) -> str:
         """Memformat data korban secara dinamis dengan format berpenomoran resmi Basarnas."""
         # Determine if it's empty
         is_empty = False
@@ -772,6 +794,10 @@ class MessageFormatterService:
                 formatted_blocks.append(f"{idx}. \tNama: Belum diketahui\n\tJenis Kelamin : -")
             
         return "\n\n".join(formatted_blocks)
+
+    # Backward compatibility aliases
+    format_data_korban = format_victim_data
+    format_korban = format_victim_data
 
     def to_basarnas_pdtw(self, waktu_str: str, created_at: datetime, koordinat_lng: float = None) -> str:
         """Converts raw waktu string to standard BASARNAS PDTW format: MMDD HHMM <TZ_CHAR>"""
@@ -952,13 +978,13 @@ class MessageFormatterService:
         # Hitung korban total
         korban_total_val = 0
         try:
-            korban_total_val = int(data.get("JUMLAH_KORBAN_TOTAL") or data.get("korban_total") or 0)
+            korban_total_val = int(data.get("JUMLAH_KORBAN_TOTAL") or data.get("total_victims") or data.get("korban_total") or 0)
         except:
             pass
 
         if korban_total_val == 0:
             # Hitung dari data_korban jika ada
-            korban_list = data.get("data_korban") or data.get("data_korban_payload")
+            korban_list = data.get("victim_data") or data.get("data_korban") or data.get("data_korban_payload")
             if isinstance(korban_list, list):
                 korban_total_val = len(korban_list)
             elif isinstance(korban_list, dict) and "daftar_korban" in korban_list:
@@ -968,10 +994,10 @@ class MessageFormatterService:
         jumlah_korban_huruf_inline = jumlah_korban_huruf.title()
 
         # Bangun Detail Judul Dinamis
-        lokasi_raw = data.get("LOKASI_KEJADIAN") or data.get("lokasi_teks") or ""
+        lokasi_raw = data.get("LOKASI_KEJADIAN") or data.get("location_text") or data.get("lokasi_teks") or ""
         
         # Bersihkan jenis kejadian untuk judul
-        clean_jenis = str(data.get("jenis_kejadian") or data.get("KLASIFIKASI") or "").upper()
+        clean_jenis = str(data.get("incident_type") or data.get("jenis_kejadian") or data.get("KLASIFIKASI") or "").upper()
         for prefix in ["KMM (KONDISI MEMBAHAYAKAN MANUSIA)", "KONDISI MEMBAHAYAKAN MANUSIA", "KMM", 
                         "KECELAKAAN KAPAL", "LAKA KAPAL", "KECELAKAAN PESAWAT", "LAKA PESAWAT", 
                         "BENCANA ALAM", "BENCANA", "KPK"]:
@@ -983,7 +1009,7 @@ class MessageFormatterService:
 
         # If clean_jenis is empty or generic (e.g. just classification), try to extract subject from KRONOLOGI
         if not clean_jenis or clean_jenis in ["LAKA KAPAL", "LAKA PESAWAT", "KMM", "BENCANA", "KPK", "KONDISI MEMBAHAYAKAN MANUSIA"]:
-            kronologi = str(data.get("KRONOLOGI") or data.get("kronologi") or "").upper()
+            kronologi = str(data.get("KRONOLOGI") or data.get("chronology") or data.get("kronologi") or "").upper()
             
             # Get dynamic boat types / subjects from pre-warmed cache or fallback
             from app.services.rule_extractor import RuleExtractor
@@ -1091,8 +1117,8 @@ class MessageFormatterService:
 
             # Final check: if clean_jenis is still empty or generic, try fallback to data_kapal/vessel data type
             if not clean_jenis or clean_jenis in ["LAKA KAPAL", "LAKA PESAWAT", "KMM", "BENCANA", "KPK", "KONDISI MEMBAHAYAKAN MANUSIA"]:
-                dk = str(data.get("data_kapal") or data.get("metadata_kejadian", {}).get("data_kapal") or "").lower()
-                dp = str(data.get("data_pesawat") or data.get("metadata_kejadian", {}).get("data_pesawat") or "").lower()
+                dk = str(data.get("data_kapal") or data.get("metadata_kejadian", {}).get("data_kapal") or data.get("incident_metadata", {}).get("data_kapal") or "").lower()
+                dp = str(data.get("data_pesawat") or data.get("metadata_kejadian", {}).get("data_pesawat") or data.get("incident_metadata", {}).get("data_pesawat") or "").lower()
                 
                 if active_klasifikasi == "LAKA KAPAL":
                     vessel_type = "KAPAL"
@@ -1141,7 +1167,7 @@ class MessageFormatterService:
                 kab_name = kab_match.group(1).strip()
                 lokasi_upper = re.sub(r'\b(?:KAB\.?|KABUPATEN)\s+[A-Z\s]+', f"KABUPATEN {kab_name}", lokasi_upper)
             else:
-                pos_sar = data.get("pos_sar_terdekat") or ""
+                pos_sar = data.get("nearest_sar_post") or data.get("pos_sar_terdekat") or ""
                 if "ANAMBAS" in lokasi_upper or "JEMAJA" in lokasi_upper or "ANAMBAS" in pos_sar.upper() or "JEMAJA" in pos_sar.upper():
                     lokasi_upper = f"{lokasi_upper} KABUPATEN KEPULAUAN ANAMBAS"
                 elif "NATUNA" in lokasi_upper or "NATUNA" in pos_sar.upper():
@@ -1200,8 +1226,6 @@ class MessageFormatterService:
             if key == "MOTTO_INSTANSI":
                 motto = data.get("MOTTO_INSTANSI") or "Avignam Jagat Samagram\nSelamatlah Alam Semesta"
                 lines = [line.strip().strip("*_ ") for line in motto.split("\n") if line.strip()]
-                if len(lines) >= 2:
-                    return f"*{lines[0]}*\n_{lines[1]}_"
                 return "\n".join(f"*{line}*" for line in lines)
             if key == "TTD_KEPALA":
                 ttd = data.get("TTD_KEPALA") or "SIAGA SAR 01"
@@ -1223,10 +1247,10 @@ class MessageFormatterService:
                 return self.to_basarnas_pdtw(wi_str, dt_obj, koordinat_lng=lng_val)
                 
             if key == "PELAPOR":
-                p_val = data.get("PELAPOR") or data.get("pelapor")
+                p_val = data.get("PELAPOR") or data.get("pelapor") or data.get("reporter")
                 if not p_val or str(p_val).strip() in ("", "-", "None"):
-                    nama_p = data.get("pelapor_nama") or "Belum Diketahui"
-                    telp_p = data.get("pelapor_nomor") or "-"
+                    nama_p = data.get("reporter_name") or data.get("pelapor_nama") or "Belum Diketahui"
+                    telp_p = data.get("reporter_phone") or data.get("pelapor_nomor") or "-"
                     return f"{nama_p} ( {telp_p} )"
                 p_str = str(p_val).strip()
                 match_p = re.match(r'^(.*?)\s*\((.*?)\)$', p_str)
@@ -1235,10 +1259,10 @@ class MessageFormatterService:
                 return p_str
 
             if key == "KOORDINAT":
-                lat = data.get("koordinat_lat") or data.get("latitude")
-                lng = data.get("koordinat_lng") or data.get("longitude")
+                lat = data.get("latitude") or data.get("koordinat_lat")
+                lng = data.get("longitude") or data.get("koordinat_lng")
                 if not lat or not lng:
-                    direct_coord = data.get("KOORDINAT") or data.get("koordinat") or ""
+                    direct_coord = data.get("KOORDINAT") or data.get("koordinat") or data.get("coordinates") or ""
                     from app.services.geo_service import parse_coordinates
                     coords = parse_coordinates(str(direct_coord))
                     if coords:
@@ -1248,7 +1272,7 @@ class MessageFormatterService:
                         return self.decimal_to_dms(float(lat), float(lng))
                     except Exception:
                         pass
-                direct_coord = data.get("KOORDINAT") or data.get("koordinat") or "Belum Diketahui"
+                direct_coord = data.get("KOORDINAT") or data.get("koordinat") or data.get("coordinates") or "Belum Diketahui"
                 return str(direct_coord)
                 
             # 2. Penanganan Judul Dinamis
@@ -1273,15 +1297,15 @@ class MessageFormatterService:
 
             # 3. Penanganan Korban Detail
             if key == "RINCIAN_KORBAN":
-                korban_list = data.get("data_korban")
+                korban_list = data.get("victim_data") or data.get("data_korban")
                 if korban_list is None:
-                    korban_list = data.get("metadata_kejadian", {}).get("data_korban")
+                    korban_list = data.get("incident_metadata", {}).get("data_korban") or data.get("metadata_kejadian", {}).get("data_korban")
                 return self.format_rincian_korban(korban_list)
 
             if key == "DATA_KORBAN":
-                korban_list = data.get("data_korban")
+                korban_list = data.get("victim_data") or data.get("data_korban")
                 if korban_list is None:
-                    korban_list = data.get("metadata_kejadian", {}).get("data_korban")
+                    korban_list = data.get("incident_metadata", {}).get("data_korban") or data.get("metadata_kejadian", {}).get("data_korban")
                 if korban_list is None:
                     korban_list = []
                 elif isinstance(korban_list, str) and (korban_list.startswith("[") or korban_list.startswith("{")):
@@ -1296,9 +1320,9 @@ class MessageFormatterService:
             # 4. Penanganan Korban Breakdown
             if key in ("KORBAN_SELAMAT", "KORBAN_MENINGGAL", "KORBAN_HILANG"):
                 field_map = {
-                    "KORBAN_SELAMAT": ["korban_selamat", "korban_s"],
-                    "KORBAN_MENINGGAL": ["korban_meninggal", "korban_md"],
-                    "KORBAN_HILANG": ["korban_hilang", "korban_dp"]
+                    "KORBAN_SELAMAT": ["survived_victims", "korban_selamat", "korban_s"],
+                    "KORBAN_MENINGGAL": ["deceased_victims", "korban_meninggal", "korban_md"],
+                    "KORBAN_HILANG": ["missing_victims", "korban_hilang", "korban_dp"]
                 }
                 val = None
                 for alias in field_map[key]:
@@ -1311,22 +1335,23 @@ class MessageFormatterService:
 
             # 5. Penanganan Data Sarana/Kendaraan
             if key in ("DATA_KAPAL", "DATA_PESAWAT", "DATA_KENDARAAN", "DATA_SARANA"):
+                meta = data.get("incident_metadata") or data.get("metadata_kejadian") or {}
                 if key == "DATA_KAPAL" or active_klasifikasi == "LAKA KAPAL":
-                    val = data.get("data_kapal") or data.get("metadata_kejadian", {}).get("data_kapal") or data.get("DATA_KAPAL")
+                    val = data.get("data_kapal") or meta.get("data_kapal") or data.get("DATA_KAPAL")
                     return self.format_data_kapal(val)
                 elif key == "DATA_PESAWAT" or active_klasifikasi == "LAKA PESAWAT":
-                    val = data.get("data_pesawat") or data.get("metadata_kejadian", {}).get("data_pesawat") or data.get("DATA_PESAWAT")
+                    val = data.get("data_pesawat") or meta.get("data_pesawat") or data.get("DATA_PESAWAT")
                     return self.format_data_pesawat(val)
                 elif key in ("DATA_KENDARAAN", "DATA_SARANA") or active_klasifikasi == "KPK":
-                    val = data.get("data_alat") or data.get("metadata_kejadian", {}).get("data_alat") or data.get("DATA_KENDARAAN")
+                    val = data.get("data_alat") or meta.get("data_alat") or data.get("DATA_KENDARAAN")
                     return self.format_data_alat(val)
                 return "- "
 
             # 6. Heading dan Jarak Terpisah & Terintegrasi
-            pos_sar = data.get("pos_sar_terdekat") or "Pos SAR Terdekat"
+            pos_sar = data.get("nearest_sar_post") or data.get("pos_sar_terdekat") or "Pos SAR Terdekat"
             
             if key == "HEADING":
-                heading = data.get("HEADING") or data.get("heading") or data.get("heading_ke_lokasi")
+                heading = data.get("heading_degree") or data.get("HEADING") or data.get("heading") or data.get("heading_ke_lokasi")
                 if heading and str(heading).strip() not in ("", "-", "None", "Tidak terdeteksi"):
                     h_str = str(heading).strip()
                     if "dari" in h_str.lower():
@@ -1346,7 +1371,7 @@ class MessageFormatterService:
                 return f"- dari {pos_sar}."
 
             if key == "JARAK":
-                jarak = data.get("JARAK") or data.get("jarak") or data.get("jarak_ke_lokasi")
+                jarak = data.get("distance_nm") or data.get("JARAK") or data.get("jarak") or data.get("jarak_ke_lokasi")
                 if jarak and str(jarak).strip() not in ("", "-", "None", "Tidak terdeteksi"):
                     j_str = str(jarak).strip()
                     if "dari" in j_str.lower():
@@ -1368,8 +1393,8 @@ class MessageFormatterService:
                 return f"- Nm dari {pos_sar}"
 
             if key == "HEADING_JARAK":
-                heading = data.get("heading") or data.get("heading_ke_lokasi")
-                jarak = data.get("jarak") or data.get("jarak_ke_lokasi")
+                heading = data.get("heading_degree") or data.get("heading") or data.get("heading_ke_lokasi")
+                jarak = data.get("distance_nm") or data.get("jarak") or data.get("jarak_ke_lokasi")
                 if heading and jarak:
                     heading_str = str(heading).replace("°", "") + "°"
                     jarak_str = str(jarak).upper().replace("NM", "").strip() + " NM"
@@ -1385,7 +1410,7 @@ class MessageFormatterService:
 
             # 7. Unsur SAR, Alut, Aksi, Hasil Formatter
             if key in ("UNSUR_SAR", "UNSUR"):
-                val = data.get("UNSUR_SAR") or data.get("unsur_sar") or data.get("UNSUR") or data.get("unsur")
+                val = data.get("resources_deployed") or data.get("UNSUR_SAR") or data.get("unsur_sar") or data.get("UNSUR") or data.get("unsur")
                 if not val or str(val).strip() == "":
                     return "* Pos SAR Terdekat;\n* Potensi SAR Terdekat."
                 
@@ -1407,7 +1432,7 @@ class MessageFormatterService:
                 return "\n".join(formatted_unsur)
 
             if key in ("ALUT_PALSAR", "ALUT"):
-                val = data.get("ALUT_PALSAR") or data.get("alut_palsar") or data.get("ALUT") or data.get("alut")
+                val = data.get("resources_deployed") or data.get("ALUT_PALSAR") or data.get("alut_palsar") or data.get("ALUT") or data.get("alut")
                 if not val or str(val).strip() == "":
                     return "* RIB Pos SAR\n* Palsar Air\n* Pal Komunikasi\n* Pal Keselamatan lainnya"
                     
@@ -1429,7 +1454,8 @@ class MessageFormatterService:
                 return "\n".join(formatted_alut)
 
             if key in ("KRONOLOGI", "AKSI", "HASIL"):
-                val = data.get(key) or data.get(key.lower())
+                key_en_map = {"KRONOLOGI": "chronology", "AKSI": "action", "HASIL": "result"}
+                val = data.get(key) or data.get(key.lower()) or (data.get(key_en_map.get(key, "")) if key_en_map.get(key) else None)
                 if not val or str(val).strip() in ("", "-", "None"):
                     if key == "HASIL":
                         return "* Dalam pencarian / Pemantauan."
@@ -1467,17 +1493,17 @@ class MessageFormatterService:
 
             # 8. Alias mapping default
             aliases = {
-                "JENIS_KEJADIAN": ["jenis_kejadian", "JENIS_KEJADIAN", "KLASIFIKASI", "klasifikasi"],
-                "KLASIFIKASI": ["KLASIFIKASI", "klasifikasi", "jenis_kejadian", "JENIS_KEJADIAN"],
-                "WAKTU_KEJADIAN": ["waktu", "WAKTU_KEJADIAN", "waktu_kejadian"],
-                "LOKASI_KEJADIAN": ["lokasi_teks", "LOKASI_KEJADIAN", "lokasi_kejadian", "lokasi"],
-                "KRONOLOGI": ["kronologi", "KRONOLOGI"],
-                "KOORDINAT": ["koordinat", "KOORDINAT"],
-                "CUACA": ["cuaca", "CUACA"],
-                "JUDUL_KEJADIAN": ["judul_kejadian", "JUDUL_KEJADIAN"],
-                "WAKTU_INFO_DITERIMA": ["waktu_info_diterima", "WAKTU_INFO_DITERIMA"],
-                "PELAPOR": ["pelapor", "PELAPOR"],
-                "HASIL": ["hasil", "HASIL"]
+                "JENIS_KEJADIAN": ["incident_type", "jenis_kejadian", "JENIS_KEJADIAN", "KLASIFIKASI", "klasifikasi"],
+                "KLASIFIKASI": ["incident_type", "KLASIFIKASI", "klasifikasi", "jenis_kejadian", "JENIS_KEJADIAN"],
+                "WAKTU_KEJADIAN": ["incident_time", "waktu", "WAKTU_KEJADIAN", "waktu_kejadian"],
+                "LOKASI_KEJADIAN": ["location_text", "lokasi_teks", "LOKASI_KEJADIAN", "lokasi_kejadian", "lokasi"],
+                "KRONOLOGI": ["chronology", "kronologi", "KRONOLOGI"],
+                "KOORDINAT": ["coordinates", "coordinate", "koordinat", "KOORDINAT"],
+                "CUACA": ["weather", "cuaca", "CUACA"],
+                "JUDUL_KEJADIAN": ["incident_title", "judul_kejadian", "JUDUL_KEJADIAN"],
+                "WAKTU_INFO_DITERIMA": ["info_received_time", "waktu_info_diterima", "WAKTU_INFO_DITERIMA"],
+                "PELAPOR": ["reporter_name", "reporter", "pelapor", "PELAPOR"],
+                "HASIL": ["result", "hasil", "HASIL"]
             }
             
             # Cari dari alias
@@ -1501,8 +1527,6 @@ class MessageFormatterService:
                 if key == "HASIL":
                     return "Dalam pencarian / Pemantauan"
                 return ""
-                
-            return str(val)
                 
             return str(val)
 

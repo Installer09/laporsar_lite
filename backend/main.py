@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 from contextlib import asynccontextmanager
-from app.api.routes import reports, chat, telegram, whatsapp, auth, settings, knowledge, wa_widget, attachments, stats, identitas, contacts, system, admin, public, national_reports, location_webview, mobile_auth, mobile_chat, hotspots, storage
+from app.api.routes import reports, chat, telegram, whatsapp, auth, settings, knowledge, wa_widget, attachments, stats, identity, contacts, system, admin, public, national_reports, location_webview, mobile_auth, mobile_chat, hotspots, storage
 
 from app.db.session import master_engine as engine, Base
 from app.models import report
@@ -290,7 +290,7 @@ app.include_router(telegram.router, prefix="/api/telegram", tags=["Telegram Webh
 app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["WhatsApp Webhook"])
 app.include_router(wa_widget.router, prefix="/api/wa-widget", tags=["WhatsApp Widget"])
 app.include_router(settings.router, prefix="/api/settings", tags=["Settings"])
-app.include_router(identitas.router, prefix="/api/settings", tags=["Identitas & Wilayah"])
+app.include_router(identity.router, prefix="/api/settings", tags=["Identity & Area"])
 app.include_router(knowledge.router, prefix="/api/knowledge", tags=["Knowledge Base"])
 app.include_router(attachments.router, prefix="/api/attachments", tags=["Attachments"])
 app.include_router(stats.router, prefix="/api/stats", tags=["Dashboard Stats"])

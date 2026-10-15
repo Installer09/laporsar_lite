@@ -38,11 +38,11 @@ class KoordinatFieldProcessor(BaseFieldProcessor):
         q_text = (
             "*Apakah Anda memiliki titik koordinat GPS kejadian?*\n\n"
             "Anda dapat memberikan titik lokasi kejadian dengan cara:\n"
-            "1. Ketuk tombol *📍 Bagikan Lokasi Kejadian* di bawah (jika Anda berada di lokasi kejadian).\n"
-            "2. Atau kirim via menu pesan: ikon klip kertas (📎) -> *Lokasi* (bisa geser pin ke posisi musibah).\n"
+            "1. Ketuk tombol *Bagikan Lokasi Kejadian* di bawah (jika Anda berada di lokasi kejadian).\n"
+            "2. Atau kirim via menu lampiran pesan -> *Lokasi* (bisa geser pin ke posisi musibah).\n"
             "3. Atau ketik angka koordinat / tautan Google Maps (contoh: _-3.391282, 106.241521_).\n"
             f"{map_link_line}"
             "4. Jika tidak tahu titik koordinatnya, pilih tombol *Belum Tahu* (cukup nama perairan/tempat yang sudah Anda sebutkan)."
         )
-        buttons = [{"text": "📍 Bagikan Lokasi Kejadian", "request_location": True}, "Belum Tahu"]
+        buttons = [{"text": "Bagikan Lokasi Kejadian", "request_location": True}, "Belum Tahu"]
         return q_text, buttons

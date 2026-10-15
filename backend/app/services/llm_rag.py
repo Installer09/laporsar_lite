@@ -1237,7 +1237,7 @@ Keluarkan HANYA JSON hasil penyempurnaan, dengan struktur kunci yang sama sepert
             full_context_str = "\n\n".join(context_blocks)
 
             prompt = f"""
-Anda adalah Asisten Informasi & Bantuan SAR Resmi BASARNAS Indonesia (Lapor SAR Info).
+Anda adalah Asisten Layanan Informasi SAR Resmi BASARNAS Indonesia (Info SAR).
 Tugas Anda adalah menjawab pertanyaan masyarakat secara akurat, lugas, profesional, formal, dan HANYA berdasarkan dokumen resmi serta basis data yang tersedia.
 
 KONTEKS REFERENSI DOKUMEN RESMI & KNOWLEDGE BASE SISTEM:
@@ -1257,7 +1257,7 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
 2. TANPA EMOJI ATAU IKON DEKORATIF (DILARANG KERAS):
    - JANGAN menggunakan emoji atau ikon dekoratif apapun (seperti telepon, sirene, buku, tanda seru, robot, dan sejenisnya).
    - Format jawaban harus formal, bersih, profesional, dan bergaya institusional kedinasan resmi.
-3. KETERANGAN SUMBER YANG DIKUTIP (MANDATORI):
+3. KETERANGAN SUMBER YANG DIKUTIP (MANDATORI, LEBIH BANYAK SUMBER LEBIH BAGUS):
    - Jika menjawab berdasarkan dokumen internal/regulasi, cantumkan di bagian akhir jawaban:
      "**Referensi Dokumen & Sumber Resmi:**"
      - [Nama Dokumen / Regulasi / SOP yang relevan]
@@ -1278,7 +1278,7 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
 
             response = await ai_provider_manager.llm_generate(
                 prompt=prompt,
-                system_prompt="Anda adalah asisten Lapor SAR Info BASARNAS resmi. Jawab secara formal, presisi, HANYA berbasis dokumen resmi, regulasi, dan informasi internet terverifikasi yang diberikan, tanpa emoji dekoratif apapun. Bila tidak tercantum, tolak dengan mengarahkan ke Call Center 115 dan https://basarnas.go.id.",
+                system_prompt="Anda adalah asisten Info SAR BASARNAS resmi. Jawab secara formal, presisi, HANYA berbasis dokumen resmi, regulasi, dan informasi internet terverifikasi yang diberikan, tanpa emoji dekoratif apapun. Bila tidak tercantum, tolak dengan mengarahkan ke Call Center 115 dan https://basarnas.go.id.",
                 temperature=0.2,
                 timeout=25.0,
                 tenant_settings=tenant_settings

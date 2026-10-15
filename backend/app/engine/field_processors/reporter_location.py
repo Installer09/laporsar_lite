@@ -63,8 +63,8 @@ class ReporterLocationFieldProcessor(BaseFieldProcessor):
         else:
             reply = (
                 "*Verifikasi Lokasi Pelapor*\n\n"
-                "Silakan ketuk tombol **Share Location** (*📍 Bagikan Lokasi Saya*) jika Anda berada di lokasi kejadian, "
-                "atau pilih tombol *Saya Tidak di Lokasi* jika Anda melapor dari rumah/darat."
+                "Silakan ketuk tombol *Bagikan Lokasi Saya* jika Anda berada di lokasi kejadian, "
+                "atau pilih tombol *Saya Tidak di Lokasi* jika Anda melapor dari luar area kejadian."
             )
             return False, {"text": reply, "buttons": self._get_buttons()}
 
@@ -79,7 +79,6 @@ class ReporterLocationFieldProcessor(BaseFieldProcessor):
 
     def _get_buttons(self) -> list:
         return [
-            {"text": "📍 Bagikan Lokasi Saya", "request_location": True},
-            "Saya Tidak di Lokasi",
-            "Lewati"
+            {"text": "Bagikan Lokasi Saya", "request_location": True},
+            "Saya Tidak di Lokasi"
         ]

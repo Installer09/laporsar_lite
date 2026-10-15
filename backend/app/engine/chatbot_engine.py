@@ -46,12 +46,12 @@ FIELD_QUESTIONS = {
         "text": (
             "*Apakah Anda memiliki titik koordinat GPS kejadian?*\n\n"
             "Anda dapat memberikan titik lokasi kejadian dengan cara:\n"
-            "1. Ketuk tombol *📍 Bagikan Lokasi Kejadian* di bawah (jika Anda berada di lokasi kejadian).\n"
-            "2. Atau kirim via menu Telegram: ikon klip kertas (📎) -> *Lokasi* (bisa geser pin ke posisi musibah).\n"
+            "1. Ketuk tombol *Bagikan Lokasi Kejadian* di bawah (jika Anda berada di lokasi kejadian).\n"
+            "2. Atau kirim via menu Telegram: ikon lampiran / klip kertas -> *Lokasi* (bisa geser pin ke posisi musibah).\n"
             "3. Atau ketik angka koordinat / tautan Google Maps (contoh: _-3.391282, 106.241521_).\n"
             "4. Jika tidak tahu titik koordinatnya, pilih tombol *Belum Tahu* (cukup nama lokasi yang sudah Anda sebutkan)."
         ),
-        "buttons": [{"text": "📍 Bagikan Lokasi Kejadian", "request_location": True}, "Belum Tahu"]
+        "buttons": [{"text": "Bagikan Lokasi Kejadian", "request_location": True}, "Belum Tahu"]
     },
     "korban": {
         "text": (
@@ -385,12 +385,11 @@ class ChatbotEngine:
             # Telegram supports native location sharing button
             if session.channel == "telegram":
                 buttons = [
-                    {"text": "📍 Bagikan Lokasi GPS Sekarang", "request_location": True},
-                    "Info SAR",
-                    "Cek Status Laporan"
+                    {"text": "Bagikan Lokasi GPS Sekarang", "request_location": True},
+                    "Info SAR"
                 ]
             else:
-                buttons = ["Lapor SAR", "Info SAR", "Cek Status Laporan"]
+                buttons = ["Lapor SAR", "Info SAR"]
 
             reply = (
                 "*LAPOR SAR*\n"
@@ -437,7 +436,7 @@ class ChatbotEngine:
                 "• Apa kriteria musibah yang termasuk Kondisi Membahayakan Manusia?\n"
                 "• Berapa nomor kontak resmi siaga darurat BASARNAS?"
             )
-            buttons = ["Lapor SAR", "Cek Status Laporan"]
+            buttons = ["Lapor SAR", "Info SAR"]
             self._update_history(session, "assistant", reply, buttons=buttons)
             await db.commit()
             await self._broadcast_session(session, autopilot, extracted_data, db=db)
@@ -796,7 +795,7 @@ class ChatbotEngine:
 
         if target_report_no:
             result = await db.execute(
-                select(Report).where(Report.no_laporan.ilike(target_report_no)).order_by(Report.id.desc())
+                select(Report).where(Report.report_number.ilike(target_report_no)).order_by(Report.id.desc())
             )
             reports = result.scalars().all()
             if not reports:
@@ -825,7 +824,7 @@ class ChatbotEngine:
             if searched_phone or phone:
                 target_phone = searched_phone or phone
                 result = await db.execute(
-                    select(Report).where(Report.pelapor_nomor == target_phone).order_by(Report.id.desc()).limit(3)
+                    select(Report).where(Report.reporter_phone == target_phone).order_by(Report.id.desc()).limit(3)
                 )
                 reports = result.scalars().all()
                 if not reports:
@@ -842,7 +841,7 @@ class ChatbotEngine:
                     return {"text": reply, "buttons": buttons}
             elif last_report_no:
                 result = await db.execute(
-                    select(Report).where(Report.no_laporan.ilike(last_report_no)).order_by(Report.id.desc())
+                    select(Report).where(Report.report_number.ilike(last_report_no)).order_by(Report.id.desc())
                 )
                 reports = result.scalars().all()
             else:
@@ -970,10 +969,10 @@ class ChatbotEngine:
                     from app.models.report import Report
                     from sqlalchemy import func, literal
                     
-                    cleaned_db_phone = func.regexp_replace(Report.pelapor_nomor, r'[^\d]', '', 'g')
+                    cleaned_db_phone = func.regexp_replace(Report.reporter_phone, r'[^\d]', '', 'g')
                     stmt = select(func.count(Report.id)).where(
                         Report.created_at >= one_hour_ago,
-                        Report.pelapor_nomor.is_not(None),
+                        Report.reporter_phone.is_not(None),
                         (cleaned_db_phone.like(f"%{phone_clean}%")) |
                         (literal(phone_clean).like(func.concat("%", cleaned_db_phone, "%")))
                     )

@@ -146,7 +146,7 @@ async def provision_tenant_db(
             logger.warning(f"Dictionary seeding note for {tenant.slug}: {e}")
 
         # Seed Identity & Settings
-        from app.api.routes.identitas import DEFAULT_IDENTITAS
+        from app.api.routes.identity import DEFAULT_IDENTITAS
         try:
             for key, val in DEFAULT_IDENTITAS.items():
                 res = await tenant_db.execute(select(SystemSetting).where(SystemSetting.key == key))

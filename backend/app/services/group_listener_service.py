@@ -104,7 +104,7 @@ class GroupListenerService:
                 # Check Report by stored telegram_group_msg_id in metadata_kejadian
                 res = await db.execute(
                     select(Report).where(
-                        Report.metadata_kejadian["telegram_group_msg_id"].astext == str(replied_msg_id)
+                        Report.incident_metadata["telegram_group_msg_id"].astext == str(replied_msg_id)
                     )
                 )
                 rep = res.scalar_one_or_none()
@@ -118,7 +118,7 @@ class GroupListenerService:
             if matched_no:
                 no_lap = matched_no.group(1).upper()
                 res = await db.execute(
-                    select(Report).where(func.upper(Report.no_laporan) == no_lap)
+                    select(Report).where(func.upper(Report.report_number) == no_lap)
                 )
                 rep = res.scalar_one_or_none()
                 if rep:
@@ -130,7 +130,7 @@ class GroupListenerService:
         if direct_match:
             no_lap = direct_match.group(1).upper()
             res = await db.execute(
-                select(Report).where(func.upper(Report.no_laporan) == no_lap)
+                select(Report).where(func.upper(Report.report_number) == no_lap)
             )
             rep = res.scalar_one_or_none()
             if rep:
