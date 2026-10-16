@@ -6,7 +6,7 @@ from app.engine.field_processors.base import BaseFieldProcessor
 
 logger = logging.getLogger(__name__)
 
-class KoordinatFieldProcessor(BaseFieldProcessor):
+class CoordinateFieldProcessor(BaseFieldProcessor):
     """Processes and validates the GPS coordinates ('koordinat') field."""
 
     async def validate_and_extract(
@@ -46,3 +46,6 @@ class KoordinatFieldProcessor(BaseFieldProcessor):
         )
         buttons = [{"text": "Bagikan Lokasi Kejadian", "request_location": True}, "Belum Tahu"]
         return q_text, buttons
+
+
+KoordinatFieldProcessor = CoordinateFieldProcessor

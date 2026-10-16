@@ -36,9 +36,13 @@ class SARNLPExtractor:
             tenant_context.reset(token)
         
         # 1. Run local RuleExtractor (Dict/Regex & DB Classifications) using cleaned message
-        local_data = {}
+        local_data: Dict[str, Any] = {}
         try:
             local_data = await self.rule_extractor.extract_all(cleaned_message, db)
+            # Always preserve original reporter text in chronology fallback (zero-hallucination rule)
+            if not local_data.get("kronologi"):
+                local_data["kronologi"] = message
+                local_data["chronology"] = message
             logger.info(f"RuleExtractor extracted: {local_data}")
         except Exception as e:
             logger.error(f"RuleExtractor failed: {str(e)}")
@@ -54,7 +58,13 @@ class SARNLPExtractor:
                     context=context,
                     db=db
                 )
-                result = validated_data if isinstance(validated_data, dict) else local_data
+                if isinstance(validated_data, dict):
+                    result = dict(local_data)
+                    for k, v in validated_data.items():
+                        if v is not None and v != "":
+                            result[k] = v
+                else:
+                    result = local_data
             except Exception as e:
                 logger.error(f"LLM Validator failed: {str(e)}")
                 result = local_data

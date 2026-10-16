@@ -7,7 +7,7 @@ from app.engine.field_processors.base import BaseFieldProcessor
 
 logger = logging.getLogger(__name__)
 
-class LokasiFieldProcessor(BaseFieldProcessor):
+class LocationFieldProcessor(BaseFieldProcessor):
     """Processes and validates the incident location ('lokasi_teks') field."""
 
     async def validate_and_extract(
@@ -71,3 +71,6 @@ class LokasiFieldProcessor(BaseFieldProcessor):
             "Sebutkan nama pantai, laut, desa, atau patokan terdekat yang Anda ketahui."
         )
         return q_text, ["Belum Tahu"]
+
+
+LokasiFieldProcessor = LocationFieldProcessor

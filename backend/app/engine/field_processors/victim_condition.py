@@ -7,7 +7,7 @@ from app.engine.field_processors.base import BaseFieldProcessor
 
 logger = logging.getLogger(__name__)
 
-class KorbanKondisiFieldProcessor(BaseFieldProcessor):
+class VictimConditionFieldProcessor(BaseFieldProcessor):
     """Processes and validates the victim status conditions ('korban_kondisi') field."""
 
     async def validate_and_extract(
@@ -105,3 +105,6 @@ class KorbanKondisiFieldProcessor(BaseFieldProcessor):
             "Contoh: _2 selamat, 1 hilang_ atau _selamat semua_"
         )
         return q_text, ["Belum Tahu"]
+
+
+KorbanKondisiFieldProcessor = VictimConditionFieldProcessor

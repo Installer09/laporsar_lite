@@ -307,52 +307,94 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
         try:
             if not RuleExtractor._cache_loaded:
                 await RuleExtractor.load_cache(db)
-                
+
+            from app.services.autocorrect_service import AutoCorrectService
+            normalized_msg = AutoCorrectService.normalize_colloquial_tokens(message) if message else ""
+
             extracted: Dict[str, Any] = {
                 "kronologi": message,
+                "chronology": message,
             }
 
-            # 1. Jenis Kejadian (Classification)
-            jenis_kejadian = await RuleExtractor.extract_jenis_kejadian(message, db)
+            # 1. Incident Type (Classification) & Vessel Context
+            jenis_kejadian = await RuleExtractor.extract_incident_type(normalized_msg, db)
+            vessel_ctx = RuleExtractor.extract_vessel_context(normalized_msg)
+
             if jenis_kejadian:
                 extracted["jenis_kejadian"] = jenis_kejadian
+                extracted["incident_type"] = jenis_kejadian
+            elif vessel_ctx and vessel_ctx.get("incident_type"):
+                extracted["jenis_kejadian"] = vessel_ctx["incident_type"]
+                extracted["incident_type"] = vessel_ctx["incident_type"]
 
-            # 2. Lokasi
-            lokasi = await RuleExtractor.extract_lokasi(message, db)
+            if vessel_ctx:
+                if vessel_ctx.get("sub_incident_type"):
+                    extracted["sub_jenis_kejadian"] = vessel_ctx["sub_incident_type"]
+                    extracted["sub_incident_type"] = vessel_ctx["sub_incident_type"]
+                if vessel_ctx.get("uses_vessel"):
+                    extracted["pakai_kapal"] = vessel_ctx["uses_vessel"]
+                    extracted["uses_vessel"] = vessel_ctx["uses_vessel"]
+                if vessel_ctx.get("victim_condition"):
+                    extracted["kondisi_korban"] = vessel_ctx["victim_condition"]
+                    extracted["victim_condition"] = vessel_ctx["victim_condition"]
+
+            # 2. Location (Lokasi)
+            lokasi = await RuleExtractor.extract_location(normalized_msg, db)
             if lokasi:
+                # If maritime/vessel context and location is an island without 'Perairan', normalize it
+                if vessel_ctx and re.match(r"^Pulau\s+", lokasi, re.IGNORECASE):
+                    lokasi = f"Perairan {lokasi}"
                 extracted["lokasi_teks"] = lokasi
+                extracted["location_text"] = lokasi
 
-            # 3. Waktu
-            waktu = RuleExtractor.extract_waktu(message)
+            # 3. Time (Waktu)
+            waktu = RuleExtractor.extract_time(normalized_msg)
             if waktu:
                 extracted["waktu"] = waktu
+                extracted["incident_time"] = waktu
 
-            # 4. Korban (basic count)
-            korban = RuleExtractor.extract_korban(message)
+            # 4. Victim Count (Korban)
+            korban = RuleExtractor.extract_victim_count(normalized_msg)
             if korban:
                 extracted["korban"] = korban
+                extracted["victim_summary"] = korban
 
-            # 5. Koordinat
-            coords = RuleExtractor.extract_koordinat(message)
+            # 5. Coordinates (Koordinat)
+            coords = RuleExtractor.extract_coordinates(message)
             if coords:
                 extracted["koordinat_lat"] = coords[0]
                 extracted["koordinat_lng"] = coords[1]
+                extracted["latitude"] = coords[0]
+                extracted["longitude"] = coords[1]
                 extracted["koordinat"] = f"{coords[0]}, {coords[1]}"
+                extracted["coordinates"] = f"{coords[0]}, {coords[1]}"
                 extracted["_explicit_koordinat"] = True
 
-            # 6. Data Kapal
-            data_kapal = RuleExtractor.extract_data_kapal(message)
+            # 6. Vessel Data (Data Kapal)
+            data_kapal = RuleExtractor.extract_vessel_data(normalized_msg)
             if data_kapal:
                 extracted["data_kapal"] = data_kapal
+                extracted["vessel_data"] = data_kapal
+                extracted["pakai_kapal"] = "Ya"
+                extracted["uses_vessel"] = "Ya"
+            elif vessel_ctx and vessel_ctx.get("vessel_data"):
+                extracted["data_kapal"] = vessel_ctx["vessel_data"]
+                extracted["vessel_data"] = vessel_ctx["vessel_data"]
 
-            # 7. Jumlah Korban Detail (selamat / MD / DP)
-            detail = RuleExtractor.extract_jumlah_korban_detail(message)
+            # 7. Reporter Relation (Hubungan Pelapor dan Korban)
+            relation = RuleExtractor.extract_reporter_relation(normalized_msg)
+            if relation:
+                extracted["pelapor_hubungan"] = relation
+                extracted["reporter_relation"] = relation
+
+            # 8. Victim Breakdown Detail (selamat / MD / DP)
+            detail = RuleExtractor.extract_victim_breakdown(normalized_msg)
             if detail:
                 extracted["korban_detail"] = detail
 
-            # 8. Dictionary-aware enrichment (expand abbreviations)
+            # 9. Dictionary-aware enrichment (expand abbreviations)
             try:
-                hints = await RuleExtractor.enrich_with_dictionary(message, db)
+                hints = await RuleExtractor.enrich_with_dictionary(normalized_msg, db)
                 if hints:
                     extracted["_dictionary_hints"] = hints
             except Exception as e:
@@ -363,13 +405,133 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
             tenant_context.reset(token)
 
     # =================================================================
-    # Individual extractors
+    # Individual extractors (English Primary Names + Indonesian Aliases)
     # =================================================================
 
     @staticmethod
-    async def extract_jenis_kejadian(message: str, db: AsyncSession) -> str:
-        """Match against Classification keywords in DB."""
+    def extract_vessel_context(message: str) -> Optional[Dict[str, str]]:
+        """
+        Detect maritime vessel + problem context (e.g. 'pompongnya mati', 'kapal mogok',
+        'perahu tenggelam') and infer incident_type, sub_incident_type, uses_vessel, and vessel_data.
+        Prevents 'mati' after a vessel from being misclassified as victim death (MD).
+        """
+        if not message:
+            return None
+
+        from app.services.autocorrect_service import AutoCorrectService
+        msg_norm = AutoCorrectService.normalize_colloquial_tokens(message).lower()
+
+        vessel_types = [
+            "speedboat", "ketinting", "tongkang", "pompong", "tugboat",
+            "perahu", "sampan", "jukung", "pancung", "kapal"
+        ]
+        vt_pattern = "|".join(vessel_types)
+
+        # Pattern A: Vessel followed by engine failure ('pompongnya mati', 'kapal mati mesin', 'pompong mogok')
+        engine_fail_match = re.search(
+            rf"\b({vt_pattern})(?:nya|ku|mu)?\s+(?:saya\s+|kami\s+|itu\s+|sedang\s+|mengalami\s+)?(mati\s+mesin|mati|mogok|rusak\s+mesin|patah\s+as|patah\s+kemudi|kehabisan\s+(?:bbm|solar|bensin|minyak))\b",
+            msg_norm,
+            re.IGNORECASE
+        )
+        if engine_fail_match:
+            vessel_raw = engine_fail_match.group(1).title()
+            problem_raw = engine_fail_match.group(2).lower()
+            if problem_raw in ("mati", "mati mesin", "mogok", "rusak mesin"):
+                sub_type = f"{vessel_raw} Mati Mesin"
+            elif "patah" in problem_raw:
+                sub_type = f"{vessel_raw} {problem_raw.title()}"
+            else:
+                sub_type = f"{vessel_raw} Kehabisan BBM"
+            return {
+                "incident_type": "LAKA KAPAL",
+                "sub_incident_type": sub_type,
+                "uses_vessel": "Ya",
+                "vessel_data": f"Jenis: {vessel_raw}",
+                "victim_condition": sub_type,
+            }
+
+        # Pattern B: Vessel followed by maritime accident ('pompong tenggelam', 'kapal terbalik', 'perahu hanyut')
+        accident_match = re.search(
+            rf"\b({vt_pattern})(?:nya|ku|mu)?\s+(?:saya\s+|kami\s+|itu\s+|sedang\s+|mengalami\s+)?(tenggelam|karam|terbalik|hanyut|kandas|terbakar|kebakaran|tabrakan|bocor|hilang\s+kontak|lost\s+contact|belum\s+kembali|belum\s+pulang)\b",
+            msg_norm,
+            re.IGNORECASE
+        )
+        if accident_match:
+            vessel_raw = accident_match.group(1).title()
+            problem_raw = accident_match.group(2).lower()
+            if problem_raw == "karam":
+                problem_title = "Tenggelam"
+            else:
+                problem_title = problem_raw.title()
+            sub_type = f"{vessel_raw} {problem_title}"
+            return {
+                "incident_type": "LAKA KAPAL",
+                "sub_incident_type": sub_type,
+                "uses_vessel": "Ya",
+                "vessel_data": f"Jenis: {vessel_raw}",
+                "victim_condition": sub_type,
+            }
+
+        return None
+
+    @staticmethod
+    def extract_reporter_relation(message: str) -> str:
+        """
+        Extract the relationship between the reporter and the victim(s) from conversational text.
+        Examples:
+          - 'Kakak saya pomponya mati' -> 'Keluarga Korban (Kakak)'
+          - 'Teman saya belum pulang melaut' -> 'Rekan Korban'
+          - 'Saya melihat kapal terbalik' -> 'Saksi Mata'
+        """
+        if not message:
+            return ""
+
         msg_lower = message.lower()
+
+        family_map = [
+            (r"\b(kakak|abang|kk)\s+(?:kandung\s+|laki-laki\s+|perempuan\s+|ipar\s+)?(?:saya|aku|kami|kita)\b", "Keluarga Korban (Kakak)"),
+            (r"\b(adik|adek)\s+(?:kandung\s+|laki-laki\s+|perempuan\s+|ipar\s+)?(?:saya|aku|kami|kita)\b", "Keluarga Korban (Adik)"),
+            (r"\b(ayah|bapak|bapa|papa|abi)\s+(?:kandung\s+|mertua\s+)?(?:saya|aku|kami|kita)\b", "Keluarga Korban (Ayah)"),
+            (r"\b(ibu|emak|mamak|mama|bunda)\s+(?:kandung\s+|mertua\s+)?(?:saya|aku|kami|kita)\b", "Keluarga Korban (Ibu)"),
+            (r"\b(anak|putra|putri)\s+(?:kandung\s+|laki-laki\s+|perempuan\s+)?(?:saya|aku|kami|kita)\b", "Keluarga Korban (Anak)"),
+            (r"\b(suami)\s+(?:saya|aku)\b", "Keluarga Korban (Suami)"),
+            (r"\b(istri)\s+(?:saya|aku)\b", "Keluarga Korban (Istri)"),
+            (r"\b(paman|om|pakcik|pakde)\s+(?:saya|aku|kami|kita)\b", "Keluarga Korban (Paman)"),
+            (r"\b(bibi|tante|makcik|bude)\s+(?:saya|aku|kami|kita)\b", "Keluarga Korban (Bibi)"),
+            (r"\b(kakek|nenek|keponakan|sepupu|ipar|mertua|menantu|keluarga|saudara|kerabat|orang\s+tua)\s+(?:saya|aku|kami|kita)\b", "Keluarga Korban"),
+        ]
+        for pattern, label in family_map:
+            if re.search(pattern, msg_lower):
+                return label
+
+        colleague_patterns = [
+            (r"\b(teman|rekan|kawan|sahabat|abk|anak\s+buah|anggota)\s+(?:kerja\s+|melaut\s+)?(?:saya|aku|kami|kita)\b", "Rekan Korban"),
+            (r"\b(tetangga)\s+(?:saya|aku|kami|kita)\b", "Tetangga / Warga"),
+            (r"\b(?:saya|kami)\s+melihat\b", "Saksi Mata"),
+        ]
+        for pattern, label in colleague_patterns:
+            if re.search(pattern, msg_lower):
+                return label
+
+        # Direct victim patterns (only if no third-person relation was matched above)
+        direct_victim_patterns = [
+            r"\b(?:kapal|pompong|perahu|speedboat|sampan|ketinting)\s+(?:saya|kami|kita)\b",
+            r"\b(?:kami|saya)\s+(?:mengalami|terjebak|terombang[\s-]*ambing|mati\s+mesin|hanyut|tenggelam|butuh\s+evakuasi)\b",
+        ]
+        for pattern in direct_victim_patterns:
+            if re.search(pattern, msg_lower):
+                return "Korban Langsung"
+
+        return ""
+
+    # Backward compatibility alias
+    extract_hubungan_pelapor = extract_reporter_relation
+
+    @staticmethod
+    async def extract_incident_type(message: str, db: AsyncSession) -> str:
+        """Match against Classification keywords in DB."""
+        from app.services.autocorrect_service import AutoCorrectService
+        msg_lower = AutoCorrectService.normalize_colloquial_tokens(message).lower() if message else ""
         try:
             result = await db.execute(select(Classification))
             classifications = result.scalars().all()
@@ -405,19 +567,22 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
                 )
                 dict_incidents = result.scalars().all()
                 for dw in dict_incidents:
-
                     if dw.word and dw.word.lower() in msg_lower and dw.ner_target:
-                        # Map 'Laka Kapal' -> 'LAKA KAPAL', etc.
                         return dw.ner_target.upper()
             except Exception as e:
                 logger.error(f"[RuleExtractor] Failed to extract jenis kejadian from DictionaryWord: {e}")
 
         return ""
 
+    # Backward compatibility alias
+    extract_jenis_kejadian = extract_incident_type
+
     @staticmethod
-    async def extract_lokasi(message: str, db: AsyncSession) -> str:
+    async def extract_location(message: str, db: AsyncSession) -> str:
         """Match against Location DB and common location patterns."""
-        msg_lower = message.lower()
+        from app.services.autocorrect_service import AutoCorrectService
+        msg_normalized = AutoCorrectService.normalize_colloquial_tokens(message) if message else ""
+        msg_lower = msg_normalized.lower()
 
         # Check explicit Location names from DB
         try:
@@ -432,7 +597,7 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
         # Check approved location names in DictionaryWord (Cache or DB)
         if RuleExtractor._cache_loaded:
             cache_words = []
-            for k in ["Nama Tempat", "Lokasi", "Geografi", "LOCATION"]:
+            for k in ["Nama Tempat", "Lokasi", "Geografi", "LOCATION", "MEDAN_PERAIRAN"]:
                 cache_words.extend(RuleExtractor._dictionary_cache.get(k, []))
             cache_words.sort(key=lambda x: len(x["word"] or ""), reverse=True)
             for item in cache_words:
@@ -445,24 +610,23 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
                 result = await db.execute(
                     select(DictionaryWord).where(
                         DictionaryWord.status == DictionaryStatus.APPROVED,
-                        DictionaryWord.ner_type.in_(["Nama Tempat", "Lokasi", "Geografi", "LOCATION"])
+                        DictionaryWord.ner_type.in_(["Nama Tempat", "Lokasi", "Geografi", "LOCATION", "MEDAN_PERAIRAN"])
                     )
                 )
                 dict_locations = result.scalars().all()
                 for dw in dict_locations:
-
                     if dw.word and dw.word.lower() in msg_lower:
                         return dw.word.title()
             except Exception as e:
                 logger.error(f"[RuleExtractor] Failed to extract lokasi from DictionaryWord: {e}")
 
-        # Fetch Location Prefixes from Dictionary
-        prefixes = ["di dekat", "di sekitar", "dekat", "sekitar", "di"] # Default fallbacks
+        # Fetch Location Prefixes from Dictionary (merge with default prefixes so compound prefixes aren't lost)
+        default_prefixes = ["di dekat", "di sekitar", "dekat", "sekitar", "di", "pada"]
+        prefixes = list(default_prefixes)
         if RuleExtractor._cache_loaded:
             db_prefixes = [item["word"].strip().lower() for item in RuleExtractor._dictionary_cache.get("LOCATION_PREFIX", []) if item.get("word") and item["word"].strip()]
             if db_prefixes:
-                db_prefixes.sort(key=len, reverse=True)
-                prefixes = db_prefixes
+                prefixes = list(set(default_prefixes + db_prefixes))
         else:
             try:
                 from app.models.knowledge_models import DictionaryWord, DictionaryStatus
@@ -474,14 +638,13 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
                 )
                 db_prefixes = [row.strip().lower() for row in result.scalars().all() if row.strip()]
                 if db_prefixes:
-                    # Sort by length descending to match longest prefix first
-                    db_prefixes.sort(key=len, reverse=True)
-                    prefixes = db_prefixes
+                    prefixes = list(set(default_prefixes + db_prefixes))
             except Exception as e:
                 logger.warning(f"[RuleExtractor] Failed to load location prefixes from dictionary: {e}")
 
-        # Build regex group for prefixes: (?:di dekat|di sekitar|dekat|sekitar|di)
-        # We add \s+ after the prefix
+        prefixes.sort(key=len, reverse=True)
+
+        # Build regex group for prefixes: (?:di dekat|di sekitar|dekat|sekitar|di|pada)
         prefix_group = r"(?:" + "|".join(re.escape(p) for p in prefixes) + r")\s+"
 
         # Location types from pre-warmed cache or fallback
@@ -491,13 +654,14 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
             loc_types = list(set(loc_types + db_loc_types))
         if not loc_types:
             loc_types = ["perairan", "sungai", "gunung", "laut", "pantai", "danau", "selat", "hutan", "tanjung", "bukit", "desa", "kelurahan", "kecamatan", "jalan", "jembatan", "pulau"]
+        elif "pulau" not in loc_types:
+            loc_types.append("pulau")
         loc_types.sort(key=len, reverse=True)
 
-        
         patterns = []
         for loc_type in loc_types:
             patterns.append(rf"{prefix_group}{loc_type}\s+([a-z0-9\s]+)")
-        
+
         # Generic fallback
         patterns.extend([
             r"lokasi\s+di\s+([a-z0-9\s]+)",
@@ -511,35 +675,56 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
             if db_stops:
                 stop_words = list(set(stop_words + db_stops))
         stop_words.sort(key=len, reverse=True)
-        
+
         stop_pattern_str = r"\b(?:" + "|".join(re.escape(sw) for sw in stop_words) + r")\b|\bpukul\s*\d+|\bjam\s*\d+|\bpada\s+jam\b"
         stop_regex = re.compile(stop_pattern_str, re.IGNORECASE)
+
+        known_islands = {"senoa", "jemaja", "subi", "midai", "serasan", "panjang", "tiga", "sedanau", "bunguran", "laut"}
+        if RuleExtractor._cache_loaded and RuleExtractor._dictionary_cache.get("ISLAND"):
+            for item in RuleExtractor._dictionary_cache["ISLAND"]:
+                if item.get("word"):
+                    known_islands.add(item["word"].strip().lower())
 
         for p in patterns:
             match = re.search(p, msg_lower)
             if match:
                 raw = match.group(0).strip()
-                # Hapus prefix navigasi: "lokasi di ", "lokasi: ", "di "
+                # Check if proximity prefix ('di dekat', 'dekat', 'di sekitar', 'sekitar') was used with an island/water body
+                is_proximity = bool(re.match(r"^(?:di\s+)?(?:dekat|sekitar)\s+", raw, flags=re.IGNORECASE))
+
+                # Strip navigation prefix: "lokasi di ", "lokasi: ", "di dekat ", "dekat ", "di sekitar ", "sekitar ", "di ", "pada "
                 raw = re.sub(
-                    r'^(?:lokasi\s+di\s+|lokasi\s*:\s*|di\s+)',
+                    r'^(?:lokasi\s+di\s+|lokasi\s*:\s*|(?:di\s+)?(?:dekat|sekitar)\s+|di\s+|pada\s+)',
                     '', raw, flags=re.IGNORECASE
                 )
-                
+
                 # Trim location text if a boundary transition word is found
                 boundary_match = stop_regex.search(raw)
                 if boundary_match:
                     raw = raw[:boundary_match.start()].strip()
-                    
-                # Ambil maksimal 4 kata (hindari mengambil kalimat panjang)
+
+                # Take at most 4 words (avoid capturing long sentences)
                 words = raw.split()
                 location = " ".join(words[:4]).strip(",.:; ")
                 if len(location) >= 3:
-                    return location.title()
+                    loc_title = location.title()
+                    # Normalize proximity to an island ('dekat pulau senoa' -> 'Perairan Pulau Senoa')
+                    if is_proximity and (
+                        location.lower().startswith("pulau ")
+                        or any(isl in location.lower().split() for isl in known_islands)
+                    ):
+                        if not loc_title.lower().startswith("perairan "):
+                            loc_title = f"Perairan {loc_title}"
+                    return loc_title
 
         return ""
 
+    # Backward compatibility alias
+    extract_lokasi = extract_location
+
+
     @staticmethod
-    def extract_waktu(message: str) -> str:
+    def extract_time(message: str) -> str:
         """Extract time references using regex.
         Guard: hasil harus <= 60 karakter, lebih dari itu dianggap false positive.
         """
@@ -591,6 +776,9 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
 
         return ""
 
+    # Backward compatibility alias
+    extract_waktu = extract_time
+
     @staticmethod
     def _normalize_num_format(text: str) -> str:
         """
@@ -611,7 +799,7 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
         return normalized
 
     @staticmethod
-    def extract_korban(message: str) -> str:
+    def extract_victim_count(message: str) -> str:
         """Extract victim counts. Prefers victim-specific count (tenggelam/hilang)
         over total involved. Handles format 'N (kata) orang' via normalization.
         Also handles named victim format: 'Identitas korban, Arman Laki-laki 46 Tahun'.
@@ -776,10 +964,13 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
 
         return ""
 
-    # ── NEW: Koordinat ────────────────────────────────────────────
+    # Backward compatibility alias
+    extract_korban = extract_victim_count
+
+    # ── Coordinates ───────────────────────────────────────────────
 
     @staticmethod
-    def extract_koordinat(message: str) -> Optional[Tuple[float, float]]:
+    def extract_coordinates(message: str) -> Optional[Tuple[float, float]]:
         """
         Extract coordinates from message text.
         Supports:
@@ -858,6 +1049,9 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
 
         return None
 
+    # Backward compatibility alias
+    extract_koordinat = extract_coordinates
+
     @staticmethod
     def _dms_to_decimal(match: re.Match) -> float:
         """Convert a DMS regex match to decimal degrees."""
@@ -875,22 +1069,24 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
 
         return round(decimal, 6)
 
-    # ── NEW: Data Kapal ───────────────────────────────────────────
+    # ── Vessel Data ───────────────────────────────────────────────
 
     @staticmethod
-    def extract_data_kapal(message: str) -> str:
+    def extract_vessel_data(message: str) -> str:
         """
         Extract vessel/ship info from message.
         Captures: vessel type, prefix, name, GT, and color from the dynamically loaded dictionary.
         All matching is fully case-insensitive to handle panicking reporters typing in lowercase.
-        Supports multiple vessel extractions.
+        Supports multiple vessel extractions and enclitic suffixes (-nya, -ku, -mu).
         """
-        msg_lower = message.lower()
+        from app.services.autocorrect_service import AutoCorrectService
+        msg_norm = AutoCorrectService.normalize_colloquial_tokens(message) if message else ""
+        msg_lower = msg_norm.lower()
 
         # 1. Load keywords from database dictionary cache (fallbacks to guarantee execution safety)
         vessel_types = [item["word"].lower() for item in RuleExtractor._dictionary_cache.get("VESSEL_TYPE", [])]
         if not vessel_types:
-            vessel_types = ["pompong", "speedboat", "perahu", "kapal", "yacht", "tugboat", "tongkang"]
+            vessel_types = ["pompong", "speedboat", "perahu", "kapal", "yacht", "tugboat", "tongkang", "sampan", "ketinting", "jukung", "pancung"]
 
         vessel_prefixes = [item["word"].upper() for item in RuleExtractor._dictionary_cache.get("VESSEL_PREFIX", [])]
         if not vessel_prefixes:
@@ -919,20 +1115,20 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
         candidates = []
         # Find prefixes
         for vp in vessel_prefixes:
-            for match in re.finditer(rf"\b{re.escape(vp)}\b", message, re.IGNORECASE):
+            for match in re.finditer(rf"\b{re.escape(vp)}\b", msg_norm, re.IGNORECASE):
                 candidates.append({
                     "start": match.start(),
                     "end": match.end(),
                     "word": match.group(0),
                     "type": "PREFIX"
                 })
-        # Find types
+        # Find types (including optional possessive suffix -nya/-ku/-mu)
         for vt in vessel_types:
-            for match in re.finditer(rf"\b{re.escape(vt)}\b", msg_lower):
+            for match in re.finditer(rf"\b({re.escape(vt)})(?:nya|ku|mu)?\b", msg_lower):
                 candidates.append({
                     "start": match.start(),
                     "end": match.end(),
-                    "word": match.group(0),
+                    "word": match.group(1),
                     "type": "TYPE"
                 })
 
@@ -958,8 +1154,8 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
             # Calculate the window of text for this vessel
             start_pos = match_info["end"]
             # The window ends at the start of the next vessel match, or end of message
-            next_start = vessel_matches[idx + 1]["start"] if idx + 1 < len(vessel_matches) else len(message)
-            substring = message[start_pos:next_start]
+            next_start = vessel_matches[idx + 1]["start"] if idx + 1 < len(vessel_matches) else len(msg_norm)
+            substring = msg_norm[start_pos:next_start]
 
             # Parse GT (Gross Tonnage) within this substring
             gt_val = ""
@@ -998,7 +1194,7 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
                 color_prefixes + location_prefixes +
                 [vp.lower() for vp in vessel_prefixes] +
                 [vt.lower() for vt in vessel_types] +
-                ["gt", "gts", "g.t", "dan", "yang", "dari", "ke", "pukul", "jam", "di", "pada", "dekat", "sekitar"]
+                ["gt", "gts", "g.t", "dan", "yang", "dari", "ke", "pukul", "jam", "di", "pada", "dekat", "sekitar", "saya", "kami", "kita", "mogok"]
             )
             # Add colors
             for col in vessel_colors:
@@ -1038,10 +1234,13 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
             return "\n".join(vessel_strings)
         return ""
 
-    # ── NEW: Jumlah Korban Detail ─────────────────────────────────
+    # Backward compatibility alias
+    extract_data_kapal = extract_vessel_data
+
+    # ── Victim Breakdown Detail ───────────────────────────────────
 
     @staticmethod
-    def extract_jumlah_korban_detail(message: str) -> Optional[Dict[str, str]]:
+    def extract_victim_breakdown(message: str) -> Optional[Dict[str, str]]:
         """
         Extract detailed victim breakdown: selamat, meninggal (MD), hilang (DP).
         Handles format 'N (kata) orang selamat' via normalization.
@@ -1064,6 +1263,10 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
                 detail[status] = match.group(1)
 
         return detail if detail else None
+
+    # Backward compatibility alias
+    extract_jumlah_korban_detail = extract_victim_breakdown
+
 
     # ── NEW: Dictionary Enrichment ────────────────────────────────
 

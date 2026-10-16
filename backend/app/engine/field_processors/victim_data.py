@@ -7,7 +7,7 @@ from app.engine.field_processors.base import BaseFieldProcessor
 
 logger = logging.getLogger(__name__)
 
-class DataKorbanFieldProcessor(BaseFieldProcessor):
+class VictimDataFieldProcessor(BaseFieldProcessor):
     """Processes and validates individual/multiple victim details ('data_korban') field."""
 
     async def validate_and_extract(
@@ -48,7 +48,7 @@ class DataKorbanFieldProcessor(BaseFieldProcessor):
         
         try:
             from app.services.message_formatter import message_formatter
-            count_word = message_formatter.angka_ke_kata(count).title()
+            count_word = message_formatter.number_to_words(count).title()
         except Exception:
             count_word = str(count)
             
@@ -63,3 +63,6 @@ class DataKorbanFieldProcessor(BaseFieldProcessor):
         buttons = ["Belum Tahu"]
         
         return q_text, buttons
+
+
+DataKorbanFieldProcessor = VictimDataFieldProcessor

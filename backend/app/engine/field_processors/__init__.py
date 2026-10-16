@@ -1,21 +1,13 @@
 from app.engine.field_processors.base import BaseFieldProcessor
-from app.engine.field_processors.time import WaktuFieldProcessor as TimeFieldProcessor
-from app.engine.field_processors.location import LokasiFieldProcessor as LocationFieldProcessor
-from app.engine.field_processors.victim import KorbanFieldProcessor as VictimFieldProcessor
-from app.engine.field_processors.victim_condition import KorbanKondisiFieldProcessor as VictimConditionFieldProcessor
-from app.engine.field_processors.victim_data import DataKorbanFieldProcessor as VictimDataFieldProcessor
-from app.engine.field_processors.coordinate import KoordinatFieldProcessor as CoordinateFieldProcessor
+from app.engine.field_processors.time import TimeFieldProcessor, WaktuFieldProcessor
+from app.engine.field_processors.location import LocationFieldProcessor, LokasiFieldProcessor
+from app.engine.field_processors.victim import VictimFieldProcessor, KorbanFieldProcessor
+from app.engine.field_processors.victim_condition import VictimConditionFieldProcessor, KorbanKondisiFieldProcessor
+from app.engine.field_processors.victim_data import VictimDataFieldProcessor, DataKorbanFieldProcessor
+from app.engine.field_processors.coordinate import CoordinateFieldProcessor, KoordinatFieldProcessor
 from app.engine.field_processors.reporter_location import ReporterLocationFieldProcessor
 from app.engine.field_processors.vehicle import VehicleFieldProcessor
 from app.engine.field_processors.default import DefaultFieldProcessor
-
-# Backward compatibility class aliases
-WaktuFieldProcessor = TimeFieldProcessor
-LokasiFieldProcessor = LocationFieldProcessor
-KorbanFieldProcessor = VictimFieldProcessor
-KorbanKondisiFieldProcessor = VictimConditionFieldProcessor
-DataKorbanFieldProcessor = VictimDataFieldProcessor
-KoordinatFieldProcessor = CoordinateFieldProcessor
 
 def get_field_processor(field_name: str) -> BaseFieldProcessor:
     """Registry function to resolve a field name to its corresponding FieldProcessor."""

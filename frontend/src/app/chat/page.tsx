@@ -695,6 +695,25 @@ export default function ChatPage() {
             ) : (
               /* Extracted Fields Cards */
               <div className="space-y-2.5">
+                {/* Field: Jenis Kejadian & Sub-Kejadian */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex gap-3 items-start">
+                  <div className="p-2 bg-amber-100 text-amber-700 rounded-lg shrink-0">
+                    <Info className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Jenis Kejadian</span>
+                    <p className={`text-xs font-semibold mt-0.5 break-words ${
+                      activeSession.extracted_data.jenis_kejadian ? 'text-slate-800' : 'text-slate-400 italic'
+                    }`}>
+                      {activeSession.extracted_data.jenis_kejadian
+                        ? activeSession.extracted_data.sub_jenis_kejadian
+                          ? `${activeSession.extracted_data.jenis_kejadian} (${activeSession.extracted_data.sub_jenis_kejadian})`
+                          : activeSession.extracted_data.jenis_kejadian
+                        : 'Belum diperoleh'}
+                    </p>
+                  </div>
+                </div>
+
                 {/* Field: Waktu */}
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex gap-3 items-start">
                   <div className="p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0">
@@ -725,6 +744,21 @@ export default function ChatPage() {
                   </div>
                 </div>
 
+                {/* Field: Sarana / Kapal (if present) */}
+                {(activeSession.extracted_data.data_kapal || activeSession.extracted_data.pakai_kapal) && (
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex gap-3 items-start">
+                    <div className="p-2 bg-cyan-100 text-cyan-700 rounded-lg shrink-0">
+                      <Globe className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Data Sarana / Kapal</span>
+                      <p className="text-xs font-semibold mt-0.5 break-words text-slate-800">
+                        {activeSession.extracted_data.data_kapal || `Menggunakan Kapal: ${activeSession.extracted_data.pakai_kapal}`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Field: Data Korban */}
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex gap-3 items-start">
                   <div className="p-2 bg-rose-100 text-rose-700 rounded-lg shrink-0">
@@ -739,6 +773,40 @@ export default function ChatPage() {
                     </p>
                   </div>
                 </div>
+
+                {/* Field: Hubungan Pelapor */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex gap-3 items-start">
+                  <div className="p-2 bg-purple-100 text-purple-700 rounded-lg shrink-0">
+                    <User className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Hubungan Pelapor</span>
+                    <p className={`text-xs font-semibold mt-0.5 break-words ${
+                      activeSession.extracted_data.pelapor_hubungan ? 'text-slate-800' : 'text-slate-400 italic'
+                    }`}>
+                      {activeSession.extracted_data.pelapor_hubungan || 'Belum diperoleh'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Field: Kata Baru (Pending Operator Review) */}
+                {Array.isArray(activeSession.extracted_data.unknown_terms) && activeSession.extracted_data.unknown_terms.length > 0 && (
+                  <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200 flex flex-col gap-1.5">
+                    <span className="text-[10px] text-amber-800 font-bold uppercase tracking-wider">
+                      Kata Baru (Menunggu Koreksi Operator)
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {activeSession.extracted_data.unknown_terms.map((term: string, idx: number) => (
+                        <span
+                          key={idx}
+                          className="text-[11px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-semibold border border-amber-300"
+                        >
+                          {term}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

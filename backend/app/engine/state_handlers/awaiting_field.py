@@ -50,7 +50,7 @@ class AwaitingFieldStateHandler(BaseStateHandler):
         if is_valid:
             # Check if this is a detailed message. If so, run hybrid extractor
             # to extract any other fields that might be answered in this message.
-            if len(message.strip()) > 10 and not any(kw in message.lower() for kw in SKIP_WORDS):
+            if len(message.strip()) > 10 and normalized_answer not in SKIP_WORDS:
                 try:
                     from app.services.incident_data_service import extract_incident_data
                     try:

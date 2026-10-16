@@ -72,7 +72,11 @@ class LLMRagService:
     async def get_dictionary_context(self, db: AsyncSession, query_text: str = None) -> str:
         """Fetch approved dictionary words, classifications, negative constraints, and dynamic vector similarity to inject into LLM context."""
         try:
-            if not db:
+            # Defensive swap if caller accidentally passed (query_text, db)
+            if isinstance(db, str) and query_text is not None and not isinstance(query_text, str):
+                db, query_text = query_text, db
+
+            if not db or isinstance(db, str):
                 return ""
 
             info = getattr(db, "info", None)
@@ -686,29 +690,48 @@ class LLMRagService:
             similar = await self.search_similar_reports(message, db, limit=2)
             few_shot_str = self._build_few_shot_context(similar)
 
+        # Ensure complete draft schema so AI can fill fields missed by regex without dropping existing ones
+        complete_draft = {
+            "jenis_kejadian": raw_data.get("jenis_kejadian"),
+            "sub_jenis_kejadian": raw_data.get("sub_jenis_kejadian"),
+            "lokasi_teks": raw_data.get("lokasi_teks"),
+            "waktu": raw_data.get("waktu"),
+            "korban": raw_data.get("korban"),
+            "kondisi_korban": raw_data.get("kondisi_korban"),
+            "pakai_kapal": raw_data.get("pakai_kapal"),
+            "data_kapal": raw_data.get("data_kapal"),
+            "pelapor_hubungan": raw_data.get("pelapor_hubungan"),
+            "kronologi": raw_data.get("kronologi") or message,
+        }
+        for k, v in raw_data.items():
+            if k not in complete_draft and not k.startswith("_"):
+                complete_draft[k] = v
+
         system_prompt = f"""Anda adalah Hakim Ekstraksi NLP untuk BASARNAS Indonesia.
-Tugas Anda adalah meninjau hasil tebakan awal (draf) dari mesin Rule-Based dan mengoreksinya berdasarkan konteks kalimat asli dari pelapor.
+Tugas Anda adalah meninjau hasil tebakan awal (draf) dari mesin Rule-Based dan melengkapi/mengoreksinya berdasarkan konteks kalimat asli dari pelapor.
 
 {context}
 
 {few_shot_str}
 
-ATURAN KOREKSI:
-1. Jika pelapor menyebut waktu relatif ("tadi siang", "barusan"), biarkan teks aslinya (misal "Tadi Siang") atau artikan maknanya jika jelas. JANGAN memaksakan format jam absolut (misal 12.00) jika pelapor murni hanya mengetik waktu relatif.
-2. Periksa nama korban. Jika mesin menebak status korban "Tidak Tahu" tapi dalam konteks kalimat kata "Tahu" adalah nama orang, perbaiki menjadi nama orang "Tahu" dengan status yang sesuai kalimat (misal: "Dalam Pencarian").
-3. Bersihkan kolom 'lokasi_teks'. Hapus kata-kata keterangan waktu (seperti "kejadiannya jam", "pukul", "tadi"), kata kerja (seperti "tenggelam", "hanyut"), atau kata sambung yang tidak semestinya menjadi bagian dari nama lokasi (contoh: "Pantai Piwang Kejadiannya Jam" wajib dikoreksi menjadi "Pantai Piwang").
-4. Anda HANYA boleh memodifikasi data yang salah tafsir. Jika draf dari mesin sudah benar dan masuk akal secara konteks, pertahankan.
-5. Dilarang keras mengekstrak nama kejadian/musibah atau kata kerja seperti "terbakar", "kelem", "mati mesin", "tenggelam", "hanyut" sebagai nama kapal/kendaraan di dalam data_kapal atau data_korban. Jika tidak ada nama spesifik yang diberikan, set nilai tersebut ke null.
-6. Output HARUS murni JSON yang mewarisi struktur draf, tanpa tambahan teks atau awalan apapun.
+ATURAN KOREKSI & ZERO-HALLUCINATION (WAJIB DITAATI):
+1. ZERO-HALLUCINATION: Gunakan hanya fakta dari TEKS ASLI PELAPOR, GLOSARIUM & KOSAKATA SAR, serta KOSAKATA SEMANTIK VEKTOR di atas. DILARANG KERAS mengarang fakta, angka, atau makna kata yang tidak ada di kalimat pelapor. Jika ada kata yang tidak dipahami, pertahankan pesan asli pada kolom 'kronologi'.
+2. JENIS & SUB-JENIS KEJADIAN: Jika kalimat menyebutkan kapal/perahu/pompong mati atau mogok (contoh: "pompongnya mati"), maka 'jenis_kejadian' adalah "LAKA KAPAL", 'sub_jenis_kejadian' adalah "Pompong Mati Mesin", 'pakai_kapal' adalah "Ya", dan 'data_kapal' memuat "Jenis: Pompong". Jangan mengubahnya menjadi orang meninggal (MD).
+3. LOKASI PERAIRAN PULAU: Jika lokasi menyebutkan "dekat pulau X" atau "sekitar pulau X" (contoh: "didekat pulau senoa"), standarisasikan 'lokasi_teks' menjadi "Perairan Pulau X" (contoh: "Perairan Pulau Senoa"). Bersihkan kata keterangan waktu atau kata kerja dari 'lokasi_teks'.
+4. HUBUNGAN PELAPOR ('pelapor_hubungan'): Jika pelapor menyebutkan hubungan dengan korban (contoh: "Kakak saya", "Adik saya", "Ayah saya", "Suami saya", "Teman saya"), pastikan 'pelapor_hubungan' terisi (contoh: "Keluarga Korban (Kakak)" atau "Rekan Korban").
+5. WAKTU RELATIF: Jika pelapor menyebut waktu relatif ("tadi siang", "barusan"), biarkan teks aslinya (misal "Tadi Siang"). Jangan mengarang jam absolut jika tidak disebutkan.
+6. NAMA KAPAL: Dilarang mengekstrak kata kerja musibah ("terbakar", "kelem", "mati mesin", "tenggelam", "hanyut") sebagai Nama kapal. Namun tetap pertahankan jenis sarana (contoh: "Jenis: Pompong") di dalam 'data_kapal'.
+7. PERTAHANKAN DATA VALID: Jika draf dari mesin Rule-Based sudah benar dan masuk akal secara konteks, PERTAHANKAN nilainya (jangan dikosongkan menjadi null).
+8. Output HARUS murni JSON yang valid tanpa tambahan teks apapun.
 """
         prompt = f"""
 TEKS ASLI PELAPOR:
 {message}
 
 DRAF TEBAKAN MESIN (JSON):
-{json.dumps(raw_data, indent=2)}
+{json.dumps(complete_draft, indent=2)}
 
-Tugas: Perbaiki draf JSON di atas sesuai dengan konteks bahasa pelapor. Output hanya JSON valid.
+Tugas: Perbaiki dan lengkapi draf JSON di atas sesuai dengan konteks bahasa pelapor tanpa berhalusinasi. Output hanya JSON valid.
 """
         try:
             response_text = await ai_provider_manager.llm_generate(
@@ -724,12 +747,16 @@ Tugas: Perbaiki draf JSON di atas sesuai dengan konteks bahasa pelapor. Output h
             
             validated_data = json.loads(response_text)
             
-            # Ensure the output remains a dict and merges back any missing original keys just in case
             if isinstance(validated_data, dict):
-                for k, v in raw_data.items():
-                    if k not in validated_data:
-                        validated_data[k] = v
-                return validated_data
+                merged = dict(raw_data)
+                for k, v in validated_data.items():
+                    if v is not None and str(v).strip() not in ("", "null", "None", "-"):
+                        merged[k] = v
+                # Ensure deterministic RuleExtractor fields are never wiped out if AI returned null/empty
+                for protected_key in ("sub_jenis_kejadian", "pelapor_hubungan", "pakai_kapal", "data_kapal", "lokasi_teks", "jenis_kejadian"):
+                    if raw_data.get(protected_key) and not merged.get(protected_key):
+                        merged[protected_key] = raw_data[protected_key]
+                return merged
             return raw_data
         except Exception as e:
             logger.error(f"Failed to validate extraction with AI: {str(e)}")
@@ -923,7 +950,7 @@ Respond ONLY with the JSON object. No explanation."""
         except Exception as e:
             logger.error(f"Error saving unknown words: {e}")
 
-    async def parse_data_korban(self, text: str, db = None) -> list[dict]:
+    async def parse_victim_data(self, text: str, db = None) -> list[dict]:
         """
         Parses Indonesian raw text containing victim details (names, age, gender, address)
         into a structured list of dictionaries matching standard BASARNAS victim schema.
@@ -1008,6 +1035,9 @@ Kembalikan HANYA berupa valid JSON sesuai skema di atas tanpa penjelasan tambaha
             
         return []
 
+    # Backward compatibility alias
+    parse_data_korban = parse_victim_data
+
     async def refine_full_report_draft(
         self,
         extracted_data: dict,
@@ -1017,12 +1047,13 @@ Kembalikan HANYA berupa valid JSON sesuai skema di atas tanpa penjelasan tambaha
     ) -> dict:
         """
         Runs a single unified LLM pass at the end of the conversation to normalize and refine
-        all raw/unformatted fields collected during dialogue turns.
+        all raw/unformatted fields collected during dialogue turns, strictly grounded in
+        Vector Memory and SAR Dictionary (Zero-Hallucination).
         """
         import json
         from app.services.ai_providers import ai_provider_manager
         
-        # Fetch similar reports
+        # Fetch similar reports from VectorMemory
         few_shot_str = ""
         if db:
             cron = extracted_data.get("kronologi") or ""
@@ -1031,7 +1062,7 @@ Kembalikan HANYA berupa valid JSON sesuai skema di atas tanpa penjelasan tambaha
                 few_shot_str = self._build_few_shot_context(similar)
 
         prompt = f"""
-Anda adalah asisten AI BASARNAS Indonesia yang bertugas merapikan dan menstandardisasi draf laporan SAR Awal.
+Anda adalah asisten AI BASARNAS Indonesia yang bertugas merapikan dan menstandardisasi draf laporan Resmi Info Awal SAR.
 Tinjau data mentah laporan berikut yang dikumpulkan dari percakapan pelapor:
 
 DATA MENTAH LAPORAN (JSON):
@@ -1040,12 +1071,17 @@ DATA MENTAH LAPORAN (JSON):
 WAKTU ACUAN SAAT INI (LOKAL):
 {current_time_str}
 
-KONTEKS TAMBAHAN (KAMUS & ATURAN):
+KONTEKS TAMBAHAN (KAMUS ISTILAH & DATA VEKTOR SAR):
 {context}
 
 {few_shot_str}
 
 Tugas Anda adalah memproses dan menghasilkan JSON baru yang telah disempurnakan dengan aturan wajib berikut:
+
+0. ATURAN ZERO-HALLUCINATION (SANGAT PENTING):
+   - Gunakan HANYA data dari DATA MENTAH LAPORAN, KAMUS ISTILAH, dan DATA VEKTOR SAR di atas.
+   - DILARANG KERAS berhalusinasi, mengarang fakta baru, atau menebak makna kata yang tidak ada di kamus/vektor.
+   - Jika ada kata/istilah dari pelapor yang tidak dapat dipahami maknanya melalui kamus atau vektor, TAMPILKAN PESAN/KATA ASLI APA ADANYA.
 
 1. KOLOM 'waktu':
    - Konversikan teks waktu mentah menjadi format PDTW (Pola Data Tanggal Waktu) standar BASARNAS (format: DDHHMM offset, contoh '06041735 G' untuk tanggal 6 Juni pukul 17:35 WIB).
@@ -1060,16 +1096,18 @@ Tugas Anda adalah memproses dan menghasilkan JSON baru yang telah disempurnakan 
    - Jika berupa list kosong atau berisi data nihil, pertahankan list tersebut.
 
 3. KOLOM 'lokasi_teks':
-   - Bersihkan dari noise seperti kata keterangan waktu ("jam 8"), kata kerja ("tenggelam", "hanyut"), atau kata sambung yang tidak relevan. Pastikan murni nama tempat/perairan/pantai.
+   - Bersihkan dari noise seperti kata keterangan waktu ("jam 8"), kata kerja ("tenggelam", "hanyut"), atau kata sambung yang tidak relevan.
+   - Jika lokasi di dekat/sekitar pulau (contoh: "dekat pulau senoa"), pastikan tertulis "Perairan Pulau Senoa".
 
-4. KOLOM 'jenis_kejadian':
+4. KOLOM 'jenis_kejadian' & 'sub_jenis_kejadian':
    - Tentukan klasifikasi kejadian yang paling tepat berdasarkan seluruh konteks informasi. Pilihannya adalah: 'KMM', 'Laka Kapal', 'Laka Pesawat', 'KPK', 'Bencana'.
+   - Pertahankan 'sub_jenis_kejadian' spesifik jika ada (contoh: "Pompong Mati Mesin", "Kapal Tenggelam").
 
-5. KOLOM 'data_kapal' & 'nama_kapal':
-   - Bersihkan nama kapal/data kapal. Dilarang keras mengisi kolom ini dengan kata kerja atau kejadian seperti 'Terbakar', 'Kelem', 'Mati Mesin', 'Tenggelam'. Jika pelapor hanya berkata 'kapal terbakar' tanpa memberi nama kapal spesifik (misal 'KM Sinar Baru'), maka kolom ini wajib diisi null atau dikosongkan.
+5. KOLOM 'data_kapal':
+   - Pertahankan jenis, warna, atau GT kapal (contoh: "Jenis: Pompong"). Dilarang mengisi Nama kapal dengan kata kerja musibah seperti 'Terbakar', 'Kelem', 'Mati Mesin', 'Tenggelam'.
 
 6. KOLOM 'pelapor_nama' & 'pelapor_hubungan':
-   - Bersihkan dari frasa pengantar (contoh: "nama saya Budi" -> "Budi", "saya sendiri istrinya" -> "Istri").
+   - Bersihkan dari frasa pengantar (contoh: "nama saya Budi" -> "Budi", "kakak saya" -> "Keluarga Korban (Kakak)").
 
 Keluarkan HANYA JSON hasil penyempurnaan, dengan struktur kunci yang sama seperti data input di atas. Jangan sertakan teks penjelasan atau pembungkus markdown selain format JSON murni.
 """
@@ -1081,7 +1119,7 @@ Keluarkan HANYA JSON hasil penyempurnaan, dengan struktur kunci yang sama sepert
 
             response = await ai_provider_manager.llm_generate(
                 prompt=prompt,
-                system_prompt="Anda adalah asisten penyempurnaan data laporan SAR BASARNAS. Kembalikan HANYA JSON.",
+                system_prompt="Anda adalah asisten penyempurnaan data laporan SAR BASARNAS. Kembalikan HANYA JSON tanpa halusinasi.",
                 temperature=0.0,
                 json_mode=True,
                 timeout=30.0,
@@ -1090,9 +1128,9 @@ Keluarkan HANYA JSON hasil penyempurnaan, dengan struktur kunci yang sama sepert
             if response:
                 refined = json.loads(response)
                 if isinstance(refined, dict):
-                    # Merge back keys to ensure no data is lost
+                    # Merge back keys to ensure no data is lost or accidentally emptied
                     for k, v in extracted_data.items():
-                        if k not in refined:
+                        if k not in refined or (v and refined.get(k) in (None, "", "null", "None")):
                             refined[k] = v
                     return refined
         except Exception as e:
@@ -1150,7 +1188,7 @@ Keluarkan HANYA JSON hasil penyempurnaan, dengan struktur kunci yang sama sepert
 
         return results
 
-    async def answer_bantuan_sar(self, question: str, db: AsyncSession = None, allow_internet: bool = True) -> str:
+    async def answer_sar_info(self, question: str, db: AsyncSession = None, allow_internet: bool = True) -> str:
         """
         Answer informational user queries about SAR SOP, regulations, and operational contacts.
         Combines local SOP documents, vector memory, dictionary context, and trusted internet search.
@@ -1167,7 +1205,7 @@ Keluarkan HANYA JSON hasil penyempurnaan, dengan struktur kunci yang sama sepert
                 except Exception as se:
                     logger.warning(f"SOP chunk search failed: {se}")
                 try:
-                    dict_context = await self.get_dictionary_context(question, db)
+                    dict_context = await self.get_dictionary_context(db, query_text=question)
                 except Exception as de:
                     logger.warning(f"Dictionary context fetch failed: {de}")
 
@@ -1314,6 +1352,9 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
             "- Standard Operating Procedure (SOP) Siaga Call Center 115 & Komando Operasi BASARNAS\n"
             "- Pedoman Teknis Pertolongan Pertama (Medical First Responder) BASARNAS"
         )
+
+    # Backward compatibility alias
+    answer_bantuan_sar = answer_sar_info
 
     async def classify_user_intent(self, message: str, current_state: str = "AWAITING_REPORT", db: AsyncSession = None) -> str:
         """

@@ -271,6 +271,8 @@ class ActionHandler:
                 "data_kapal": data_kapal_payload,
                 "data_pesawat": data_pesawat_payload,
                 "data_alat": data_alat_payload,
+                "sub_jenis_kejadian": extracted.get("sub_jenis_kejadian"),
+                "pelapor_hubungan": extracted.get("pelapor_hubungan"),
                 "koordinat_teks": extracted.get("koordinat"),
                 "reporter_user_id": session_data.get("user_id")
             }
@@ -486,6 +488,7 @@ class ActionHandler:
         # 3. Format final BASARNAS template
         template_data = {
             "KLASIFIKASI": saved_report.jenis_kejadian,
+            "sub_jenis_kejadian": extracted.get("sub_jenis_kejadian"),
             "JUDUL_KEJADIAN": f"{saved_report.jenis_kejadian} di {saved_report.lokasi_teks}",
             "WAKTU_INFO_DITERIMA": local_created_at.strftime(f"%m%d %H%M {tz_char}") if local_created_at else "",
             "created_at": local_created_at,

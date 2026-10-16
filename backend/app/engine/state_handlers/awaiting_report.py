@@ -120,22 +120,35 @@ class AwaitingReportStateHandler(BaseStateHandler):
             await engine._broadcast_session(session, autopilot, extracted_data)
             return {"text": reply}
 
-        # Force kronologi to be the original report story
+        # Force kronologi to be the original report story (zero-hallucination: preserve original text)
         if not extracted_data.get("kronologi"):
             extracted_data["kronologi"] = message
-            
+
+        # Mark explicit vessel flags if vessel context was already extracted from the message
+        if extracted_data.get("pakai_kapal"):
+            extracted_data["_explicit_pakai_kapal"] = True
+        if extracted_data.get("data_kapal"):
+            extracted_data["_explicit_data_kapal"] = True
+        if extracted_data.get("pelapor_hubungan"):
+            extracted_data["_explicit_pelapor_hubungan"] = True
+
         # Automatically classify the incident based on the chronology text against DB classifications
+        # ONLY if jenis_kejadian was not already determined by the hybrid extractor
         try:
             from app.services.classification_service import match_classification
-            matched_cls = await match_classification(message, db)
-            if matched_cls:
-                extracted_data["jenis_kejadian"] = matched_cls
-            elif not extracted_data.get("jenis_kejadian"):
-                extracted_data["jenis_kejadian"] = "KMM"  # Fallback to KMM if no keywords match
+            existing_jenis = extracted_data.get("jenis_kejadian")
+            if not existing_jenis:
+                matched_cls = await match_classification(message, db)
+                if matched_cls:
+                    extracted_data["jenis_kejadian"] = matched_cls
+                elif extracted_data.get("pakai_kapal") == "Ya" or extracted_data.get("data_kapal"):
+                    extracted_data["jenis_kejadian"] = "LAKA KAPAL"
+                else:
+                    extracted_data["jenis_kejadian"] = "KMM"  # Fallback to KMM if no keywords match
         except Exception as e:
             logger.warning(f"Failed to auto-classify chronology: {e}")
             if not extracted_data.get("jenis_kejadian"):
-                extracted_data["jenis_kejadian"] = "KMM"
+                extracted_data["jenis_kejadian"] = "LAKA KAPAL" if extracted_data.get("pakai_kapal") == "Ya" else "KMM"
             
         # Pre-fill profile info if not already captured
         try:

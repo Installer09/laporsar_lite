@@ -996,8 +996,15 @@ class MessageFormatterService:
         # Bangun Detail Judul Dinamis
         lokasi_raw = data.get("LOKASI_KEJADIAN") or data.get("location_text") or data.get("lokasi_teks") or ""
         
-        # Bersihkan jenis kejadian untuk judul
-        clean_jenis = str(data.get("incident_type") or data.get("jenis_kejadian") or data.get("KLASIFIKASI") or "").upper()
+        # Bersihkan jenis kejadian untuk judul (prioritaskan sub_jenis_kejadian / sub_incident_type jika tersedia)
+        sub_jenis = str(
+            data.get("sub_incident_type")
+            or data.get("sub_jenis_kejadian")
+            or (data.get("metadata_kejadian", {}) or {}).get("sub_jenis_kejadian")
+            or (data.get("incident_metadata", {}) or {}).get("sub_jenis_kejadian")
+            or ""
+        ).upper().strip()
+        clean_jenis = sub_jenis or str(data.get("incident_type") or data.get("jenis_kejadian") or data.get("KLASIFIKASI") or "").upper()
         for prefix in ["KMM (KONDISI MEMBAHAYAKAN MANUSIA)", "KONDISI MEMBAHAYAKAN MANUSIA", "KMM", 
                         "KECELAKAAN KAPAL", "LAKA KAPAL", "KECELAKAAN PESAWAT", "LAKA PESAWAT", 
                         "BENCANA ALAM", "BENCANA", "KPK"]:

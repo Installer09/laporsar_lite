@@ -9,7 +9,7 @@ from app.engine.field_processors.base import BaseFieldProcessor
 
 logger = logging.getLogger(__name__)
 
-class WaktuFieldProcessor(BaseFieldProcessor):
+class TimeFieldProcessor(BaseFieldProcessor):
     """Processes and validates the incident time ('waktu') field."""
 
     async def validate_and_extract(
@@ -192,3 +192,6 @@ class WaktuFieldProcessor(BaseFieldProcessor):
         if re.search(r"\d{1,2}[.:]\d{2}", msg) or re.search(r"\d{1,2}[/\-]\d{1,2}", msg):
             return True
         return False
+
+
+WaktuFieldProcessor = TimeFieldProcessor

@@ -669,7 +669,8 @@ class ChatbotEngine:
         # Logika: Jika pelapor adalah Korban, dan koordinat kejadian sudah terisi,
         # otomatis salin koordinat kejadian ke koordinat pelapor (pelapor_lat/pelapor_lng)
         # dan bypass verifikasi lokasi pelapor.
-        if extracted_data.get("pelapor_hubungan") == "Korban":
+        rel_val = str(extracted_data.get("pelapor_hubungan") or "")
+        if rel_val in ("Korban", "Korban Langsung"):
             lat_val = extracted_data.get("koordinat_lat")
             lng_val = extracted_data.get("koordinat_lng")
             if lat_val is not None and lng_val is not None:
@@ -690,11 +691,15 @@ class ChatbotEngine:
     ) -> dict:
         session.state = "CONFIRMING"
 
-        # 1. Run Unified LLM Refinement Pass once on all collected raw fields
+        # 1. Run Unified LLM Refinement Pass once on all collected raw fields grounded in Vector + Dictionary
         try:
             from app.services.llm_rag import LLMRagService
             llm_rag = LLMRagService()
-            context = await llm_rag.get_dictionary_context(db)
+            query_for_rag = " ".join(
+                str(extracted_data.get(k) or "")
+                for k in ("kronologi", "jenis_kejadian", "sub_jenis_kejadian", "lokasi_teks", "data_kapal")
+            ).strip()
+            context = await llm_rag.get_dictionary_context(db, query_text=query_for_rag)
             
             # Format current time as local reference timezone (WIB)
             from datetime import timezone, timedelta
@@ -735,6 +740,7 @@ class ChatbotEngine:
         summary_lines = ["*RINGKASAN DATA LAPORAN SAR*\n"]
         field_labels = {
             "jenis_kejadian": "Klasifikasi Musibah",
+            "sub_jenis_kejadian": "Rincian Kejadian",
             "waktu": "Waktu Kejadian (PDTW)",
             "lokasi_teks": "Lokasi Kejadian",
             "korban": "Estimasi Korban",
@@ -752,7 +758,7 @@ class ChatbotEngine:
             
             if val and not self._is_field_missing(val):
                 summary_lines.append(f"• *{label}:* {val}")
-            elif key in ["data_kapal", "data_pesawat", "data_alat"]:
+            elif key in ["sub_jenis_kejadian", "data_kapal", "data_pesawat", "data_alat"]:
                 continue
             else:
                 summary_lines.append(f"• *{label}:* _(Belum terisi)_")

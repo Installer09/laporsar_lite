@@ -50,7 +50,20 @@ async def extract_incident_data(
     # 1. Run Hybrid Schema Extraction (Local Regex + DB Classifications + LLM Fallback)
     extracted_data, confidence = await sar_nlp_extractor.extract(message, db, conversation_history, use_llm=use_llm)
     
-    # 2. Side Effect: Regex KB Learning (Detect uppercase abbreviations)
+    # 2. Side Effect: Deterministic Unknown/Colloquial Word Logging (PENDING for Operator Review)
+    try:
+        from app.services.autocorrect_service import AutoCorrectService
+        unknown_terms = await AutoCorrectService.detect_and_log_unknown_terms(
+            message=message, db=db, user_id=user_id
+        )
+        if unknown_terms and isinstance(extracted_data, dict):
+            existing = extracted_data.get("unknown_terms", [])
+            merged_terms = list(dict.fromkeys((existing or []) + unknown_terms))
+            extracted_data["unknown_terms"] = merged_terms
+    except Exception as e:
+        logger.warning(f"Deterministic unknown word logging failed: {str(e)}")
+
+    # 3. Side Effect: Regex KB Learning (Detect uppercase abbreviations)
     try:
         detected_terms = extract_terms(message)
         if detected_terms:
@@ -58,7 +71,7 @@ async def extract_incident_data(
     except Exception as e:
         logger.error(f"KB Learning failed: {str(e)}")
 
-    # 3. Side Effect: LLM KB Learning (Only if message is long enough and LLM was active)
+    # 4. Side Effect: LLM KB Learning (Only if message is long enough and LLM was active)
     if use_llm and len(message.strip()) > 30:
         import asyncio
         try:

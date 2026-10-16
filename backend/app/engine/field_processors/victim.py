@@ -7,7 +7,7 @@ from app.engine.field_processors.base import BaseFieldProcessor
 
 logger = logging.getLogger(__name__)
 
-class KorbanFieldProcessor(BaseFieldProcessor):
+class VictimFieldProcessor(BaseFieldProcessor):
     """Processes and validates the victim count ('korban') field."""
 
     async def validate_and_extract(
@@ -74,3 +74,6 @@ class KorbanFieldProcessor(BaseFieldProcessor):
         )
         buttons = ["Kurang dari 3 orang", "3 - 5 orang", "Lebih dari 5 orang", "Belum Tahu"]
         return q_text, buttons
+
+
+KorbanFieldProcessor = VictimFieldProcessor

@@ -154,6 +154,45 @@ DEFAULT_WORDS = [
     {"word": "serasan", "ner_type": "ISLAND", "ner_target": "SERASAN"},
     {"word": "panjang", "ner_type": "ISLAND", "ner_target": "PANJANG"},
     {"word": "sedanau", "ner_type": "ISLAND", "ner_target": "SEDANAU"},
+    {"word": "bunguran", "ner_type": "ISLAND", "ner_target": "BUNGURAN"},
+    {"word": "laut", "ner_type": "ISLAND", "ner_target": "LAUT"},
+    {"word": "tiga", "ner_type": "ISLAND", "ner_target": "TIGA"},
+
+    # ── 9. VESSEL_TYPE (Jenis Sarana Air / Kapal) ──
+    {"word": "pompong", "ner_type": "VESSEL_TYPE", "ner_target": "Pompong", "category": "SARANA_ALUT", "definition": "Perahu motor kayu tradisional nelayan"},
+    {"word": "kapal", "ner_type": "VESSEL_TYPE", "ner_target": "Kapal", "category": "SARANA_ALUT", "definition": "Sarana angkutan air / kapal laut"},
+    {"word": "perahu", "ner_type": "VESSEL_TYPE", "ner_target": "Perahu", "category": "SARANA_ALUT", "definition": "Perahu tradisional atau nelayan"},
+    {"word": "speedboat", "ner_type": "VESSEL_TYPE", "ner_target": "Speedboat", "category": "SARANA_ALUT", "definition": "Perahu cepat bermesin tempel"},
+    {"word": "sampan", "ner_type": "VESSEL_TYPE", "ner_target": "Sampan", "category": "SARANA_ALUT", "definition": "Perahu kayu kecil dayung/mesin"},
+    {"word": "ketinting", "ner_type": "VESSEL_TYPE", "ner_target": "Ketinting", "category": "SARANA_ALUT", "definition": "Perahu bermesin tempel poros panjang"},
+    {"word": "tongkang", "ner_type": "VESSEL_TYPE", "ner_target": "Tongkang", "category": "SARANA_ALUT", "definition": "Kapal tongkang pengangkut muatan"},
+    {"word": "tugboat", "ner_type": "VESSEL_TYPE", "ner_target": "Tugboat", "category": "SARANA_ALUT", "definition": "Kapal tunda penarik tongkang"},
+    {"word": "jukung", "ner_type": "VESSEL_TYPE", "ner_target": "Jukung", "category": "SARANA_ALUT", "definition": "Perahu bercadik tradisional"},
+    {"word": "pancung", "ner_type": "VESSEL_TYPE", "ner_target": "Boat Pancung", "category": "SARANA_ALUT", "definition": "Perahu motor cepat antar pulau"},
+
+    # ── 10. REPORTER_RELATION (Hubungan Pelapor dan Korban) ──
+    {"word": "kakak", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban (Kakak)"},
+    {"word": "abang", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban (Kakak)"},
+    {"word": "adik", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban (Adik)"},
+    {"word": "ayah", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban (Ayah)"},
+    {"word": "bapak", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban (Ayah)"},
+    {"word": "ibu", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban (Ibu)"},
+    {"word": "anak", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban (Anak)"},
+    {"word": "suami", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban (Suami)"},
+    {"word": "istri", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban (Istri)"},
+    {"word": "paman", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban (Paman)"},
+    {"word": "bibi", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban (Bibi)"},
+    {"word": "keluarga", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban"},
+    {"word": "saudara", "ner_type": "REPORTER_RELATION", "ner_target": "Keluarga Korban"},
+    {"word": "teman", "ner_type": "REPORTER_RELATION", "ner_target": "Rekan Korban"},
+    {"word": "rekan", "ner_type": "REPORTER_RELATION", "ner_target": "Rekan Korban"},
+    {"word": "tetangga", "ner_type": "REPORTER_RELATION", "ner_target": "Tetangga / Warga"},
+
+    # ── 11. SLANG_DIALEK (Variasi Lisan / Typo Umum) ──
+    {"word": "pomponya", "ner_type": "VESSEL_TYPE", "ner_target": "Pompong", "synonym_target": "pompongnya", "is_typo_or_slang": True, "category": "SLANG_DIALEK", "definition": "Bentuk lisan/typo dari pompongnya (kapal pompong)"},
+    {"word": "pompon", "ner_type": "VESSEL_TYPE", "ner_target": "Pompong", "synonym_target": "pompong", "is_typo_or_slang": True, "category": "SLANG_DIALEK", "definition": "Bentuk lisan/typo dari pompong"},
+    {"word": "didekat", "ner_type": "LOCATION_PREFIX", "ner_target": "di dekat", "synonym_target": "di dekat", "is_typo_or_slang": True, "category": "SLANG_DIALEK", "definition": "Penulisan gabung dari preposisi di dekat"},
+    {"word": "disekitar", "ner_type": "LOCATION_PREFIX", "ner_target": "di sekitar", "synonym_target": "di sekitar", "is_typo_or_slang": True, "category": "SLANG_DIALEK", "definition": "Penulisan gabung dari preposisi di sekitar"},
 ]
 
 async def seed_default_dictionary(db = None):
@@ -189,10 +228,14 @@ async def _run_seed(db):
         if not existing:
             new_word = DictionaryWord(
                 word=word,
-                ner_type=w_data["ner_type"],
-                ner_target=w_data["ner_target"],
+                ner_type=w_data.get("ner_type"),
+                ner_target=w_data.get("ner_target"),
+                synonym_target=w_data.get("synonym_target"),
+                is_typo_or_slang=w_data.get("is_typo_or_slang", False),
+                category=w_data.get("category", "OPERASIONAL_SAR"),
+                definition=w_data.get("definition"),
                 status=DictionaryStatus.APPROVED,
-                word_type="GENERAL",
+                word_type=w_data.get("word_type", "GENERAL"),
                 is_auto_detected=False
             )
             db.add(new_word)
