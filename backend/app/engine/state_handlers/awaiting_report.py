@@ -138,10 +138,17 @@ class AwaitingReportStateHandler(BaseStateHandler):
                 extracted_data["jenis_kejadian"] = "KMM"
             
         # Pre-fill profile info if not already captured
-        if session.contact_name and not extracted_data.get("pelapor_nama"):
-            extracted_data["pelapor_nama"] = session.contact_name
-        if session.contact_phone and not extracted_data.get("pelapor_hp"):
-            extracted_data["pelapor_hp"] = session.contact_phone
+        try:
+            c_name = getattr(session, "contact_name", None)
+            c_phone = getattr(session, "contact_phone", None)
+        except Exception:
+            c_name = None
+            c_phone = None
+
+        if c_name and not extracted_data.get("pelapor_nama"):
+            extracted_data["pelapor_nama"] = c_name
+        if c_phone and not extracted_data.get("pelapor_hp"):
+            extracted_data["pelapor_hp"] = c_phone
 
         # Save extracted
         session.extracted_data = json.dumps(extracted_data)

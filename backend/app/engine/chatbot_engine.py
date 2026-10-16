@@ -367,7 +367,7 @@ class ChatbotEngine:
 
         # Check if user explicitly clicked/typed a Lapor SAR menu command
         lapor_menu_triggers = {
-            "lapor sar", "lapor", "1", "1.", "menu_lapor_sar",
+            "lapor sar", "lapor", "1", "1.", "1. lapor sar", "1.lapor sar", "1 lapor sar", "menu_lapor_sar",
             "lapor sar cepat", "lapor cepat", "lapor sar kejadian", "lapor kejadian",
             "laporkan kejadian", "sos", "lapor cepat (sos)",
             "menu_lapor_cepat", "menu_lapor_kejadian", "/lapor"

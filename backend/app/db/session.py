@@ -208,7 +208,7 @@ MASTER_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://laporsar_a
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 # Flag indicating whether PostgreSQL vector extension is active
-HAS_VECTOR_EXTENSION = False
+HAS_VECTOR_EXTENSION = True
 
 def set_vector_extension_available(status: bool):
     global HAS_VECTOR_EXTENSION

@@ -176,55 +176,52 @@ async def resolve_and_save_terms(
         from sqlalchemy import func as sa_func
         from app.models.knowledge_models import DictionaryWord, DictionaryStatus
 
-        for term in terms:
-            word_text = term.get("word", "").strip()
-            if not word_text or len(word_text) < 2 or len(word_text) > 100:
-                continue
+        async with db.begin_nested():
+            for term in terms:
+                word_text = term.get("word", "").strip()
+                if not word_text or len(word_text) < 2 or len(word_text) > 100:
+                    continue
 
-            # Check if word already exists (case-insensitive)
-            result = await db.execute(
-                select(DictionaryWord).where(
-                    sa_func.upper(DictionaryWord.word) == word_text.upper()
+                # Check if word already exists (case-insensitive)
+                result = await db.execute(
+                    select(DictionaryWord).where(
+                        sa_func.upper(DictionaryWord.word) == word_text.upper()
+                    )
                 )
-            )
-            existing = result.scalar_one_or_none()
+                existing = result.scalar_one_or_none()
 
-            if existing:
-                # Increment frequency
-                existing.frequency = (existing.frequency or 1) + 1
-                # If we now have a definition but existing doesn't, update it
-                if term.get("definition") and not existing.definition:
-                    existing.definition = term["definition"]
-                    existing.status = DictionaryStatus.APPROVED
-            else:
-                # Auto-approve if term has a glossary or inferred definition (e.g. from equations or parentheses)
-                has_def = term.get("definition") is not None
-                new_status = DictionaryStatus.APPROVED if has_def else DictionaryStatus.PENDING
- 
-                new_word = DictionaryWord(
-                    word=word_text,
-                    definition=term.get("definition"),
-                    context_example=term.get("context", ""),
-                    source_message=message[:500],
-                    source_user=user_id,
-                    status=new_status,
-                    frequency=1,
-                    word_type=term.get("word_type", "ABBREVIATION"),
-                    is_auto_detected=True,
-                )
-                db.add(new_word)
-                saved_count += 1
+                if existing:
+                    # Increment frequency
+                    existing.frequency = (existing.frequency or 1) + 1
+                    # If we now have a definition but existing doesn't, update it
+                    if term.get("definition") and not existing.definition:
+                        existing.definition = term["definition"]
+                        existing.status = DictionaryStatus.APPROVED
+                else:
+                    # Auto-approve if term has a glossary or inferred definition (e.g. from equations or parentheses)
+                    has_def = term.get("definition") is not None
+                    new_status = DictionaryStatus.APPROVED if has_def else DictionaryStatus.PENDING
+     
+                    new_word = DictionaryWord(
+                        word=word_text,
+                        definition=term.get("definition"),
+                        context_example=term.get("context", ""),
+                        source_message=message[:500],
+                        source_user=user_id,
+                        status=new_status,
+                        frequency=1,
+                        word_type=term.get("word_type", "ABBREVIATION"),
+                        is_auto_detected=True,
+                    )
+                    db.add(new_word)
+                    saved_count += 1
 
-        await db.commit()
+            await db.commit()
         if saved_count:
             logger.info(f"[TermExtractor] Saved {saved_count} new term(s) from message by {user_id}")
 
     except Exception as e:
-        logger.error(f"[TermExtractor] Error saving terms: {e}")
-        try:
-            await db.rollback()
-        except Exception:
-            pass
+        logger.warning(f"[TermExtractor] Note: Term saving bypassed: {e}")
 
     return saved_count
 
