@@ -18,7 +18,7 @@ class SystemSettingBase(BaseModel):
     def sanitize(cls, v): return sanitize_html(v)
 
 class SystemSettingResponse(SystemSettingBase):
-    id: int
+    id: Optional[int] = 0
     model_config = ConfigDict(from_attributes=True)
 
 class SystemSettingsBulkUpdate(BaseModel):

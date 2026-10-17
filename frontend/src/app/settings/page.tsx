@@ -210,6 +210,9 @@ export default function SettingsPage() {
         initialData[item.key] = item.value || '';
       });
       setFormData(initialData);
+      if (initialData.telegram_webhook_url !== undefined) {
+        setWebhookBaseUrl(initialData.telegram_webhook_url);
+      }
     }
   }, [settingsData]);
 
@@ -686,20 +689,29 @@ export default function SettingsPage() {
   const handleSetupTelegramWebhook = async () => {
     setIsSettingUpWebhook(true);
     try {
-      // Auto-simpan pengaturan form terlebih dahulu agar token tersimpan di database
-      if (formData.telegram_token) {
-        const payload = Object.entries(formData).map(([key, value]) => ({ key, value }));
-        await updateSettings(payload);
-        queryClient.invalidateQueries({ queryKey: ['settings'] });
-      }
-
       // Bersihkan base URL jika pengguna memasukkan URL lengkap atau ada spasi
-      let cleanBaseUrl = (webhookBaseUrl || '').trim();
+      let cleanBaseUrl = (webhookBaseUrl || formData.telegram_webhook_url || '').trim();
       if (cleanBaseUrl.includes('/api/telegram/webhook')) {
         cleanBaseUrl = cleanBaseUrl.split('/api/telegram/webhook')[0].replace(/\/+$/, '');
       }
 
-      const res = await setupTelegramWebhook(cleanBaseUrl, formData.telegram_token, tenantSlug || undefined);
+      // Auto-simpan pengaturan form terlebih dahulu agar token & webhook URL tersimpan di database
+      const updatedForm = {
+        ...formData,
+        telegram_webhook_url: cleanBaseUrl,
+      };
+      setFormData(updatedForm);
+      if (cleanBaseUrl !== webhookBaseUrl) {
+        setWebhookBaseUrl(cleanBaseUrl);
+      }
+
+      if (updatedForm.telegram_token) {
+        const payload = Object.entries(updatedForm).map(([key, value]) => ({ key, value }));
+        await updateSettings(payload);
+      }
+
+      const res = await setupTelegramWebhook(cleanBaseUrl, updatedForm.telegram_token, tenantSlug || undefined);
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
       if (res.status === 'success') {
         showSuccessToast('Webhook Telegram berhasil terhubung!');
       } else {
@@ -980,13 +992,20 @@ export default function SettingsPage() {
                   {liveStatus?.ollama?.connected ? 'Online' : 'Offline'}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600 flex items-center gap-1.5 font-medium"><Radio className="w-3.5 h-3.5 text-slate-400" /> Telegram Bot</span>
-                <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                  liveStatus?.telegram?.connected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50' : 'bg-rose-50 text-rose-700 border border-rose-200/50'
-                }`}>
-                  {liveStatus?.telegram?.connected ? 'Online' : 'Offline'}
-                </span>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-600 flex items-center gap-1.5 font-medium"><Radio className="w-3.5 h-3.5 text-slate-400" /> Telegram Bot</span>
+                  <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                    liveStatus?.telegram?.connected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50' : 'bg-rose-50 text-rose-700 border border-rose-200/50'
+                  }`}>
+                    {liveStatus?.telegram?.connected ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+                {liveStatus?.telegram?.connected && liveStatus?.telegram?.bot_name && (
+                  <div className="pl-5 text-[10px] font-mono text-emerald-700 truncate" title={liveStatus.telegram.bot_name}>
+                    {liveStatus.telegram.bot_name}
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-600 flex items-center gap-1.5 font-medium"><MessageSquare className="w-3.5 h-3.5 text-slate-400" /> WhatsApp</span>
@@ -1732,9 +1751,22 @@ export default function SettingsPage() {
                   <div className="space-y-6">
                     {/* Telegram Section */}
                     <div className="bg-gray-50/50 border border-gray-100 p-6 rounded-3xl space-y-4">
-                      <h3 className="font-bold text-gray-900 text-sm md:text-base flex items-center gap-2 text-sky-600">
-                        <MessageSquare className="w-5 h-5 text-sky-500" /> Telegram Bot Integration
-                      </h3>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <h3 className="font-bold text-gray-900 text-sm md:text-base flex items-center gap-2 text-sky-600">
+                          <MessageSquare className="w-5 h-5 text-sky-500" /> Telegram Bot Integration
+                        </h3>
+                        {liveStatus?.telegram?.connected ? (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200/80 text-emerald-800 rounded-full text-xs font-semibold">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>Terhubung: <strong className="font-mono">{liveStatus.telegram.bot_name || 'Bot Aktif'}</strong></span>
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 border border-rose-200/80 text-rose-700 rounded-full text-xs font-semibold">
+                            <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                            <span>Belum Terhubung{liveStatus?.telegram?.error ? ` (${liveStatus.telegram.error})` : ''}</span>
+                          </div>
+                        )}
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
                           <label className="block text-xs font-bold text-gray-700 mb-1">Telegram Bot Token</label>
@@ -1770,7 +1802,10 @@ export default function SettingsPage() {
                           <input
                             type="text"
                             value={webhookBaseUrl}
-                            onChange={(e) => setWebhookBaseUrl(e.target.value)}
+                            onChange={(e) => {
+                              setWebhookBaseUrl(e.target.value);
+                              handleConfigChange('telegram_webhook_url', e.target.value);
+                            }}
                             placeholder="Contoh: https://demonstrate-draws-ireland-plains.trycloudflare.com"
                             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                           />

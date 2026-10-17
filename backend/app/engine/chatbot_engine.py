@@ -29,114 +29,108 @@ CORE_QUESTION_ORDER = ["waktu", "lokasi_teks", "korban"]
 FIELD_QUESTIONS = {
     "waktu": {
         "text": (
-            "*Kapan kejadiannya?*\n"
-            "Sebutkan jamnya atau kapan musibah itu terjadi.\n"
-            "Contoh: _Baru saja_, _10 menit yang lalu_, _jam 10 pagi_."
+            "*Kapan kejadiannya berlangsung?*\n"
+            "Sebutkan perkiraan waktu kejadian (contoh: _baru saja_, _2 jam lalu_, _tadi pagi jam 8_, atau _kemarin sore_)."
         ),
-        "buttons": ["Baru Saja", "1 Jam yang Lalu", "Hari Ini", "Kemarin", "Belum Tahu"]
+        "buttons": ["Belum Tahu"]
     },
     "lokasi_teks": {
         "text": (
             "*Di mana lokasi kejadiannya?*\n"
-            "Sebutkan nama pantai, laut, desa, atau patokan terdekat yang Anda ketahui."
+            "Sebutkan nama perairan, pulau, pantai, desa, atau patokan terdekat."
         ),
         "buttons": ["Belum Tahu"]
     },
     "koordinat": {
         "text": (
-            "*Apakah Anda memiliki titik koordinat GPS kejadian?*\n\n"
-            "Anda dapat memberikan titik lokasi kejadian dengan cara:\n"
-            "1. Ketuk tombol *Bagikan Lokasi Kejadian* di bawah (jika Anda berada di lokasi kejadian).\n"
-            "2. Atau kirim via menu Telegram: ikon lampiran / klip kertas -> *Lokasi* (bisa geser pin ke posisi musibah).\n"
-            "3. Atau ketik angka koordinat / tautan Google Maps (contoh: _-3.391282, 106.241521_).\n"
-            "4. Jika tidak tahu titik koordinatnya, pilih tombol *Belum Tahu* (cukup nama lokasi yang sudah Anda sebutkan)."
+            "*Apakah Anda mengetahui titik koordinat lokasi kejadian?*\n"
+            "Kirimkan titik GPS / tautan Google Maps jika ada, atau pilih *Belum Tahu* jika hanya mengetahui nama tempatnya."
         ),
         "buttons": [{"text": "Bagikan Lokasi Kejadian", "request_location": True}, "Belum Tahu"]
     },
     "korban": {
         "text": (
-            "*Berapa perkiraan jumlah total korban?*\n"
+            "*Berapa perkiraan jumlah korban dalam kejadian ini?*\n"
+            "Ketik jumlah orangnya secara langsung (contoh: _1_ atau _3 orang_)."
         ),
         "buttons": ["Belum Tahu"]
     },
     "korban_kondisi": {
         "text": (
-            "*Bagaimana rincian kondisi korban saat ini?*\n"
-            "Berapa korban yang selamat, meninggal, atau masih dalam pencarian (hilang)?\n\n"
-            "Contoh: _2 selamat, 1 hilang_ atau _selamat semua_"
+            "*Bagaimana kondisi korban saat ini?*\n"
+            "Sebutkan apakah korban masih dalam pencarian (hilang), butuh evakuasi, selamat, atau meninggal dunia (contoh: _masih dalam pencarian_ atau _2 selamat, 1 hilang_)."
         ),
         "buttons": ["Belum Tahu"]
     },
     "data_korban": {
         "text": (
-            "*Siapa saja nama atau identitas korban?*\n"
-            "Sebutkan nama, jenis kelamin, umur, atau ciri-cirinya seadanya jika Anda tahu.\n"
-            "Contoh: _Budi (Laki-laki, 40 thn)_"
+            "*Siapa nama atau ciri-ciri korban?*\n"
+            "Sebutkan nama, jenis kelamin, umur, atau ciri korban jika diketahui (contoh: _Budi, Laki-laki, 40 thn_)."
         ),
-        "buttons": ["Tidak Tahu"]
+        "buttons": ["Belum Tahu"]
     },
     "data_kapal": {
         "text": (
-            "*Apa nama dan jenis kapal yang digunakan?*\n"
-            "Sebutkan nama kapal, jenis (misal: pompong/speedboat/kapal nelayan), dan rutenya jika diketahui."
+            "*Apa jenis atau nama kapal/perahu yang digunakan?*\n"
+            "Sebutkan jenis perahu, warna, atau nama kapal jika diketahui (contoh: _Pompong warna biru_ atau _KM Maju Jaya_)."
         ),
-        "buttons": ["Tidak Tahu"]
+        "buttons": ["Belum Tahu"]
     },
     "pakai_kapal": {
         "text": (
             "*Apakah korban menggunakan kapal atau perahu?*\n"
-            "Pilih Ya jika melibatkan sarana perahu (seperti pompong, sampan, ketinting, speedboat, kelong, atau kapal nelayan) atau Tidak."
+            "Pilih *Ya* jika melibatkan sarana perahu (seperti pompong, sampan, speedboat, atau kapal nelayan) atau *Tidak*."
         ),
         "buttons": ["Ya", "Tidak", "Belum Tahu"]
     },
     "data_pesawat": {
         "text": (
-            "*Apa nama maskapai dan rute pesawat tersebut?*\n"
+            "*Apa jenis, maskapai, atau rute pesawat tersebut?*\n"
             "Sebutkan nama pesawat/maskapai dan rute penerbangan jika diketahui."
         ),
-        "buttons": ["Tidak Tahu"]
+        "buttons": ["Belum Tahu"]
     },
     "data_alat": {
         "text": (
-            "*Apa jenis kendaraan atau alat yang terlibat?*\n"
+            "*Apa jenis kendaraan atau sarana yang terlibat?*\n"
             "Sebutkan jenis kendaraan, warna, atau nomor polisi jika diketahui."
         ),
-        "buttons": ["Tidak Tahu"]
+        "buttons": ["Belum Tahu"]
     },
     "eviden": {
         "text": (
-            "*Lampiran Dokumentasi Kejadian*\n"
-            "Kirimkan foto atau video kondisi lokasi atau korban jika tersedia untuk membantu tim SAR menganalisis medan operasi."
+            "*Apakah ada foto kondisi lokasi, kapal, atau korban yang dapat dilampirkan?*\n"
+            "Kirimkan foto/video jika ada, atau pilih *Tidak Ada* untuk melanjutkan."
         ),
         "buttons": ["Tidak Ada"]
     },
     "pelapor_nama": {
         "text": (
-            "*Nama Lengkap Pelapor*\n"
-            "Sebutkan nama lengkap Anda sebagai pelapor resmi."
+            "*Siapa nama lengkap Anda sebagai pelapor?*"
         ),
         "buttons": []
     },
     "pelapor_hp": {
         "text": (
-            "*Nomor Kontak Pelapor*\n"
-            "Sebutkan nomor telepon atau WhatsApp aktif yang dapat segera dihubungi oleh tim SAR."
+            "*Berapa nomor telepon/WhatsApp aktif Anda yang dapat dihubungi Tim SAR?*"
         ),
         "buttons": []
     },
     "pelapor_hubungan": {
         "text": (
-            "*Hubungan dengan Korban atau Musibah*\n"
-            "Pilih opsi di bawah atau ketik hubungan Anda (contoh: Keluarga Korban, Rekan, Saksi Mata, atau Korban Langsung)."
+            "*Apa hubungan Anda dengan korban?*\n"
+            "(Contoh: Keluarga Korban, Rekan Nelayan, Saksi Mata, atau Korban Langsung)"
         ),
         "buttons": ["Keluarga Korban", "Saksi Mata", "Korban"]
     },
     "reporter_location": {
         "text": (
-            "*Verifikasi Lokasi Pelapor*\n"
-            "Silakan bagikan titik lokasi GPS perangkat Anda saat ini."
+            "*Verifikasi Posisi Pelapor*\n"
+            "Apakah Anda saat ini berada langsung di lokasi kejadian?\n"
+            "• Jika *Ya*, ketuk *Bagikan Lokasi Saya*.\n"
+            "• Jika *Tidak* (melapor dari rumah/darat), pilih *Saya Tidak di Lokasi*."
         ),
-        "buttons": [{"text": "Bagikan Lokasi", "request_location": True}]
+        "buttons": [{"text": "Bagikan Lokasi Saya", "request_location": True}, "Saya Tidak di Lokasi"]
     }
 }
 
@@ -366,12 +360,22 @@ class ChatbotEngine:
             return await self._handle_status_check(session, db, autopilot, extracted_data, message_text=message_text)
 
         # Check if user explicitly clicked/typed a Lapor SAR menu command
-        lapor_menu_triggers = {
-            "lapor sar", "lapor", "1", "1.", "1. lapor sar", "1.lapor sar", "1 lapor sar", "menu_lapor_sar",
-            "lapor sar cepat", "lapor cepat", "lapor sar kejadian", "lapor kejadian",
-            "laporkan kejadian", "sos", "lapor cepat (sos)",
-            "menu_lapor_cepat", "menu_lapor_kejadian", "/lapor"
-        }
+        # IMPORTANT: When user is actively answering a specific field question (e.g., AWAITING_KORBAN, AWAITING_WAKTU),
+        # numeric inputs like "1" or "1." are field answers (e.g., 1 victim), NOT menu clicks!
+        is_in_field_dialogue = bool(
+            session.state
+            and session.state.startswith("AWAITING_")
+            and session.state not in ("AWAITING_REPORT", "AWAITING_STATUS_QUERY")
+        )
+        if is_in_field_dialogue:
+            lapor_menu_triggers = {"menu_lapor_sar", "/lapor"}
+        else:
+            lapor_menu_triggers = {
+                "lapor sar", "lapor", "1", "1.", "1. lapor sar", "1.lapor sar", "1 lapor sar", "menu_lapor_sar",
+                "lapor sar cepat", "lapor cepat", "lapor sar kejadian", "lapor kejadian",
+                "laporkan kejadian", "sos", "lapor cepat (sos)",
+                "menu_lapor_cepat", "menu_lapor_kejadian", "/lapor"
+            }
         msg_clean = message_text.strip().lower()
         is_lapor_menu_click = msg_clean in lapor_menu_triggers
 
@@ -385,22 +389,17 @@ class ChatbotEngine:
             # Telegram supports native location sharing button
             if session.channel == "telegram":
                 buttons = [
-                    {"text": "Bagikan Lokasi GPS Sekarang", "request_location": True},
-                    "Info SAR"
+                    {"text": "Bagikan Lokasi GPS Sekarang", "request_location": True}
                 ]
             else:
-                buttons = ["Lapor SAR", "Info SAR"]
+                buttons = []
 
             reply = (
                 "*LAPOR SAR*\n"
                 "Layanan Siaga Pelaporan Kedaruratan dan Musibah.\n\n"
-                "Silakan jelaskan musibah yang dialami atau disaksikan:\n"
-                "• Jenis kejadian (contoh: kapal mati mesin/tenggelam, orang hilang/hanyut, bencana)\n"
-                "• Lokasi kejadian (nama perairan/pantai/desa, atau kirim titik GPS jika di lokasi)\n"
-                "• Waktu kejadian\n"
-                "• Estimasi jumlah korban yang membutuhkan pertolongan\n\n"
-                f"Jika Anda berada langsung di lokasi kejadian, Anda juga dapat membuka [Peta Titik Darurat SAR]({webview_url}) untuk mengunci koordinat secara akurat.\n\n"
-                "Ketik keterangan kejadian secara singkat atau kirimkan pesan suara/lokasi."
+                "Silakan ceritakan kejadian darurat yang dialami atau disaksikan secara langsung (apa yang terjadi, di mana lokasinya, waktu kejadian, dan perkiraan jumlah korban).\n\n"
+                f"Jika Anda berada langsung di lokasi kejadian, Anda dapat membagikan titik GPS atau membuka [Peta Titik Darurat SAR]({webview_url}).\n\n"
+                "_(Ketik pesan Anda secara singkat atau kirimkan pesan suara)_"
             )
             session.state = "AWAITING_REPORT"
             self._update_history(session, "assistant", reply, buttons=buttons)
@@ -420,7 +419,7 @@ class ChatbotEngine:
             if message_text.strip().lower() not in info_menu_keywords and len(message_text.strip().split()) >= 2:
                 # Direct conversational answering without intermediate menu friction
                 rag_answer = await llm_rag_service.answer_bantuan_sar(message_text, db)
-                buttons = ["Lapor SAR", "Info SAR"]
+                buttons = ["Lapor SAR", "Menu Utama"]
                 self._update_history(session, "assistant", rag_answer, buttons=buttons)
                 await db.commit()
                 await self._broadcast_session(session, autopilot, extracted_data, db=db)
@@ -429,14 +428,13 @@ class ChatbotEngine:
             reply = (
                 "*INFO SAR*\n"
                 "Layanan Informasi Resmi, Regulasi, dan Standar Operasional Prosedur BASARNAS.\n\n"
-                "Ajukan pertanyaan Anda mengenai regulasi SAR, prosedur penyelamatan, istilah kedaruratan, atau kontak unit operasional BASARNAS.\n\n"
-                "Seluruh jawaban disusun secara faktual berdasarkan dokumen resmi sistem dan sumber internet terverifikasi.\n\n"
+                "Silakan ketik pertanyaan Anda mengenai prosedur penyelamatan, regulasi SAR, istilah kedaruratan, atau informasi layanan operasional BASARNAS.\n\n"
                 "Contoh pertanyaan:\n"
                 "• Bagaimana prosedur pelaporan orang hilang di laut?\n"
-                "• Apa kriteria musibah yang termasuk Kondisi Membahayakan Manusia?\n"
+                "• Apa kriteria musibah Kondisi Membahayakan Manusia (KMM)?\n"
                 "• Berapa nomor kontak resmi siaga darurat BASARNAS?"
             )
-            buttons = ["Lapor SAR", "Info SAR"]
+            buttons = ["Lapor SAR", "Menu Utama"]
             self._update_history(session, "assistant", reply, buttons=buttons)
             await db.commit()
             await self._broadcast_session(session, autopilot, extracted_data, db=db)
@@ -450,7 +448,7 @@ class ChatbotEngine:
                 # Fall through to the reporting state handler below
             else:
                 rag_answer = await llm_rag_service.answer_bantuan_sar(message_text, db)
-                buttons = ["Lapor SAR", "Info SAR"]
+                buttons = ["Lapor SAR", "Menu Utama"]
                 self._update_history(session, "assistant", rag_answer, buttons=buttons)
                 await db.commit()
                 await self._broadcast_session(session, autopilot, extracted_data, db=db)
@@ -464,7 +462,7 @@ class ChatbotEngine:
             elif intent in ("LAPOR_INFO", "BANTUAN_SAR"):
                 session.state = "MODE_BANTUAN"
                 rag_answer = await llm_rag_service.answer_bantuan_sar(message_text, db)
-                buttons = ["Lapor SAR", "Info SAR"]
+                buttons = ["Lapor SAR", "Menu Utama"]
                 self._update_history(session, "assistant", rag_answer, buttons=buttons)
                 await db.commit()
                 await self._broadcast_session(session, autopilot, extracted_data, db=db)
@@ -587,9 +585,7 @@ class ChatbotEngine:
             self._update_history(session, "assistant", q_text, buttons=q_buttons)
             await self._broadcast_session(session, autopilot, extracted_data, db=db)
             
-            if q_buttons:
-                return {"text": q_text, "buttons": list(q_buttons)}
-            return {"text": q_text}
+            return {"text": q_text, "buttons": list(q_buttons) if q_buttons else []}
             
         # If all fields in sequence are filled
         return await self._enter_confirming(session, extracted_data, db, autopilot)
@@ -679,6 +675,13 @@ class ChatbotEngine:
                 extracted_data["is_current_location_shared"] = True
                 extracted_data["reporter_location"] = "Sudah terverifikasi (Pelapor adalah Korban)"
                 session.extracted_data = json.dumps(extracted_data)
+        elif rel_val and extracted_data.get("_explicit_koordinat"):
+            # Smart Skip: Jika pelapor adalah Keluarga Korban / Rekan / Saksi (bukan korban langsung)
+            # dan sudah menjawab pertanyaan koordinat kejadian, tidak perlu menanyakan GPS kedua kalinya.
+            extracted_data["is_current_location_shared"] = True
+            if not extracted_data.get("reporter_location"):
+                extracted_data["reporter_location"] = f"Pelapor melapor sebagai {rel_val}"
+            session.extracted_data = json.dumps(extracted_data)
 
         # Mandatory GPS verification
         if not extracted_data.get("is_current_location_shared"):

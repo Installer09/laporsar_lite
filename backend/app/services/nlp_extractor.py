@@ -56,7 +56,8 @@ class SARNLPExtractor:
                     message=cleaned_message,
                     raw_data=local_data,
                     context=context,
-                    db=db
+                    db=db,
+                    conversation_history=conversation_history
                 )
                 if isinstance(validated_data, dict):
                     result = dict(local_data)

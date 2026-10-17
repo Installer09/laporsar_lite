@@ -677,7 +677,8 @@ class LLMRagService:
         message: str,
         raw_data: dict,
         context: str,
-        db
+        db,
+        conversation_history: list = None
     ) -> dict:
         tenant_settings = None
         if db is not None:
@@ -689,6 +690,11 @@ class LLMRagService:
         if db:
             similar = await self.search_similar_reports(message, db, limit=2)
             few_shot_str = self._build_few_shot_context(similar)
+
+        history_str = self._format_conversation_history(conversation_history) if conversation_history else ""
+        from app.core.time_utils import get_wib_now
+        now_wib = get_wib_now()
+        current_time_str = now_wib.strftime("%Y-%m-%d %H:%M WIB")
 
         # Ensure complete draft schema so AI can fill fields missed by regex without dropping existing ones
         complete_draft = {
@@ -707,28 +713,41 @@ class LLMRagService:
             if k not in complete_draft and not k.startswith("_"):
                 complete_draft[k] = v
 
-        system_prompt = f"""Anda adalah Hakim Ekstraksi NLP untuk BASARNAS Indonesia.
-Tugas Anda adalah meninjau hasil tebakan awal (draf) dari mesin Rule-Based dan melengkapi/mengoreksinya berdasarkan konteks kalimat asli dari pelapor.
+        system_prompt = f"""Anda adalah Hakim Ekstraksi NLP Kontekstual Utama (AI-First) untuk BASARNAS Indonesia.
+Waktu Server Saat Ini: {current_time_str}
+Tugas Anda adalah memahami maksud percakapan pelapor secara cerdas dan manusiawi, serta melengkapi atau mengoreksi draf tebakan awal dari mesin Rule-Based yang mungkin kaku atau salah tafsir.
 
 {context}
 
 {few_shot_str}
-
-ATURAN KOREKSI & ZERO-HALLUCINATION (WAJIB DITAATI):
-1. ZERO-HALLUCINATION: Gunakan hanya fakta dari TEKS ASLI PELAPOR, GLOSARIUM & KOSAKATA SAR, serta KOSAKATA SEMANTIK VEKTOR di atas. DILARANG KERAS mengarang fakta, angka, atau makna kata yang tidak ada di kalimat pelapor. Jika ada kata yang tidak dipahami, pertahankan pesan asli pada kolom 'kronologi'.
-2. JENIS & SUB-JENIS KEJADIAN: Jika kalimat menyebutkan kapal/perahu/pompong mati atau mogok (contoh: "pompongnya mati"), maka 'jenis_kejadian' adalah "LAKA KAPAL", 'sub_jenis_kejadian' adalah "Pompong Mati Mesin", 'pakai_kapal' adalah "Ya", dan 'data_kapal' memuat "Jenis: Pompong". Jangan mengubahnya menjadi orang meninggal (MD).
-3. LOKASI PERAIRAN PULAU: Jika lokasi menyebutkan "dekat pulau X" atau "sekitar pulau X" (contoh: "didekat pulau senoa"), standarisasikan 'lokasi_teks' menjadi "Perairan Pulau X" (contoh: "Perairan Pulau Senoa"). Bersihkan kata keterangan waktu atau kata kerja dari 'lokasi_teks'.
-4. HUBUNGAN PELAPOR ('pelapor_hubungan'): Jika pelapor menyebutkan hubungan dengan korban (contoh: "Kakak saya", "Adik saya", "Ayah saya", "Suami saya", "Teman saya"), pastikan 'pelapor_hubungan' terisi (contoh: "Keluarga Korban (Kakak)" atau "Rekan Korban").
-5. WAKTU RELATIF: Jika pelapor menyebut waktu relatif ("tadi siang", "barusan"), biarkan teks aslinya (misal "Tadi Siang"). Jangan mengarang jam absolut jika tidak disebutkan.
+{history_str}
+ATURAN PENALARAN KONTEKSTUAL & ZERO-HALLUCINATION (WAJIB DITAATI):
+1. ZERO-HALLUCINATION: Gunakan hanya fakta dari TEKS ASLI PELAPOR, RIWAYAT PERCAKAPAN, GLOSARIUM & KOSAKATA SAR, serta KOSAKATA SEMANTIK VEKTOR di atas. DILARANG KERAS mengarang fakta yang tidak ada di kalimat pelapor.
+2. PENALARAN HUBUNGAN KEKERABATAN TIMBAL BALIK ('pelapor_hubungan' = SIAPA PELAPOR TERHADAP KORBAN):
+   Kolom 'pelapor_hubungan' mencatat POSISI PELAPOR terhadap korban, BUKAN siapa korbannya. Gunakan logika timbal balik keluarga:
+   - Jika pelapor berkata "Kakak/Abang saya [mengalami musibah]" -> Korban adalah Kakak, maka Pelapor adalah "Adik Korban".
+   - Jika pelapor berkata "Adik saya [mengalami musibah]" -> Korban adalah Adik, maka Pelapor adalah "Kakak Korban".
+   - Jika pelapor berkata "Ayah/Bapak/Ibu/Orang tua saya [mengalami musibah]" -> Korban adalah Orang Tua, maka Pelapor adalah "Anak Korban".
+   - Jika pelapor berkata "Anak/Putra/Putri saya [mengalami musibah]" -> Korban adalah Anak, maka Pelapor adalah "Orang Tua Korban".
+   - Jika pelapor berkata "Suami saya [mengalami musibah]" -> Korban adalah Suami, maka Pelapor adalah "Istri Korban".
+   - Jika pelapor berkata "Istri saya [mengalami musibah]" -> Korban adalah Istri, maka Pelapor adalah "Suami Korban".
+   - Jika pelapor berkata "Paman/Om/Bibi/Tante saya [mengalami musibah]" -> Pelapor adalah "Keponakan Korban".
+   - Jika pelapor berkata "Keponakan saya [mengalami musibah]" -> Pelapor adalah "Paman/Bibi Korban".
+   - Jika pelapor berkata "Kakek/Nenek saya [mengalami musibah]" -> Pelapor adalah "Cucu Korban".
+   - Jika pelapor menyebutkan jati dirinya langsung ("Saya kakaknya", "Saya ayahnya") -> gunakan posisi tersebut secara langsung ("Kakak Korban", "Orang Tua Korban").
+   - Jika korban adalah rekan/teman ("Teman saya") -> "Rekan Korban". Jika pelapor sendiri yang mengalami musibah ("Pompong kami mati mesin") -> "Korban Langsung".
+3. JENIS & SUB-JENIS KEJADIAN: Jika kalimat menyebutkan kapal/perahu/pompong mati atau mogok (contoh: "pompongnya mati"), maka 'jenis_kejadian' adalah "LAKA KAPAL", 'sub_jenis_kejadian' adalah "Pompong Mati Mesin", 'pakai_kapal' adalah "Ya", dan 'data_kapal' memuat "Jenis: Pompong". Jangan mengubahnya menjadi orang meninggal (MD).
+4. LOKASI PERAIRAN PULAU: Jika lokasi menyebutkan "dekat pulau X" atau "sekitar pulau X" (contoh: "didekat pulau senoa"), standarisasikan 'lokasi_teks' menjadi "Perairan Pulau X" (contoh: "Perairan Pulau Senoa"). Bersihkan kata keterangan waktu atau kata kerja dari 'lokasi_teks'.
+5. PENALARAN JUMLAH KORBAN IMPLISIT ('korban'): Jika pelapor menyebutkan subjek majemuk tanpa menulis angka total secara eksplisit (contoh: "Kakak saya bersama 2 temannya" -> 1 + 2 = "3 Orang"; "Ayah saya dan ibunya" -> "2 Orang"), hitung dan isi total 'korban' secara akurat. Namun jika baru menyebut 1 tokoh di laporan awal tanpa kepastian apakah ia sendirian atau bersama orang lain, jangan menebak jumlah korban kecuali konteksnya jelas.
 6. NAMA KAPAL: Dilarang mengekstrak kata kerja musibah ("terbakar", "kelem", "mati mesin", "tenggelam", "hanyut") sebagai Nama kapal. Namun tetap pertahankan jenis sarana (contoh: "Jenis: Pompong") di dalam 'data_kapal'.
-7. PERTAHANKAN DATA VALID: Jika draf dari mesin Rule-Based sudah benar dan masuk akal secara konteks, PERTAHANKAN nilainya (jangan dikosongkan menjadi null).
+7. KOREKSI DRAF REGEX YANG SALAH: Jika draf dari mesin Rule-Based salah tafsir karena keterbatasan regex, KOREKSI nilainya sesuai pemahaman bahasa alami Anda. Jika draf sudah benar, pertahankan.
 8. Output HARUS murni JSON yang valid tanpa tambahan teks apapun.
 """
         prompt = f"""
 TEKS ASLI PELAPOR:
 {message}
 
-DRAF TEBAKAN MESIN (JSON):
+DRAF TEBAKAN AWAL REGEX (JSON):
 {json.dumps(complete_draft, indent=2)}
 
 Tugas: Perbaiki dan lengkapi draf JSON di atas sesuai dengan konteks bahasa pelapor tanpa berhalusinasi. Output hanya JSON valid.
@@ -752,7 +771,7 @@ Tugas: Perbaiki dan lengkapi draf JSON di atas sesuai dengan konteks bahasa pela
                 for k, v in validated_data.items():
                     if v is not None and str(v).strip() not in ("", "null", "None", "-"):
                         merged[k] = v
-                # Ensure deterministic RuleExtractor fields are never wiped out if AI returned null/empty
+                # Ensure deterministic RuleExtractor fields are only restored if AI returned null/empty
                 for protected_key in ("sub_jenis_kejadian", "pelapor_hubungan", "pakai_kapal", "data_kapal", "lokasi_teks", "jenis_kejadian"):
                     if raw_data.get(protected_key) and not merged.get(protected_key):
                         merged[protected_key] = raw_data[protected_key]
@@ -1291,25 +1310,28 @@ PERTANYAAN PENGGUNA:
 "{question}"
 
 PETUNJUK FORMAT JAWABAN (WAJIB DIIKUTI SECARA KETAT):
-1. KEAKURATAN & STRICT GROUNDING:
+1. STRUKTUR EXECUTIVE BRIEF KEDINASAN (3 BAGIAN RINGKAS):
+   - Bagian 1 (Judul & Inti Jawaban): Awali dengan judul *INFORMASI SAR: [TOPIK SINGKAT]* lalu berikan 1 paragraf ringkas (2-3 kalimat) yang langsung menjawab inti pertanyaan.
+   - Bagian 2 (Rincian / Langkah Prosedur): Sajikan poin-poin terstruktur (maksimal 3-5 poin menggunakan angka 1., 2. atau bullet •) agar mudah dibaca di layar ponsel.
+   - Bagian 3 (Referensi & Kontak Resmi): Cantumkan sumber dokumen/regulasi yang dikutip serta kanal resmi BASARNAS.
+2. KEAKURATAN & STRICT GROUNDING:
    - Jawaban Anda WAJIB HANYA didasarkan pada konteks dokumen resmi, regulasi SAR, SOP, basis data sistem, atau informasi terverifikasi dari internet di atas.
-   - JIKA informasi yang ditanyakan sama sekali TIDAK TERCANTUM atau TIDAK RELEVAN dengan konteks di atas, Anda DILARANG berhalusinasi atau mengarang jawaban.
-   - Dalam kondisi informasi tidak tercantum, berikan jawaban standar berikut:
+   - JIKA informasi yang ditanyakan sama sekali TIDAK TERCANTUM atau TIDAK RELEVAN dengan konteks di atas, Anda DILARANG berhalusinasi atau mengarang jawaban, dan WAJIB memberikan jawaban standar berikut:
      "Informasi tersebut tidak tercantum dalam basis data resmi sistem SAR.
 
 Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi Call Center BASARNAS di nomor 115 (Bebas Pulsa 24 Jam) atau kunjungi website resmi BASARNAS di https://basarnas.go.id."
-2. TANPA EMOJI ATAU IKON DEKORATIF (DILARANG KERAS):
-   - JANGAN menggunakan emoji atau ikon dekoratif apapun (seperti telepon, sirene, buku, tanda seru, robot, dan sejenisnya).
-   - Format jawaban harus formal, bersih, profesional, dan bergaya institusional kedinasan resmi.
-3. KETERANGAN SUMBER YANG DIKUTIP (MANDATORI, LEBIH BANYAK SUMBER LEBIH BAGUS):
-   - Jika menjawab berdasarkan dokumen internal/regulasi, cantumkan di bagian akhir jawaban:
-     "**Referensi Dokumen & Sumber Resmi:**"
-     - [Nama Dokumen / Regulasi / SOP yang relevan]
-   - Jika menggunakan data dari "INFORMASI TERVERIFIKASI DARI INTERNET", cantumkan tautan sumbernya secara eksplisit:
-     "**Sumber Informasi Terverifikasi (Internet):**"
-     - [Nama Sumber / Judul] ([URL])
-4. INFORMASI KONTAK & SITUS RESMI:
-   - Sebutkan Call Center BASARNAS: 115 (Bebas Pulsa 24 Jam) dan Website Resmi: https://basarnas.go.id.
+3. FORMAT MARKDOWN & TANPA EMOJI (DILARANG KERAS):
+   - Gunakan satu tanda bintang (*teks tebal*) untuk penebalan teks (JANGAN gunakan dua bintang **teks**).
+   - JANGAN menggunakan emoji atau ikon dekoratif apapun.
+4. KETERANGAN SUMBER & KONTAK RESMI DI AKHIR JAWABAN:
+   - Cantumkan:
+     *Referensi Dokumen & Sumber Resmi:*
+     • [Nama Dokumen / Regulasi / SOP yang relevan]
+   - Jika menggunakan data internet terverifikasi, tambahkan:
+     *Sumber Informasi Terverifikasi:*
+     • [Nama Sumber / Judul] ([URL])
+   - Di baris paling bawah cantumkan:
+     *Layanan Siaga BASARNAS:* Call Center 115 (Bebas Pulsa 24 Jam) | https://basarnas.go.id
 5. Gunakan Bahasa Indonesia yang baku, sopan, formal, dan presisi.
 """
             tenant_settings = None
@@ -1322,35 +1344,34 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
 
             response = await ai_provider_manager.llm_generate(
                 prompt=prompt,
-                system_prompt="Anda adalah asisten Info SAR BASARNAS resmi. Jawab secara formal, presisi, HANYA berbasis dokumen resmi, regulasi, dan informasi internet terverifikasi yang diberikan, tanpa emoji dekoratif apapun. Bila tidak tercantum, tolak dengan mengarahkan ke Call Center 115 dan https://basarnas.go.id.",
+                system_prompt="Anda adalah asisten Info SAR BASARNAS resmi. Jawab secara formal, presisi, HANYA berbasis dokumen resmi, regulasi, dan informasi internet terverifikasi yang diberikan, gunakan *satu bintang* untuk huruf tebal, tanpa emoji dekoratif apapun. Bila tidak tercantum, tolak dengan mengarahkan ke Call Center 115 dan https://basarnas.go.id.",
                 temperature=0.2,
                 timeout=25.0,
                 tenant_settings=tenant_settings
             )
             if response and response.strip():
-                # Strip any stray decorative emojis to ensure clean, non-slop institutional format
+                # Strip any stray decorative emojis and normalize **bold** -> *bold* for Telegram/WhatsApp compatibility
                 cleaned_resp = re.sub(r"[\U00010000-\U0010ffff]|[\u2600-\u27BF]|[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u200d\ufe0f\ufe0e]", "", response)
+                cleaned_resp = re.sub(r"\*\*([^*]+)\*\*", r"*\1*", cleaned_resp)
                 cleaned_resp = re.sub(r"[ \t]+", " ", cleaned_resp)
                 return cleaned_resp.strip()
         except Exception as e:
             logger.error(f"Failed to generate RAG Bantuan SAR answer: {e}")
             
         return (
-            "**Informasi Standar Operasional Prosedur (SOP) & Bantuan SAR BASARNAS**\n\n"
-            "Badan Nasional Pencarian dan Pertolongan (BASARNAS) menyelenggarakan operasi pencarian, pertolongan, dan evakuasi secara siaga 24/7 berdasarkan standar operasional terintegrasi.\n\n"
-            "**Alur Prosedur Tanggap Darurat SAR:**\n"
-            "1. Penerimaan Laporan: Verifikasi data waktu kejadian, estimasi lokasi/koordinat, dan jumlah korban melalui Layanan Siaga 115.\n"
+            "*INFORMASI SAR: STANDAR OPERASIONAL PROSEDUR (SOP) & LAYANAN DARURAT BASARNAS*\n\n"
+            "Badan Nasional Pencarian dan Pertolongan (BASARNAS) menyelenggarakan operasi pencarian, pertolongan, dan evakuasi secara siaga 24 jam penuh (24/7) dan bebas biaya (gratis) di seluruh wilayah Indonesia.\n\n"
+            "*Alur Prosedur Tanggap Darurat SAR:*\n"
+            "1. Penerimaan Laporan: Verifikasi waktu kejadian, lokasi/koordinat, dan perkiraan jumlah korban melalui Layanan Siaga 115 atau Lapor SAR.\n"
             "2. Klasifikasi Insiden: Penentuan jenis musibah (Kecelakaan Kapal, Kecelakaan Pesawat, Bencana Alam, atau Kondisi Membahayakan Manusia/KMM).\n"
-            "3. Pengerahan Tim Rescue & Alut: SAR Mission Coordinator (SMC) mengoordinasikan pengerahan personel dan alat utama penyelamatan.\n\n"
-            "Call Center Darurat BASARNAS: 115 (Bebas Pulsa 24 Jam)\n"
-            "Website Resmi: https://basarnas.go.id\n"
-            "Untuk pelaporan musibah darurat saat ini, silakan gunakan menu Lapor SAR.\n\n"
-            "**Referensi Dokumen & Sumber Resmi:**\n"
-            "- Undang-Undang Republik Indonesia Nomor 29 Tahun 2014 tentang Pencarian dan Pertolongan\n"
-            "- Peraturan Badan Nasional Pencarian dan Pertolongan tentang Tata Cara Penyelenggaraan Operasi SAR\n"
-            "- International Aeronautical and Maritime Search and Rescue (IAMSAR) Manual Volume III\n"
-            "- Standard Operating Procedure (SOP) Siaga Call Center 115 & Komando Operasi BASARNAS\n"
-            "- Pedoman Teknis Pertolongan Pertama (Medical First Responder) BASARNAS"
+            "3. Pengerahan Tim Rescue: SAR Mission Coordinator (SMC) mengerahkan personel dan alat utama penyelamatan terdekat.\n\n"
+            "*Referensi Dokumen & Sumber Resmi:*\n"
+            "• Undang-Undang Republik Indonesia Nomor 29 Tahun 2014 tentang Pencarian dan Pertolongan\n"
+            "• Peraturan Badan Nasional Pencarian dan Pertolongan tentang Pedoman Penyelenggaraan Operasi SAR\n"
+            "• International Aeronautical and Maritime Search and Rescue (IAMSAR) Manual Volume III\n\n"
+            "*Layanan Siaga BASARNAS:*\n"
+            "• Call Center Darurat: 115 (Bebas Pulsa 24 Jam)\n"
+            "• Website Resmi: https://basarnas.go.id"
         )
 
     # Backward compatibility alias
@@ -1364,9 +1385,27 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
         """
         msg_clean = message.strip().lower()
         
-        # Fast path for exact button clicks / common commands
+        # Fast path for global reset and status commands (always active in any state)
         if msg_clean in ("/start", "/reset", "/mulai", "reset", "menu", "menu utama"):
             return "RESET"
+        if (
+            msg_clean in ("/status", "/cek", "cek status", "cek status laporan", "status", "status laporan")
+            or msg_clean.startswith("cek ")
+            or msg_clean.startswith("status ")
+            or bool(re.search(r'\bSAR-[A-Z0-9\-]+\b', message, re.IGNORECASE))
+        ):
+            return "CEK_STATUS"
+
+        # If user is in the middle of answering a specific field question (e.g., AWAITING_KORBAN, AWAITING_WAKTU),
+        # do NOT treat numeric answers ("1", "2", "3") or short words as menu selections!
+        # Only allow explicit slash/callback menu switches, and route all field answers to DATA_PELAPORAN.
+        if current_state and current_state.startswith("AWAITING_") and current_state not in ("AWAITING_REPORT", "AWAITING_STATUS_QUERY"):
+            if msg_clean in ("/bantuan", "menu_info_sar", "info sar"):
+                return "LAPOR_INFO"
+            if msg_clean in ("/lapor", "menu_lapor_sar"):
+                return "LAPOR_SAR"
+            return "DATA_PELAPORAN"
+
         if msg_clean in (
             "lapor sar", "lapor", "1", "1.", "menu_lapor_sar", 
             "lapor sar cepat", "lapor cepat", "lapor sar kejadian", "lapor kejadian", 
@@ -1380,18 +1419,6 @@ Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi C
             "/bantuan", "tanya sar", "bantuan", "menu_lapor_info", "3", "3."
         ):
             return "LAPOR_INFO"
-        if (
-            msg_clean in ("/status", "/cek", "cek status", "cek status laporan", "status", "status laporan")
-            or msg_clean.startswith("cek ")
-            or msg_clean.startswith("status ")
-            or bool(re.search(r'\bSAR-[A-Z0-9\-]+\b', message, re.IGNORECASE))
-        ):
-            return "CEK_STATUS"
-
-        # If user is in the middle of answering a specific field question,
-        # route message directly to the field processor without unnecessary LLM latency
-        if current_state and current_state.startswith("AWAITING_") and current_state not in ("AWAITING_REPORT", "AWAITING_STATUS_QUERY"):
-            return "DATA_PELAPORAN"
 
         # Quick indicator check for obvious incident reports or info questions
         incident_indicators = [

@@ -102,7 +102,7 @@ class DefaultFieldProcessor(BaseFieldProcessor):
                 history_list = json.loads(session.conversation_history)
             except Exception:
                 history_list = []
-            nlp_data = await extract_incident_data(message, db, session.user_id, history_list, use_llm=False)
+            nlp_data = await extract_incident_data(message, db, session.user_id, history_list, use_llm=True)
             if nlp_data and nlp_data.get(self.field_name):
                 nlp_val = nlp_data[self.field_name]
         except Exception as e:

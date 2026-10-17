@@ -36,16 +36,14 @@ class VictimDataFieldProcessor(BaseFieldProcessor):
         
         is_unknown = not digits or "belum tahu" in str(count_str).lower() or "belum diketahui" in str(count_str).lower()
         
-        if is_unknown:
+        if is_unknown or int(digits[0]) <= 1:
             q_text = (
-                "*Siapa saja nama atau identitas korban?*\n\n"
-                "Sebutkan nama, jenis kelamin, umur, atau ciri-cirinya seadanya jika Anda tahu.\n"
-                "Contoh: _Budi (Laki-laki, 40 thn)_ atau ketuk tombol **Belum Ada Data**."
+                "*Siapa nama atau ciri-ciri korban?*\n"
+                "Sebutkan nama, jenis kelamin, umur, atau ciri korban jika diketahui (contoh: _Budi, Laki-laki, 40 thn_)."
             )
-            return q_text, ["Belum Ada Data"]
+            return q_text, ["Belum Tahu"]
             
-        count = int(digits[0]) if digits else 1
-        
+        count = int(digits[0])
         try:
             from app.services.message_formatter import message_formatter
             count_word = message_formatter.number_to_words(count).title()
@@ -53,16 +51,10 @@ class VictimDataFieldProcessor(BaseFieldProcessor):
             count_word = str(count)
             
         q_text = (
-            f"*Siapa saja nama atau identitas {count} ({count_word}) orang korban tersebut?*\n\n"
-            "Sebutkan nama, jenis kelamin, umur, atau ciri-cirinya seadanya yang Anda ketahui dalam satu pesan.\n"
-            "*(Contoh: Korban 1 Andi 25th Laki, Korban 2 Ani 20th Perempuan)*\n\n"
-            "Ketuk tombol **Belum Tahu** jika Anda tidak memiliki datanya."
+            f"*Siapa saja nama atau identitas {count} ({count_word}) orang korban tersebut?*\n"
+            "Sebutkan nama, jenis kelamin, atau umur korban yang Anda ketahui dalam satu pesan (contoh: _Andi 25th Laki, Ani 20th Perempuan_)."
         )
-        
-        # Default buttons for data_korban:
-        buttons = ["Belum Tahu"]
-        
-        return q_text, buttons
+        return q_text, ["Belum Tahu"]
 
 
 DataKorbanFieldProcessor = VictimDataFieldProcessor

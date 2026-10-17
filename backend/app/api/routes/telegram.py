@@ -433,36 +433,13 @@ async def process_telegram_background(tenant_slug: str, db_url: str, s3_bucket: 
                 
                 # Dispatch the reply back to Telegram
                 if response and "text" in response:
-                    session = await chatbot_engine.get_or_create_session(f"tg_{chat_id}", "telegram", db)
-                    if session.state == "AWAITING_WAKTU":
-                        try:
-                            ext_data = json.loads(session.extracted_data) if session.extracted_data else {}
-                        except Exception:
-                            ext_data = {}
-                        
-                        if not ext_data.get("_temp_date"):
-                            inline_kb = create_calendar()
-                            await reply_dispatcher.send_telegram_reply(
-                                chat_id=chat_id,
-                                text=response["text"],
-                                inline_keyboard=inline_kb,
-                                bot_token=token
-                            )
-                        else:
-                            await reply_dispatcher.send_telegram_reply(
-                                chat_id=chat_id,
-                                text=response["text"],
-                                buttons=[],
-                                bot_token=token
-                            )
-                    else:
-                        await reply_dispatcher.send_telegram_reply(
-                            chat_id=chat_id,
-                            text=response["text"],
-                            buttons=response.get("buttons"),
-                            inline_keyboard=response.get("inline_keyboard"),
-                            bot_token=token
-                        )
+                    await reply_dispatcher.send_telegram_reply(
+                        chat_id=chat_id,
+                        text=response["text"],
+                        buttons=response.get("buttons"),
+                        inline_keyboard=response.get("inline_keyboard"),
+                        bot_token=token
+                    )
         except Exception as e:
             logger.error(f"Error processing Telegram message in background: {e}", exc_info=True)
 
@@ -575,25 +552,39 @@ async def setup_telegram_webhook(
             detail="Token Telegram belum dikonfigurasi pada pengaturan instansi. Silakan isi token dan simpan pengaturan terlebih dahulu."
         )
 
-    # Always persist bot_token to DB if explicitly provided in payload
-    if payload and payload.bot_token and payload.bot_token.strip():
+    # Always persist bot_token and base_url to DB if explicitly provided in payload
+    if payload:
         try:
-            stmt = select(SystemSetting).where(SystemSetting.key == "telegram_token")
-            res = await db.execute(stmt)
-            existing = res.scalar_one_or_none()
-            if existing:
-                existing.value = payload.bot_token.strip()
-            else:
-                db.add(SystemSetting(key="telegram_token", value=payload.bot_token.strip()))
-            await db.commit()
+            settings_to_save = {}
+            if payload.bot_token and payload.bot_token.strip():
+                settings_to_save["telegram_token"] = payload.bot_token.strip()
+            if payload.base_url is not None and payload.base_url.strip():
+                clean_save_url = payload.base_url.strip().rstrip('/')
+                if "/api/telegram/webhook" in clean_save_url:
+                    clean_save_url = clean_save_url.split("/api/telegram/webhook")[0].rstrip('/')
+                settings_to_save["telegram_webhook_url"] = clean_save_url
+
+            if settings_to_save:
+                stmt = select(SystemSetting).where(SystemSetting.key.in_(list(settings_to_save.keys())))
+                res = await db.execute(stmt)
+                existing_map = {s.key: s for s in res.scalars().all()}
+                for k, v in settings_to_save.items():
+                    if k in existing_map:
+                        existing_map[k].value = v
+                    else:
+                        db.add(SystemSetting(key=k, value=v))
+                await db.commit()
         except Exception as e:
-            logger.warning(f"Could not auto-persist telegram_token: {e}")
+            logger.warning(f"Could not auto-persist telegram webhook settings: {e}")
 
     # Determine target tenant slug
     target_tenant_slug = (payload.tenant_slug.strip() if payload and payload.tenant_slug and payload.tenant_slug.strip() else None) or tenant.slug
 
-    # Use the custom base URL if provided in the payload, otherwise fall back to request base URL
-    custom_base_url = payload.base_url.strip() if payload and payload.base_url else None
+    # Use the custom base URL if provided in the payload, otherwise fall back to saved DB URL or request base URL
+    custom_base_url = (
+        (payload.base_url.strip() if payload and payload.base_url and payload.base_url.strip() else None)
+        or getattr(tenant_settings, "db_settings", {}).get("telegram_webhook_url")
+    )
     if custom_base_url:
         clean_url = custom_base_url.rstrip('/')
         # Prevent double-path if user accidentally pasted full webhook URL (e.g. https://domain.com/api/telegram/webhook/natuna)

@@ -488,19 +488,35 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
 
         msg_lower = message.lower()
 
-        family_map = [
-            (r"\b(kakak|abang|kk)\s+(?:kandung\s+|laki-laki\s+|perempuan\s+|ipar\s+)?(?:saya|aku|kami|kita)\b", "Keluarga Korban (Kakak)"),
-            (r"\b(adik|adek)\s+(?:kandung\s+|laki-laki\s+|perempuan\s+|ipar\s+)?(?:saya|aku|kami|kita)\b", "Keluarga Korban (Adik)"),
-            (r"\b(ayah|bapak|bapa|papa|abi)\s+(?:kandung\s+|mertua\s+)?(?:saya|aku|kami|kita)\b", "Keluarga Korban (Ayah)"),
-            (r"\b(ibu|emak|mamak|mama|bunda)\s+(?:kandung\s+|mertua\s+)?(?:saya|aku|kami|kita)\b", "Keluarga Korban (Ibu)"),
-            (r"\b(anak|putra|putri)\s+(?:kandung\s+|laki-laki\s+|perempuan\s+)?(?:saya|aku|kami|kita)\b", "Keluarga Korban (Anak)"),
-            (r"\b(suami)\s+(?:saya|aku)\b", "Keluarga Korban (Suami)"),
-            (r"\b(istri)\s+(?:saya|aku)\b", "Keluarga Korban (Istri)"),
-            (r"\b(paman|om|pakcik|pakde)\s+(?:saya|aku|kami|kita)\b", "Keluarga Korban (Paman)"),
-            (r"\b(bibi|tante|makcik|bude)\s+(?:saya|aku|kami|kita)\b", "Keluarga Korban (Bibi)"),
-            (r"\b(kakek|nenek|keponakan|sepupu|ipar|mertua|menantu|keluarga|saudara|kerabat|orang\s+tua)\s+(?:saya|aku|kami|kita)\b", "Keluarga Korban"),
+        # 1. Self-identification patterns: Pelapor menyebutkan posisi dirinya terhadap korban
+        #    Contoh: "Saya kakaknya", "Saya kakak korban", "Saya ayahnya"
+        self_id_map = [
+            (r"\b(?:saya|aku)\s+(?:adalah\s+)?(?:kakak|abang)(?:nya|\s+korban)\b", "Kakak Korban"),
+            (r"\b(?:saya|aku)\s+(?:adalah\s+)?(?:adik|adek)(?:nya|\s+korban)\b", "Adik Korban"),
+            (r"\b(?:saya|aku)\s+(?:adalah\s+)?(?:ayah|bapak|papa|ibu|mama|orang\s+tua)(?:nya|\s+korban)\b", "Orang Tua Korban"),
+            (r"\b(?:saya|aku)\s+(?:adalah\s+)?(?:anak|putra|putri)(?:nya|\s+korban)\b", "Anak Korban"),
+            (r"\b(?:saya|aku)\s+(?:adalah\s+)?suami(?:nya|\s+korban)\b", "Suami Korban"),
+            (r"\b(?:saya|aku)\s+(?:adalah\s+)?istri(?:nya|\s+korban)\b", "Istri Korban"),
         ]
-        for pattern, label in family_map:
+        for pattern, label in self_id_map:
+            if re.search(pattern, msg_lower):
+                return label
+
+        # 2. Reciprocal kinship patterns: Pelapor menyebutkan siapa korbannya ("<Kerabat> saya [mengalami musibah]")
+        #    Jika korban adalah Kakak saya -> maka Pelapor adalah Adik Korban!
+        reciprocal_family_map = [
+            (r"\b(kakak|abang|kk)\s+(?:kandung\s+|laki-laki\s+|perempuan\s+|ipar\s+)?(?:saya|aku|kami|kita)\b", "Adik Korban"),
+            (r"\b(adik|adek)\s+(?:kandung\s+|laki-laki\s+|perempuan\s+|ipar\s+)?(?:saya|aku|kami|kita)\b", "Kakak Korban"),
+            (r"\b(ayah|bapak|bapa|papa|abi|ibu|emak|mamak|mama|bunda|orang\s+tua)\s+(?:kandung\s+|mertua\s+)?(?:saya|aku|kami|kita)\b", "Anak Korban"),
+            (r"\b(anak|putra|putri)\s+(?:kandung\s+|laki-laki\s+|perempuan\s+)?(?:saya|aku|kami|kita)\b", "Orang Tua Korban"),
+            (r"\b(suami)\s+(?:saya|aku)\b", "Istri Korban"),
+            (r"\b(istri)\s+(?:saya|aku)\b", "Suami Korban"),
+            (r"\b(paman|om|pakcik|pakde|bibi|tante|makcik|bude)\s+(?:saya|aku|kami|kita)\b", "Keponakan Korban"),
+            (r"\b(keponakan)\s+(?:saya|aku|kami|kita)\b", "Paman/Bibi Korban"),
+            (r"\b(kakek|nenek)\s+(?:saya|aku|kami|kita)\b", "Cucu Korban"),
+            (r"\b(sepupu|ipar|mertua|menantu|keluarga|saudara|kerabat)\s+(?:saya|aku|kami|kita)\b", "Keluarga Korban"),
+        ]
+        for pattern, label in reciprocal_family_map:
             if re.search(pattern, msg_lower):
                 return label
 
@@ -850,6 +866,29 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
                     num_words[word] = target
                 elif target == "":
                     num_words[word] = ""
+
+        # Compound subject counting: e.g. "Kakak saya bersama 2 temannya" -> 1 + 2 = 3 Orang
+        word_num_keys = "|".join(re.escape(w) for w in num_words.keys() if w != "sebanyak")
+        compound_with_num = re.search(
+            rf"\b(?:(?:kakak|abang|adik|adek|ayah|bapak|ibu|suami|istri|anak|paman|om|bibi|tante|kakek|nenek|teman|rekan|tetangga)\s+(?:saya|aku|kami)|saya|aku)\s+"
+            rf"(?:bersama|sama|dengan|dan)\s+(?:dengan\s+)?(\d+|{word_num_keys})\s*(?:orang\s+)?"
+            rf"(?:teman|rekan|kawan|sahabat|abk|anak\s*buah|anggota|orang|anak|saudara|kerabat|tetangga)(?:nya|\s+saya|\s+kami)?\b",
+            msg_normalized,
+        )
+        if compound_with_num:
+            raw_n = compound_with_num.group(1)
+            n_str = num_words.get(raw_n, raw_n)
+            if n_str and n_str.isdigit():
+                return f"{1 + int(n_str)} Orang"
+
+        # Compound subject with single companion: e.g. "Kakak saya sama temannya", "Ayah saya dan ibunya" -> 2 Orang
+        compound_single = re.search(
+            r"\b(?:(?:kakak|abang|adik|adek|ayah|bapak|ibu|suami|istri|anak|paman|om|bibi|tante|kakek|nenek|teman|rekan|tetangga)\s+(?:saya|aku|kami)|saya|aku)\s+"
+            r"(?:bersama|sama|dengan|dan)\s+(?:seorang\s+)?(?:teman|rekan|kawan|sahabat|adik|adek|kakak|abang|anak|istri|suami|ayah|bapak|ibu)(?:nya|\s+saya|\s+kami)?\b",
+            msg_normalized,
+        )
+        if compound_single:
+            return "2 Orang"
 
         # Get dynamic roles & generics
         default_roles = ["abk", "pemancing", "nelayan", "penumpang", "pendaki", "wisatawan", "anak", "balita", "korban", "orang", "jiwa", "warga", "personel"]

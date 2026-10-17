@@ -39,11 +39,16 @@ class VictimFieldProcessor(BaseFieldProcessor):
             return True, extracted_data
             
         has_number = False
+        single_person_words = ["sendiri", "sendirian", "seorang", "seorang diri", "1 orang", "satu orang"]
+        if any(sp in val_str for sp in single_person_words):
+            extracted_data["korban"] = "1 orang"
+            return True, extracted_data
+
         if re.search(r'\d+', val_str):
             has_number = True
         else:
             from app.services.rule_extractor import RuleExtractor
-            num_words = ["satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "seorang", "seorang diri", "abk", "nelayan", "penumpang", "kru", "awak", "korban"]
+            num_words = ["satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "seorang", "seorang diri", "abk", "nelayan", "penumpang", "kru", "awak", "korban", "kakak", "adik", "ayah", "ibu", "suami", "istri", "anak", "teman", "rekan"]
             if RuleExtractor._dictionary_cache:
                 db_num_words = []
                 for cat in ["QUANTIFIER", "VICTIM_ROLE"]:
@@ -54,26 +59,48 @@ class VictimFieldProcessor(BaseFieldProcessor):
             if any(nw in val_str for nw in num_words):
                 has_number = True
                 
+        from app.services.rule_extractor import RuleExtractor
+        parsed = RuleExtractor.extract_victim_count(answer_clean)
+        if parsed:
+            extracted_data["korban"] = parsed
+            return True, extracted_data
+
+        # Try AI-First contextual extraction before rejecting or falling back to naive digit regex
+        if not answer_clean.isdigit() and len(answer_clean.split()) >= 2:
+            try:
+                import json
+                from app.services.incident_data_service import extract_incident_data
+                try:
+                    history_list = json.loads(session.conversation_history)
+                except Exception:
+                    history_list = []
+                nlp_data = await extract_incident_data(message, db, session.user_id, history_list, use_llm=True)
+                if nlp_data and nlp_data.get("korban") and str(nlp_data.get("korban")).strip() not in ("", "Nihil", "Belum ada data", "-"):
+                    extracted_data["korban"] = str(nlp_data["korban"]).strip()
+                    return True, extracted_data
+            except Exception as ex:
+                logger.warning(f"AI fallback in VictimFieldProcessor failed: {ex}")
+
         if not has_number:
             reply = (
                 "*Format Jumlah Korban Tidak Valid*\n\n"
-                "Mohon ketik jumlah korban berupa angka secara langsung (contoh: _3_) atau ketuk tombol **Belum Tahu**."
+                "Mohon ketik jumlah korban berupa angka secara langsung (contoh: _1_ atau _3 orang_) atau pilih *Belum Tahu*."
             )
-            buttons = ["Kurang dari 3 orang", "3 - 5 orang", "Lebih dari 5 orang", "Belum Tahu"]
-            return False, {"text": reply, "buttons": buttons}
-            
-        from app.services.rule_extractor import RuleExtractor
-        parsed = RuleExtractor.extract_korban(answer_clean)
-        extracted_data["korban"] = parsed if parsed else answer_clean
+            return False, {"text": reply, "buttons": ["Belum Tahu"]}
+
+        digit_m = re.search(r'\b(\d+)\b', answer_clean)
+        if digit_m:
+            extracted_data["korban"] = f"{digit_m.group(1)} orang"
+        else:
+            extracted_data["korban"] = "1 orang" if any(w in val_str for w in ["satu", "kakak", "adik", "ayah", "ibu", "suami", "istri", "anak"]) else answer_clean
         return True, extracted_data
 
     def get_question(self, session: ChatSession, extracted_data: dict) -> tuple[str, list]:
         q_text = (
-            "*Berapa perkiraan jumlah total korban?*\n"
-            "Ketik jumlahnya secara langsung (contoh: _3 orang_) atau pilih tombol di bawah jika tidak tahu pasti."
+            "*Berapa perkiraan jumlah korban dalam kejadian ini?*\n"
+            "Ketik jumlah orangnya secara langsung (contoh: _1_ atau _3 orang_)."
         )
-        buttons = ["Kurang dari 3 orang", "3 - 5 orang", "Lebih dari 5 orang", "Belum Tahu"]
-        return q_text, buttons
+        return q_text, ["Belum Tahu"]
 
 
 KorbanFieldProcessor = VictimFieldProcessor
