@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Enum
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Enum, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 try:
@@ -61,6 +61,12 @@ class Report(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     version_id = Column(Integer, nullable=False, default=1)
+
+    __table_args__ = (
+        Index("idx_reports_status_created_at", "status", "created_at"),
+        Index("idx_reports_coords", "latitude", "longitude"),
+        Index("idx_reports_phone", "reporter_phone"),
+    )
 
     __mapper_args__ = {
         "version_id_col": version_id

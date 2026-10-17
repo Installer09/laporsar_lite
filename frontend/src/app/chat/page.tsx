@@ -22,8 +22,6 @@ import {
   MapPin, 
   Users2, 
   RefreshCw, 
-  Play, 
-  Pause,
   MessageCircle,
   HelpCircle,
   Clock,
@@ -31,9 +29,47 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  FileText
+  FileText,
+  Sparkles,
+  Copy,
+  Check,
+  ShieldAlert,
+  Anchor,
+  Radio
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+
+const SOP_QUICK_REPLIES = [
+  {
+    icon: MapPin,
+    color: 'text-blue-500',
+    title: 'Minta Live Location',
+    text: 'Mohon kirimkan Lokasi Terkini (Share Live Location) Anda melalui WhatsApp/Telegram agar tim rescue dapat memetakan posisi dan menentukan rute penyelamatan tercepat.',
+  },
+  {
+    icon: ShieldAlert,
+    color: 'text-amber-500',
+    title: 'Instruksi Keselamatan',
+    text: 'Instruksi Keselamatan Darurat: Harap tetap tenang, segera kenakan rompi pelampung (life jacket), dan tetap berada di dekat lambung kapal / titik aman terakhir.',
+  },
+  {
+    icon: Users2,
+    color: 'text-indigo-500',
+    title: 'Data Korban & Medis',
+    text: 'Berapa jumlah total orang/korban di lokasi kejadian? Mohon informasikan apakah ada korban terluka atau membutuhkan penanganan medis darurat.',
+  },
+  {
+    icon: Anchor,
+    color: 'text-cyan-600',
+    title: 'Rincian Sarana / Kapal',
+    text: 'Mohon informasikan nama sarana/kapal, warna cat lambung/badan kendaraan, serta jenis mesin atau ciri khusus lainnya untuk mempermudah identifikasi tim.',
+  },
+  {
+    icon: Radio,
+    color: 'text-emerald-500',
+    title: 'Konfirmasi Tim Bergerak',
+    text: 'Laporan Anda telah diterima oleh Siaga Komunikasi Kantor SAR. Unsur operasi terdekat sedang berkoordinasi dan mempersiapkan personel serta alut SAR untuk menuju lokasi.',
+  },
+];
 
 export default function ChatPage() {
   const queryClient = useQueryClient();
@@ -186,6 +222,39 @@ export default function ChatPage() {
     });
   };
 
+  const [copiedSummary, setCopiedSummary] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleSelectQuickReply = (text: string) => {
+    if (activeSession?.autopilot) {
+      if (window.confirm('Mode Respon Otomatis sedang aktif pada sesi ini. Nonaktifkan respon otomatis untuk mengirim pesan langsung dari operator?')) {
+        toggleAutopilotMutation.mutate({ id: activeSession.id, autopilot: false });
+      } else {
+        return;
+      }
+    }
+    setOperatorMessage(text);
+    inputRef.current?.focus();
+  };
+
+  const handleCopySummary = () => {
+    if (!activeSession?.extracted_data) return;
+    const d = activeSession.extracted_data;
+    const summary = [
+      `LAPORAN EKSTRAKSI SESI SAR: ${activeSession.contact_name || 'Pelapor'}`,
+      `• Platform: ${activeSession.channel}`,
+      `• Kejadian: ${d.jenis_kejadian || '-'}${d.sub_jenis_kejadian ? ` (${d.sub_jenis_kejadian})` : ''}`,
+      `• Waktu: ${d.waktu || '-'}`,
+      `• Lokasi: ${d.lokasi_teks || '-'}`,
+      `• Sarana: ${d.data_kapal || d.pakai_kapal || '-'}`,
+      `• Korban: ${d.data_korban || d.korban || '-'}`,
+      `• Hubungan: ${d.pelapor_hubungan || '-'}`
+    ].join('\n');
+    navigator.clipboard.writeText(summary);
+    setCopiedSummary(true);
+    setTimeout(() => setCopiedSummary(false), 2000);
+  };
+
   const getPlatformBadge = (channel: string) => {
     switch (channel) {
       case 'telegram':
@@ -284,7 +353,7 @@ export default function ChatPage() {
         <div className="p-4 border-b border-slate-100 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-slate-800 text-sm tracking-wide flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-slate-700" /> Saluran Obrolan SAR
+              <MessageSquare className="w-4 h-4 text-slate-700" /> Pusat Pesan SAR
             </h2>
             <button 
               onClick={() => refetchSessions()}
@@ -458,21 +527,21 @@ export default function ChatPage() {
                       ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100' 
                       : 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
                   }`}
-                  title={activeSession.autopilot ? 'Klik untuk mengambil alih percakapan secara manual' : 'Klik untuk mengembalikan ke asisten AI'}
+                  title={activeSession.autopilot ? 'Klik untuk mengambil alih percakapan secara manual oleh operator' : 'Klik untuk mengaktifkan kembali respon otomatis sistem'}
                 >
                   {toggleAutopilotMutation.isPending ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : activeSession.autopilot ? (
                     <>
                       <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      <span>Autopilot AI</span>
-                      <span className="text-[10px] text-emerald-700 font-normal underline ml-0.5">Ambil Alih</span>
+                      <span>Respon Otomatis</span>
+                      <span className="text-[10px] text-emerald-700 font-normal underline ml-0.5">Ambil Alih Operator</span>
                     </>
                   ) : (
                     <>
                       <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                       <span>Operator Manual</span>
-                      <span className="text-[10px] text-amber-700 font-normal underline ml-0.5">Kembalikan ke AI</span>
+                      <span className="text-[10px] text-amber-700 font-normal underline ml-0.5">Aktifkan Otomatis</span>
                     </>
                   )}
                 </button>
@@ -535,7 +604,7 @@ export default function ChatPage() {
                                 <span className="px-2 py-0.5 rounded bg-slate-900 text-white">Operator Command</span>
                               ) : (
                                 <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 flex items-center gap-1 border border-slate-200">
-                                  <Bot className="w-3 h-3 text-slate-700" /> Otomatisasi AI
+                                  <Bot className="w-3 h-3 text-slate-700" /> Respon Otomatis
                                 </span>
                               )}
                             </div>
@@ -582,27 +651,50 @@ export default function ChatPage() {
               </div>
             )}
 
+            {/* Quick Replies SOP Toolbar */}
+            <div className="px-3.5 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 overflow-x-auto">
+              <div className="flex items-center gap-1.5 shrink-0 text-slate-500 font-bold text-[11px]">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span className="hidden sm:inline">Balasan SOP:</span>
+              </div>
+              <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar">
+                {SOP_QUICK_REPLIES.map((reply, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleSelectQuickReply(reply.text)}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 hover:text-slate-900 text-slate-700 text-[11px] font-semibold rounded-lg border border-slate-200 shrink-0 shadow-xs transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                    title={reply.text}
+                  >
+                    <reply.icon className={`w-3.5 h-3.5 ${reply.color}`} />
+                    <span>{reply.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Message Reply Input Area */}
             <form 
               onSubmit={handleSendOperator}
               className="p-3.5 border-t border-slate-200 flex items-center gap-2.5 bg-white"
             >
               <input
+                ref={inputRef}
                 type="text"
                 placeholder={
                   activeSession.autopilot
-                    ? "Matikan Autopilot di atas untuk mengirim instruksi langsung..."
+                    ? "Pilih Balasan SOP atau nonaktifkan Respon Otomatis untuk mengetik manual..."
                     : "Ketik pesan tanggapan operator ke pelapor..."
                 }
                 value={operatorMessage}
                 onChange={(e) => setOperatorMessage(e.target.value)}
-                disabled={activeSession.autopilot || sendMessageMutation.isPending}
+                disabled={sendMessageMutation.isPending}
                 className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/20 focus:border-slate-400 disabled:bg-slate-100 disabled:cursor-not-allowed"
               />
               <button
                 type="submit"
                 disabled={!operatorMessage.trim() || activeSession.autopilot || sendMessageMutation.isPending}
-                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 shrink-0 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed"
+                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 shrink-0 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed cursor-pointer"
               >
                 {sendMessageMutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -632,7 +724,7 @@ export default function ChatPage() {
 
       {/* RIGHT PANEL: Visual AI Extraction Board */}
       <div className="w-80 bg-white rounded-2xl border border-slate-200 flex flex-col overflow-hidden shadow-sm shrink-0">
-        <div className="p-4 border-b border-slate-200 bg-slate-50/70">
+        <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
               <FileText className="w-4 h-4" />
@@ -642,6 +734,17 @@ export default function ChatPage() {
               <p className="text-[11px] text-slate-500">Data hasil telaah otomatis percakapan</p>
             </div>
           </div>
+          {selectedSessionId && activeSession?.extracted_data && (
+            <button
+              type="button"
+              onClick={handleCopySummary}
+              className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg text-xs flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+              title="Salin Ringkasan Parameter"
+            >
+              {copiedSummary ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              <span className="text-[10px] font-bold">{copiedSummary ? 'Disalin' : 'Salin'}</span>
+            </button>
+          )}
         </div>
 
         {selectedSessionId && activeSession ? (
@@ -689,7 +792,7 @@ export default function ChatPage() {
                 <HelpCircle className="w-8 h-8 text-indigo-400 mx-auto" />
                 <p className="text-xs font-semibold text-indigo-900">Konsultasi Info SAR</p>
                 <p className="text-[11px] leading-relaxed text-indigo-600">
-                  Pengguna sedang mencari informasi regulasi atau SOP SAR. Bot melayani secara otomatis (Autopilot AI).
+                  Pengguna sedang mencari informasi regulasi atau SOP SAR. Sistem melayani secara otomatis (Siaga Otomatis).
                 </p>
               </div>
             ) : (

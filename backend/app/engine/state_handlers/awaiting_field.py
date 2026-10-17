@@ -48,8 +48,8 @@ class AwaitingFieldStateHandler(BaseStateHandler):
         is_valid, res = await processor.validate_and_extract(message, session, extracted_data, db)
         
         if is_valid:
-            # Run hybrid AI+Rule extractor on conversational replies (skip bare digits or skip words)
-            if not answer_clean.isdigit() and normalized_answer not in SKIP_WORDS:
+            # Run hybrid AI+Rule extractor on multi-detail conversational replies (skip short answers, bare digits, or skip words)
+            if len(answer_clean.split()) >= 4 and normalized_answer not in SKIP_WORDS:
                 try:
                     from app.services.incident_data_service import extract_incident_data
                     try:

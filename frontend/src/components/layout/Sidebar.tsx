@@ -10,26 +10,27 @@ import {
   BookOpen, 
   Activity,
   MessageCircle,
-  LogOut,
   Shield,
   Globe,
-  HardDrive
+  HardDrive,
+  HelpCircle
 } from 'lucide-react';
 import { cn, decodeJwt } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSidebar } from '@/providers/SidebarProvider';
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getIdentity, getBackendUrl } from '@/lib/api';
+import { getIdentity, getBackendUrl, getReports } from '@/lib/api';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/', section: 'Operasional' },
   { icon: FileText, label: 'Laporan Masuk', href: '/reports', section: 'Operasional' },
-  { icon: MessageCircle, label: 'Chat Manual', href: '/chat', section: 'Operasional' },
+  { icon: MessageCircle, label: 'Pusat Pesan', href: '/chat', section: 'Operasional' },
   { icon: Users, label: 'Database Kontak', href: '/contacts', section: 'Operasional' },
   { icon: BookOpen, label: 'Kamus Istilah', href: '/knowledge', section: 'Pengayaan Data' },
   { icon: HardDrive, label: 'Penyimpanan Berkas', href: '/storage', section: 'Sistem' },
   { icon: Settings, label: 'Pengaturan', href: '/settings', section: 'Sistem' },
+  { icon: HelpCircle, label: 'Pusat Bantuan & SOP', href: '/help-center', section: 'Sistem' },
 ];
 
 export function Sidebar() {
@@ -43,6 +44,16 @@ export function Sidebar() {
     queryKey: ['identity'],
     queryFn: getIdentity,
   });
+
+  const { data: reports } = useQuery({
+    queryKey: ['reports_header'],
+    queryFn: getReports,
+    refetchInterval: 15000,
+  });
+
+  const pendingCount = Array.isArray(reports)
+    ? reports.filter((r: any) => r.status?.toUpperCase() === 'PENDING').length
+    : 0;
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -58,6 +69,10 @@ export function Sidebar() {
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  const cleanRole = userRole ? String(userRole).toLowerCase().replace(/[\s_-]/g, '') : '';
+  const isSuperAdmin = cleanRole === 'superadmin' || userRole === 'Super Admin';
+  const isPusatOrGlobal = !tenantSlug || tenantSlug === 'pusat' || tenantSlug === 'global' || isSuperAdmin;
+
   const dynamicMenuItems = isLoaded
     ? menuItems.filter((item) => {
         if (userRole === 'User') {
@@ -70,12 +85,17 @@ export function Sidebar() {
       })
     : [];
 
+  if (isLoaded && isPusatOrGlobal) {
+    // Insert Peta Nasional right after Dashboard for Pusat / Super Admin
+    dynamicMenuItems.splice(1, 0, {
+      icon: Globe,
+      label: 'Peta Nasional',
+      href: '/national-dashboard',
+      section: 'Operasional',
+    });
+  }
 
-
-  const isSuperAdmin = userRole === 'Super Admin' || userRole === 'super_admin' || userRole === 'SuperAdmin';
-  const isPusatOrGlobal = !tenantSlug || tenantSlug === 'pusat';
-
-  if (isSuperAdmin && isPusatOrGlobal) {
+  if (isLoaded && isSuperAdmin && (!tenantSlug || tenantSlug === 'pusat')) {
     dynamicMenuItems.push({ icon: Shield, label: 'Administrator', href: '/admin', section: 'Sistem' });
   }
 
@@ -170,12 +190,21 @@ export function Sidebar() {
                             animate={{ opacity: 1, width: 'auto' }}
                             exit={{ opacity: 0, width: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="whitespace-nowrap truncate min-w-0"
+                            className="whitespace-nowrap truncate min-w-0 flex-1"
                           >
                             {item.label}
                           </motion.span>
                         )}
                       </AnimatePresence>
+                      {item.href === '/reports' && pendingCount > 0 && (
+                        isSidebarOpen ? (
+                          <span className="ml-auto px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-rose-500 text-white shadow-xs animate-pulse">
+                            {pendingCount}
+                          </span>
+                        ) : (
+                          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 border border-white animate-pulse" />
+                        )
+                      )}
                     </div>
                   </Link>
                 );

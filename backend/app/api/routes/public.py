@@ -56,21 +56,21 @@ async def get_public_map_reports(
             async with session_maker() as tenant_db:
                 stmt = select(
                     Report.id,
-                    Report.no_laporan,
-                    Report.jenis_kejadian,
-                    Report.koordinat_lat,
-                    Report.koordinat_lng,
+                    Report.report_number.label("no_laporan"),
+                    Report.incident_type.label("jenis_kejadian"),
+                    Report.latitude.label("koordinat_lat"),
+                    Report.longitude.label("koordinat_lng"),
                     Report.status,
-                    Report.pos_sar_terdekat,
+                    Report.nearest_sar_post.label("pos_sar_terdekat"),
                     Report.created_at,
-                    Report.lokasi_teks,
-                    Report.waktu,
-                    Report.korban,
-                    Report.korban_total
+                    Report.location_text.label("lokasi_teks"),
+                    Report.incident_time.label("waktu"),
+                    Report.victim_summary.label("korban"),
+                    Report.total_victims.label("korban_total")
                 ).where(
                     Report.status.in_(["AKTIF", "PENDING"]),
-                    Report.koordinat_lat != None,
-                    Report.koordinat_lng != None
+                    Report.latitude != None,
+                    Report.longitude != None
                 )
                 
                 rep_result = await tenant_db.execute(stmt)

@@ -1174,11 +1174,22 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
         # Sort candidates by start index ascending, then length descending
         candidates.sort(key=lambda x: (x["start"], -(x["end"] - x["start"])))
 
-        # Filter overlapping matches (e.g. "KMN" matching "KM" and "KMN" at the same place)
+        # Filter overlapping matches and merge immediately adjacent compound vessel mentions (e.g. "kapal pompong" -> single Pompong match)
+        generic_vessels = {"kapal", "perahu", "boat", "motor"}
         vessel_matches = []
         last_end = -1
         for cand in candidates:
             if cand["start"] >= last_end:
+                if vessel_matches and (cand["start"] - vessel_matches[-1]["end"]) <= 2:
+                    prev = vessel_matches[-1]
+                    if prev["word"].lower() in generic_vessels and cand["word"].lower() not in generic_vessels:
+                        # Upgrade the previous generic match (e.g. "kapal") to the specific vessel (e.g. "pompong")
+                        vessel_matches[-1] = cand
+                        last_end = cand["end"]
+                        continue
+                    elif cand["word"].lower() in generic_vessels:
+                        last_end = cand["end"]
+                        continue
                 vessel_matches.append(cand)
                 last_end = cand["end"]
 
@@ -1225,32 +1236,50 @@ class RuleExtractor(metaclass=MultitenantServiceMeta):
 
             # Parse Name (Nama) from the remaining substring
             nama_val = ""
-            words = substring.strip().split()
-            name_words = []
+            sub_low = substring.lower()
+            # Check for negative expressions ("tidak ada namanya", "tanpa nama", etc.)
+            has_no_name = any(neg in sub_low for neg in [
+                "tidak ada nama", "tanpa nama", "belum ada nama", "ga ada nama", "gak ada nama",
+                "cuma sampan biasa", "sampan biasa", "kayu biasa"
+            ])
+            
+            if not has_no_name:
+                words = substring.strip().split()
+                name_words = []
 
-            # Dynamic separator words
-            separator_words = set(
-                color_prefixes + location_prefixes +
-                [vp.lower() for vp in vessel_prefixes] +
-                [vt.lower() for vt in vessel_types] +
-                ["gt", "gts", "g.t", "dan", "yang", "dari", "ke", "pukul", "jam", "di", "pada", "dekat", "sekitar", "saya", "kami", "kita", "mogok"]
-            )
-            # Add colors
-            for col in vessel_colors:
-                separator_words.add(col.lower())
-            # Add common incident verbs to stop name extraction before them
-            incident_verbs = list(RuleExtractor._incident_verbs_cache) if RuleExtractor._incident_verbs_cache else ["terbakar", "tenggelam", "hanyut", "kelem", "mati", "mesin", "hilang", "meninggal", "selamat", "ditemukan", "pencarian", "evakuasi", "terbalik", "tubrukan", "tabrakan", "kandas", "pecah", "bocor", "rusak", "ledakan"]
-            for iv in incident_verbs:
-                separator_words.add(iv.lower())
+                # Dynamic separator words
+                narrative_stopwords = [
+                    "nelayan", "kayu", "fiber", "besi", "karet", "baja", "biasa",
+                    "milik", "punya", "bapak", "pak", "ibu", "belum", "pulang", "kembali",
+                    "melaut", "pergi", "mencari", "ikan", "tadi", "kemarin", "siang", "pagi",
+                    "sore", "malam", "ada", "cuma", "hanya", "tidak", "tdk", "bukan",
+                    "seorang", "orang", "abk", "awak", "kru", "penumpang"
+                ]
+                separator_words = set(
+                    color_prefixes + location_prefixes + narrative_stopwords +
+                    [vp.lower() for vp in vessel_prefixes] +
+                    [vt.lower() for vt in vessel_types] +
+                    ["gt", "gts", "g.t", "dan", "yang", "dari", "ke", "pukul", "jam", "di", "pada", "dekat", "sekitar", "saya", "kami", "kita", "mogok"]
+                )
+                # Add colors
+                for col in vessel_colors:
+                    separator_words.add(col.lower())
+                # Add common incident verbs to stop name extraction before them
+                incident_verbs = list(RuleExtractor._incident_verbs_cache) if RuleExtractor._incident_verbs_cache else ["terbakar", "tenggelam", "hanyut", "kelem", "mati", "mesin", "hilang", "meninggal", "selamat", "ditemukan", "pencarian", "evakuasi", "terbalik", "tubrukan", "tabrakan", "kandas", "pecah", "bocor", "rusak", "ledakan"]
+                for iv in incident_verbs:
+                    separator_words.add(iv.lower())
 
-            for word in words:
-                word_clean = word.lower().strip(".,;:!?()\"'")
-                if word_clean in separator_words or re.match(r"^\d+", word_clean):
-                    break
-                name_words.append(word)
+                for word in words:
+                    word_clean = word.lower().strip(".,;:!?()\"'")
+                    if word_clean in separator_words or re.match(r"^\d+", word_clean):
+                        break
+                    name_words.append(word)
 
-            if name_words:
-                nama_val = " ".join(name_words).strip(".,;:!?()\"' ").title()
+                if name_words:
+                    candidate_name = " ".join(name_words).strip(".,;:!?()\"' ").title()
+                    # Reject candidate if it is just single common word
+                    if candidate_name.lower() not in narrative_stopwords:
+                        nama_val = candidate_name
 
             # Format this vessel's info
             v_parts = []

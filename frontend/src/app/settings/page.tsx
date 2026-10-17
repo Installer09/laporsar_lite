@@ -7,7 +7,7 @@ import {
   Radio, RefreshCw, Server, AlertCircle, Building2, 
   UserPlus, Users, FileText, Check, X, Info, Upload, Globe, ExternalLink,
   Eye, EyeOff, Calendar, Cpu, ArrowUpCircle, AlertTriangle, UploadCloud, Search,
-  Lock
+  Lock, Anchor
 } from 'lucide-react';
 import { decodeJwt } from '@/lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -117,13 +117,44 @@ export default function SettingsPage() {
 
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [userFormError, setUserFormError] = useState('');
   const [userForm, setUserForm] = useState({
     name: '',
     email: '',
     phone: '',
+    nip: '',
+    jabatan: '',
     role: 'Operator',
     password: ''
   });
+
+  const getPasswordStrength = (pwd: string) => {
+    if (!pwd) return { score: 0, label: '', colorText: '', colorBg: '', barWidth: '0%', checks: { length: false, upper: false, lower: false, num: false, special: false } };
+    const checks = {
+      length: pwd.length >= 8,
+      upper: /[A-Z]/.test(pwd),
+      lower: /[a-z]/.test(pwd),
+      num: /[0-9]/.test(pwd),
+      special: /[!@#$%^&*(),.?":{}|<>\-_+=~`]/.test(pwd),
+    };
+    let score = 0;
+    if (checks.length) score++;
+    if (checks.upper && checks.lower) score++;
+    if (checks.num) score++;
+    if (checks.special) score++;
+
+    const maps = [
+      { label: 'Sangat Lemah', colorText: 'text-rose-600', colorBg: 'bg-rose-500', barWidth: '20%' },
+      { label: 'Lemah', colorText: 'text-rose-500', colorBg: 'bg-rose-500', barWidth: '40%' },
+      { label: 'Sedang', colorText: 'text-amber-500', colorBg: 'bg-amber-500', barWidth: '60%' },
+      { label: 'Kuat', colorText: 'text-blue-500', colorBg: 'bg-blue-500', barWidth: '80%' },
+      { label: 'Sangat Kuat', colorText: 'text-emerald-600', colorBg: 'bg-emerald-500', barWidth: '100%' },
+    ];
+    return { score, ...maps[score], checks };
+  };
 
   const [widgetModalOpen, setWidgetModalOpen] = useState(false);
   const [editingWidget, setEditingWidget] = useState<any>(null);
@@ -804,7 +835,7 @@ export default function SettingsPage() {
   };
 
   const handleRestoreDatabase = async (file: File) => {
-    if (!confirm("⚠️ PERINGATAN BAHAYA!\n\nProses pemulihan (restore) akan MENGHAPUS dan MENIMPA seluruh data Pos/Unit SAR, Klasifikasi, Kamus Jargon, Kontak, dan Laporan yang ada saat ini dengan data cadangan.\n\nApakah Anda yakin ingin melanjutkan restorasi?")) {
+    if (!confirm("PERINGATAN OPERASIONAL!\n\nProses pemulihan (restore) akan MENGHAPUS dan MENIMPA seluruh data Pos/Unit SAR, Klasifikasi, Kamus Jargon, Kontak, dan Laporan yang ada saat ini dengan data cadangan.\n\nApakah Anda yakin ingin melanjutkan restorasi?")) {
       return;
     }
     setIsRestoring(true);
@@ -835,7 +866,7 @@ export default function SettingsPage() {
       address: '',
       unsur: '',
       alut: '',
-      icon: '🏠'
+      icon: ''
     });
     setEditingLocation(null);
     setLocationModalOpen(true);
@@ -873,7 +904,11 @@ export default function SettingsPage() {
   };
 
   const openAddUser = () => {
-    setUserForm({ name: '', email: '', phone: '', role: 'Operator', password: '' });
+    setUserForm({ name: '', email: '', phone: '', nip: '', jabatan: '', role: 'Operator', password: '' });
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setUserFormError('');
     setEditingUser(null);
     setUserModalOpen(true);
   };
@@ -884,9 +919,15 @@ export default function SettingsPage() {
       name: usr.name,
       email: usr.email,
       phone: usr.phone || '',
+      nip: usr.nip || '',
+      jabatan: usr.jabatan || '',
       role: usr.role,
       password: '' // Kept empty unless changing password
     });
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setUserFormError('');
     setUserModalOpen(true);
   };
 
@@ -1246,10 +1287,14 @@ export default function SettingsPage() {
                                   <img 
                                     src={`${loc.icon.startsWith('http') ? '' : getBackendUrl() + '/'}${loc.icon}`} 
                                     alt="icon" 
-                                    className="w-5 h-5 rounded-full object-cover" 
+                                    className="w-4 h-4 rounded-full object-cover" 
                                   />
+                                ) : loc.type === 'Kantor SAR' ? (
+                                  <Building2 className="w-3.5 h-3.5 text-slate-700" />
+                                ) : loc.type === 'Pos SAR' ? (
+                                  <MapPin className="w-3.5 h-3.5 text-slate-700" />
                                 ) : (
-                                  loc.icon || (loc.type === 'Kantor SAR' ? '🏢' : loc.type === 'Pos SAR' ? '🏠' : '🛡️')
+                                  <Shield className="w-3.5 h-3.5 text-slate-700" />
                                 )}
                               </span>
                               <span>{loc.type}</span>
@@ -1279,13 +1324,15 @@ export default function SettingsPage() {
 
                         <div className="border-t border-gray-100 pt-3 flex flex-wrap gap-2 text-[10px] text-gray-500">
                           {loc.unsur && (
-                            <span className="px-2 py-0.5 bg-slate-50 border border-slate-100 rounded-md font-medium truncate max-w-[140px]">
-                              👥 {loc.unsur}
+                            <span className="px-2 py-0.5 bg-slate-50 border border-slate-100 rounded-md font-medium truncate max-w-[140px] inline-flex items-center gap-1">
+                              <Users className="w-3 h-3 text-slate-500 shrink-0" />
+                              <span className="truncate">{loc.unsur}</span>
                             </span>
                           )}
                           {loc.alut && (
-                            <span className="px-2 py-0.5 bg-slate-50 border border-slate-100 rounded-md font-medium truncate max-w-[140px]">
-                              ⛴️ {loc.alut}
+                            <span className="px-2 py-0.5 bg-slate-50 border border-slate-100 rounded-md font-medium truncate max-w-[140px] inline-flex items-center gap-1">
+                              <Anchor className="w-3 h-3 text-slate-500 shrink-0" />
+                              <span className="truncate">{loc.alut}</span>
                             </span>
                           )}
                           <span className="ml-auto font-mono text-[9px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">
@@ -2023,7 +2070,7 @@ export default function SettingsPage() {
                                 </optgroup>
                               )}
 
-                              <option value="__manual__">✏️ -- Ketik Manual Model Lain --</option>
+                              <option value="__manual__">-- Input Manual Model Lain --</option>
                             </select>
                           )}
                         </div>
@@ -2163,7 +2210,7 @@ export default function SettingsPage() {
                                 </optgroup>
                               )}
 
-                              <option value="__manual__">✏️ -- Ketik Manual Model Lain --</option>
+                              <option value="__manual__">-- Input Manual Model Lain --</option>
                             </select>
                           )}
                         </div>
@@ -2302,7 +2349,7 @@ export default function SettingsPage() {
                                 </optgroup>
                               )}
 
-                              <option value="__manual__">✏️ -- Ketik Manual Model Lain --</option>
+                              <option value="__manual__">-- Input Manual Model Lain --</option>
                             </select>
                           )}
                         </div>
@@ -2414,8 +2461,19 @@ export default function SettingsPage() {
                             {usr.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <h3 className="font-bold text-gray-900 text-sm">{usr.name}</h3>
-                            <p className="text-xs text-gray-500 mt-0.5">{usr.email} {usr.phone ? `• ${usr.phone}` : ''}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-bold text-gray-900 text-sm">{usr.name}</h3>
+                              {usr.jabatan && (
+                                <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded-md">
+                                  {usr.jabatan}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-2 flex-wrap">
+                              <span>{usr.email}</span>
+                              {usr.nip && <span className="font-mono text-slate-400 font-medium">• NIP: {usr.nip}</span>}
+                              {usr.phone && <span>• {usr.phone}</span>}
+                            </p>
                           </div>
                         </div>
 
@@ -2726,16 +2784,7 @@ export default function SettingsPage() {
                   <label className="block text-xs font-bold text-gray-700 mb-1">Tipe Unit</label>
                   <select
                     value={locationForm.type}
-                    onChange={(e) => {
-                      const newType = e.target.value;
-                      let newIcon = locationForm.icon;
-                      if (!locationForm.icon || ['🏢', '🏠', '🛡️'].includes(locationForm.icon)) {
-                        if (newType === 'Kantor SAR') newIcon = '🏢';
-                        else if (newType === 'Pos SAR') newIcon = '🏠';
-                        else if (newType === 'Unit Siaga SAR') newIcon = '🛡️';
-                      }
-                      setLocationForm({ ...locationForm, type: newType, icon: newIcon });
-                    }}
+                    onChange={(e) => setLocationForm({ ...locationForm, type: e.target.value })}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
                   >
                     <option value="Kantor SAR">Kantor SAR</option>
@@ -2754,7 +2803,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Ikon / Gambar Kustom</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Ikon / Gambar Unit</label>
                   
                   {/* Visual Preview & Selector */}
                   <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
@@ -2768,27 +2817,30 @@ export default function SettingsPage() {
                           />
                           <button
                             type="button"
-                            onClick={() => {
-                              // Reset to default emoji based on type
-                              let defEmoji = '🏠';
-                              if (locationForm.type === 'Kantor SAR') defEmoji = '🏢';
-                              else if (locationForm.type === 'Unit Siaga SAR') defEmoji = '🛡️';
-                              setLocationForm({ ...locationForm, icon: defEmoji });
-                            }}
+                            onClick={() => setLocationForm({ ...locationForm, icon: '' })}
                             className="absolute -top-1 -right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-all shadow-sm active:scale-90"
+                            title="Hapus gambar kustom"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ) : (
-                        <div className="w-16 h-16 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-3xl">
-                          {locationForm.icon || '🏠'}
+                        <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200 shadow-sm flex items-center justify-center text-slate-700">
+                          {locationForm.type === 'Kantor SAR' ? (
+                            <Building2 className="w-8 h-8 text-slate-700" />
+                          ) : locationForm.type === 'Pos SAR' ? (
+                            <MapPin className="w-8 h-8 text-slate-700" />
+                          ) : (
+                            <Shield className="w-8 h-8 text-slate-700" />
+                          )}
                         </div>
                       )}
-                      <span className="text-[10px] text-gray-400 mt-1 font-semibold uppercase tracking-wider">Preview</span>
+                      <span className="text-[10px] text-gray-400 mt-1 font-semibold uppercase tracking-wider">
+                        {locationForm.icon && (locationForm.icon.startsWith('uploads/') || locationForm.icon.startsWith('http')) ? 'Kustom' : 'Ikon Standar'}
+                      </span>
                     </div>
 
-                    <div className="flex-1 space-y-3">
+                    <div className="flex-1 space-y-2">
                       {/* Upload File Input & Button */}
                       <div>
                         <input
@@ -2819,27 +2871,12 @@ export default function SettingsPage() {
                           <Upload className="w-3.5 h-3.5" />
                           Unggah Gambar Kustom
                         </label>
-                        <p className="text-[10px] text-gray-400 mt-1">Format: PNG/JPG/WEBP. Rekomendasi rasio 1:1.</p>
+                        <p className="text-[10px] text-gray-400 mt-1">Format: PNG/JPG/WEBP. Rekomendasi rasio 1:1 transparan.</p>
                       </div>
 
-                      {/* Emoji fallback/quick selection list */}
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-gray-500 block">Atau pilih emoji standar:</span>
-                        <div className="flex flex-wrap items-center gap-1 bg-white border border-gray-150 rounded-xl p-1 w-fit">
-                          {['🏢', '🏠', '🛡️', '⚓', '🛥️', '🚁', '🚑', '🚨', '🚒'].map((emoji) => (
-                            <button
-                              key={emoji}
-                              type="button"
-                              onClick={() => setLocationForm({ ...locationForm, icon: emoji })}
-                              className={`w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 hover:shadow-sm active:scale-95 transition-all text-sm ${
-                                locationForm.icon === emoji ? 'bg-slate-100 text-slate-800 ring-1 ring-slate-900/20 font-bold' : 'text-gray-600'
-                              }`}
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Jika tidak mengunggah gambar kustom, peta dan daftar pos secara otomatis menerapkan simbol vektor resmi sesuai tipe unit SAR.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -2988,98 +3025,263 @@ export default function SettingsPage() {
 
       {/* C. User Modal */}
       {userModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full border border-gray-100 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full border border-gray-100 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-8">
             <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-slate-50/80">
-              <h3 className="font-extrabold text-gray-900 text-base">
-                {editingUser ? `Edit Data ${editingUser.name}` : 'Registrasi Administrator Baru'}
-              </h3>
+              <div>
+                <h3 className="font-extrabold text-gray-900 text-base">
+                  {editingUser ? `Edit Data Personel: ${editingUser.name}` : 'Registrasi Personel / Operator Baru'}
+                </h3>
+                <p className="text-[11px] text-slate-500 font-medium">Standar Pengguna Resmi Pusat Kendali BASARNAS</p>
+              </div>
               <button onClick={() => setUserModalOpen(false)} className="p-1.5 hover:bg-gray-200 rounded-full transition-all text-gray-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Nama Lengkap</label>
-                <input
-                  type="text"
-                  value={userForm.name}
-                  onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
-                  placeholder="Nama Lengkap Operator"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                />
-              </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              setUserFormError('');
 
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={userForm.email}
-                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                  placeholder="operator@basarnas.go.id"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                />
-              </div>
+              if (!userForm.name.trim()) {
+                setUserFormError('Nama lengkap personel wajib diisi');
+                return;
+              }
 
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Nomor Kontak (WhatsApp)</label>
-                <input
-                  type="text"
-                  value={userForm.phone}
-                  onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
-                  placeholder="081234567890"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                />
-              </div>
+              const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+              if (!emailRegex.test(userForm.email.trim())) {
+                setUserFormError('Format email tidak valid (contoh: operator@sar.go.id)');
+                return;
+              }
 
-              <div className="grid grid-cols-2 gap-4">
+              if (userForm.phone && userForm.phone.trim()) {
+                const cleanPhone = userForm.phone.replace(/[\s\-]/g, '');
+                const phoneRegex = /^(\+62|62|0)8[1-9][0-9]{7,11}$/;
+                if (!phoneRegex.test(cleanPhone)) {
+                  setUserFormError('Nomor kontak tidak valid. Gunakan format nomor seluler Indonesia (contoh: 08123456789 atau +628123456789)');
+                  return;
+                }
+              }
+
+              if (!editingUser || (userForm.password && userForm.password.trim())) {
+                const pwd = userForm.password;
+                if (!pwd || pwd.length < 8) {
+                  setUserFormError('Kata sandi minimal harus 8 karakter');
+                  return;
+                }
+                if (!/[A-Z]/.test(pwd) || !/[a-z]/.test(pwd) || !/[0-9]/.test(pwd) || !/[!@#$%^&*(),.?":{}|<>\-_+=~`]/.test(pwd)) {
+                  setUserFormError('Kata sandi harus mengandung kombinasi huruf kapital (A-Z), huruf kecil (a-z), angka (0-9), dan simbol (!@#$%)');
+                  return;
+                }
+                if (pwd !== confirmPassword) {
+                  setUserFormError('Konfirmasi kata sandi tidak cocok');
+                  return;
+                }
+              }
+
+              userMutation.mutate(userForm);
+            }}>
+              <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                {userFormError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-2 text-rose-700 text-xs font-semibold animate-in fade-in">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{userFormError}</span>
+                  </div>
+                )}
+
+                {/* Section 1: Identitas Resmi */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Nama Lengkap Personel <span className="text-rose-500">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      value={userForm.name}
+                      onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                      placeholder="Contoh: Budi Santoso, S.T."
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">NIP (Nomor Induk Pegawai)</label>
+                      <input
+                        type="text"
+                        value={userForm.nip}
+                        onChange={(e) => setUserForm({ ...userForm, nip: e.target.value })}
+                        placeholder="Contoh: 198501012010011001"
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Jabatan Operasional</label>
+                      <input
+                        type="text"
+                        value={userForm.jabatan}
+                        onChange={(e) => setUserForm({ ...userForm, jabatan: e.target.value })}
+                        placeholder="Contoh: Rescuer Mahir / Operator Radio"
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Kontak & Akses */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-gray-100">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Email Kedinasan <span className="text-rose-500">*</span></label>
+                    <input
+                      type="email"
+                      required
+                      value={userForm.email}
+                      onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                      placeholder="operator@basarnas.go.id"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Nomor Kontak (WhatsApp)</label>
+                    <input
+                      type="text"
+                      value={userForm.phone}
+                      onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
+                      placeholder="Contoh: 081234567890"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Role / Peran</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Role / Peran Sistem</label>
                   <select
                     value={userForm.role}
                     onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none font-semibold text-gray-800"
                   >
-                    <option value="Admin">Admin (Kantor / Unit)</option>
-                    <option value="Operator">Operator</option>
+                    <option value="Operator">Operator (Pusat Kendali / Siaga)</option>
+                    <option value="Admin">Admin (Kantor SAR / UPT)</option>
                     <option value="User">User / Tamu</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
-                    {editingUser ? 'Password Baru (Opsional)' : 'Password'}
-                  </label>
-                  <input
-                    type="password"
-                    value={userForm.password}
-                    onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                    placeholder={editingUser ? 'Kosongkan jika sama' : '••••••••'}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
-                  />
+                {/* Section 3: Keamanan Kata Sandi */}
+                <div className="pt-2 border-t border-gray-100 space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      {editingUser ? 'Kata Sandi Baru (Kosongkan jika tidak diubah)' : 'Kata Sandi (Password)'}
+                      {!editingUser && <span className="text-rose-500"> *</span>}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={userForm.password}
+                        onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                        placeholder={editingUser ? 'Kosongkan jika sandi tetap' : 'Minimal 8 karakter kombinasi'}
+                        className="w-full pl-4 pr-11 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+
+                    {/* Password Strength Meter */}
+                    {userForm.password && (
+                      <div className="mt-2 space-y-1.5 animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-gray-500 font-medium">Kekuatan Sandi:</span>
+                          <span className={`font-bold ${getPasswordStrength(userForm.password).colorText}`}>
+                            {getPasswordStrength(userForm.password).label}
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-300 ${getPasswordStrength(userForm.password).colorBg}`}
+                            style={{ width: getPasswordStrength(userForm.password).barWidth }}
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 pt-1 text-[10px]">
+                          <span className={`px-1.5 py-0.5 rounded ${getPasswordStrength(userForm.password).checks.length ? 'bg-emerald-50 text-emerald-700 font-bold' : 'bg-gray-100 text-gray-400'}`}>
+                            {getPasswordStrength(userForm.password).checks.length ? '✓' : '•'} 8+ Karakter
+                          </span>
+                          <span className={`px-1.5 py-0.5 rounded ${getPasswordStrength(userForm.password).checks.upper ? 'bg-emerald-50 text-emerald-700 font-bold' : 'bg-gray-100 text-gray-400'}`}>
+                            {getPasswordStrength(userForm.password).checks.upper ? '✓' : '•'} Huruf Besar
+                          </span>
+                          <span className={`px-1.5 py-0.5 rounded ${getPasswordStrength(userForm.password).checks.num ? 'bg-emerald-50 text-emerald-700 font-bold' : 'bg-gray-100 text-gray-400'}`}>
+                            {getPasswordStrength(userForm.password).checks.num ? '✓' : '•'} Angka
+                          </span>
+                          <span className={`px-1.5 py-0.5 rounded ${getPasswordStrength(userForm.password).checks.special ? 'bg-emerald-50 text-emerald-700 font-bold' : 'bg-gray-100 text-gray-400'}`}>
+                            {getPasswordStrength(userForm.password).checks.special ? '✓' : '•'} Simbol
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Konfirmasi Kata Sandi */}
+                  {(!editingUser || userForm.password) && (
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Ulangi Kata Sandi <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Ketik ulang kata sandi yang sama"
+                          className={`w-full pl-4 pr-11 py-2.5 bg-gray-50 border rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 outline-none transition-all ${
+                            confirmPassword && userForm.password !== confirmPassword 
+                              ? 'border-rose-400 focus:border-rose-500' 
+                              : confirmPassword && userForm.password === confirmPassword 
+                              ? 'border-emerald-400 focus:border-emerald-500' 
+                              : 'border-gray-200 focus:border-slate-400'
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1"
+                          tabIndex={-1}
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      {confirmPassword && (
+                        <p className={`text-[11px] mt-1 font-semibold flex items-center gap-1 ${
+                          userForm.password === confirmPassword ? 'text-emerald-600' : 'text-rose-500'
+                        }`}>
+                          {userForm.password === confirmPassword ? '✓ Kata sandi cocok' : '✗ Kata sandi belum cocok'}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
-              <button
-                type="button"
-                onClick={() => setUserModalOpen(false)}
-                className="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl transition-all"
-              >
-                Batalkan
-              </button>
-              <button
-                type="button"
-                onClick={() => userMutation.mutate(userForm)}
-                disabled={userMutation.isPending}
-                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
-              >
-                {userMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                {editingUser ? 'Simpan Data' : 'Registrasikan'}
-              </button>
-            </div>
+              <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+                <button
+                  type="button"
+                  onClick={() => setUserModalOpen(false)}
+                  className="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                >
+                  Batalkan
+                </button>
+                <button
+                  type="submit"
+                  disabled={userMutation.isPending || (Boolean(userForm.password) && userForm.password !== confirmPassword)}
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {userMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {editingUser ? 'Simpan Perubahan' : 'Registrasikan'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

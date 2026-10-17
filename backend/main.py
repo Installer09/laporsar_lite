@@ -91,6 +91,13 @@ async def lifespan(app: FastAPI):
                 # Create all tables (vector_memory will use Vector if has_vector, else Text)
                 await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn))
 
+                # Safe idempotent schema update for existing user tables
+                try:
+                    await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS nip VARCHAR(50);"))
+                    await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS jabatan VARCHAR(100);"))
+                except Exception as col_err:
+                    logger.debug(f"Column check note: {col_err}")
+
             db_connected = True
             logger.info("Database connection and schema initialization successful.")
             break

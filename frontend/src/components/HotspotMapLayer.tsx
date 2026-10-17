@@ -90,8 +90,8 @@ export default function HotspotMapLayer({ epsKm = 5.0, minSamples = 2 }: Hotspot
           html: `
             <div class="relative flex items-center justify-center">
               <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full" style="background-color: ${color}; opacity: 0.6;"></span>
-              <div class="relative w-7 h-7 rounded-full flex items-center justify-center text-white shadow-lg font-black text-[10px] border-2 border-white" style="background-color: ${color};">
-                🔥
+              <div class="relative w-7 h-7 rounded-full flex items-center justify-center text-white shadow-lg font-black border-2 border-white" style="background-color: ${color};">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               </div>
             </div>
           `,

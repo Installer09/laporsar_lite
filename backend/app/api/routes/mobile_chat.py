@@ -162,7 +162,7 @@ async def get_mobile_reports(
         raise HTTPException(status_code=404, detail="Profil kontak tidak ditemukan")
         
     reports_res = await db_pusat.execute(
-        select(Report).where(Report.pelapor_nomor == contact.phone_number).order_by(Report.id.desc())
+        select(Report).where(Report.reporter_phone == contact.phone_number).order_by(Report.id.desc())
     )
     reports = reports_res.scalars().all()
     

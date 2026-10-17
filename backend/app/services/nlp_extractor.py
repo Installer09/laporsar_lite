@@ -73,6 +73,12 @@ class SARNLPExtractor:
             logger.info("Skipping LLM Validator for fast dialogue turn.")
             result = local_data
 
+        # Harmonize single-source keys for downstream consumers
+        if result.get("kondisi_korban") and not result.get("korban_kondisi"):
+            result["korban_kondisi"] = result["kondisi_korban"]
+        elif result.get("korban_kondisi") and not result.get("kondisi_korban"):
+            result["kondisi_korban"] = result["korban_kondisi"]
+
         # Calculate confidence
         confidence = 0.95 if result else 0.0
         return result, confidence

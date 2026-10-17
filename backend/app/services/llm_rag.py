@@ -691,9 +691,7 @@ class LLMRagService:
             similar = await self.search_similar_reports(message, db, limit=2)
             few_shot_str = self._build_few_shot_context(similar)
 
-        history_str = self._format_conversation_history(conversation_history) if conversation_history else ""
-        from app.core.time_utils import get_wib_now
-        now_wib = get_wib_now()
+        now_wib = datetime.now(timezone(timedelta(hours=7)))
         current_time_str = now_wib.strftime("%Y-%m-%d %H:%M WIB")
 
         # Ensure complete draft schema so AI can fill fields missed by regex without dropping existing ones
@@ -768,13 +766,27 @@ Tugas: Perbaiki dan lengkapi draf JSON di atas sesuai dengan konteks bahasa pela
             
             if isinstance(validated_data, dict):
                 merged = dict(raw_data)
+                # Apply all AI validated fields as primary source of truth
                 for k, v in validated_data.items():
-                    if v is not None and str(v).strip() not in ("", "null", "None", "-"):
-                        merged[k] = v
-                # Ensure deterministic RuleExtractor fields are only restored if AI returned null/empty
-                for protected_key in ("sub_jenis_kejadian", "pelapor_hubungan", "pakai_kapal", "data_kapal", "lokasi_teks", "jenis_kejadian"):
-                    if raw_data.get(protected_key) and not merged.get(protected_key):
-                        merged[protected_key] = raw_data[protected_key]
+                    if v is not None:
+                        val_str = str(v).strip()
+                        if val_str not in ("null", "None", "-"):
+                            merged[k] = v
+                        elif val_str in ("null", "None", ""):
+                            # AI explicitly cleared this field; clear any false positive from regex
+                            merged[k] = None
+
+                # Keep strictly deterministic non-text fields from raw_data if AI omitted them
+                deterministic_keys = ("koordinat_lat", "koordinat_lng", "koordinat", "reporter_lat", "reporter_lng", "no_laporan")
+                for det_key in deterministic_keys:
+                    if raw_data.get(det_key) and not merged.get(det_key):
+                        merged[det_key] = raw_data[det_key]
+
+                # Fallback to raw_data for narrative fields ONLY if merged has None/empty AND raw_data has non-empty
+                for fallback_key in ("jenis_kejadian", "lokasi_teks"):
+                    if not merged.get(fallback_key) and raw_data.get(fallback_key):
+                        merged[fallback_key] = raw_data[fallback_key]
+
                 return merged
             return raw_data
         except Exception as e:
@@ -974,19 +986,9 @@ Respond ONLY with the JSON object. No explanation."""
         Parses Indonesian raw text containing victim details (names, age, gender, address)
         into a structured list of dictionaries matching standard BASARNAS victim schema.
         """
-        import re
-        
-        # 1. Fast local regex parser for Andi, arif, budi. Warga kelarik
         text_clean = text.strip().strip(".,;:!?")
-        if re.search(r'\bandi\b', text_clean, re.IGNORECASE) and re.search(r'\barif\b', text_clean, re.IGNORECASE) and re.search(r'\bbudi\b', text_clean, re.IGNORECASE):
-            address = "Kelarik" if "kelarik" in text_clean.lower() else "-"
-            return [
-                {"nama": "Andi", "jenis_kelamin": "-", "umur": "-", "alamat": address, "no_hp": "-", "ciri_ciri": "-"},
-                {"nama": "Arif", "jenis_kelamin": "-", "umur": "-", "alamat": address, "no_hp": "-", "ciri_ciri": "-"},
-                {"nama": "Budi", "jenis_kelamin": "-", "umur": "-", "alamat": address, "no_hp": "-", "ciri_ciri": "-"}
-            ]
             
-        # 2. General LLM-based parser
+        # 1. General LLM-based parser
         prompt = f"""Analisalah teks berikut yang berisi data korban bencana/musibah dan ubahlah menjadi array JSON terstruktur yang mewakili daftar data masing-masing korban secara lengkap.
         
 Teks Pelapor: "{text}"
@@ -1103,7 +1105,7 @@ Tugas Anda adalah memproses dan menghasilkan JSON baru yang telah disempurnakan 
    - Jika ada kata/istilah dari pelapor yang tidak dapat dipahami maknanya melalui kamus atau vektor, TAMPILKAN PESAN/KATA ASLI APA ADANYA.
 
 1. KOLOM 'waktu':
-   - Konversikan teks waktu mentah menjadi format PDTW (Pola Data Tanggal Waktu) standar BASARNAS (format: DDHHMM offset, contoh '06041735 G' untuk tanggal 6 Juni pukul 17:35 WIB).
+   - Konversikan teks waktu mentah menjadi format PDTW (Pola Data Tanggal Waktu) standar BASARNAS (format: MMDD HHMM offset, contoh '0604 1735 G' untuk tanggal 4 Juni pukul 17:35 WIB).
    - WIB menggunakan offset 'G', WITA menggunakan 'H', WIT menggunakan 'J'. Gunakan koordinat Bujur (longitude) jika tersedia untuk menentukan WITA (bujur >= 115) atau WIT (bujur >= 135).
    - Gunakan 'WAKTU ACUAN SAAT INI' untuk menafsirkan waktu relatif seperti "kemarin", "tadi pagi", "2 jam lalu".
    - Jika waktu benar-benar tidak diketahui/nihil, isi dengan "Waktu Kejadian Tidak Diketahui".
@@ -1126,7 +1128,7 @@ Tugas Anda adalah memproses dan menghasilkan JSON baru yang telah disempurnakan 
    - Pertahankan jenis, warna, atau GT kapal (contoh: "Jenis: Pompong"). Dilarang mengisi Nama kapal dengan kata kerja musibah seperti 'Terbakar', 'Kelem', 'Mati Mesin', 'Tenggelam'.
 
 6. KOLOM 'pelapor_nama' & 'pelapor_hubungan':
-   - Bersihkan dari frasa pengantar (contoh: "nama saya Budi" -> "Budi", "kakak saya" -> "Keluarga Korban (Kakak)").
+   - Bersihkan dari frasa pengantar (contoh: "nama saya Budi" -> "Budi", "kakak saya" -> "Adik Korban").
 
 Keluarkan HANYA JSON hasil penyempurnaan, dengan struktur kunci yang sama seperti data input di atas. Jangan sertakan teks penjelasan atau pembungkus markdown selain format JSON murni.
 """
@@ -1232,7 +1234,7 @@ Keluarkan HANYA JSON hasil penyempurnaan, dengan struktur kunci yang sama sepert
             if db is not None:
                 try:
                     tenant_slug = db.info.get("tenant_slug", "global") if hasattr(db, "info") else "global"
-                    from app.models.sop_document import SOPDocument
+                    from app.models.knowledge_models import SOPDocument
                     from app.models.master_models import MasterSOPDocument
 
                     # Master SOPs
@@ -1320,10 +1322,10 @@ PETUNJUK FORMAT JAWABAN (WAJIB DIIKUTI SECARA KETAT):
      "Informasi tersebut tidak tercantum dalam basis data resmi sistem SAR.
 
 Untuk informasi kedinasan dan koordinasi darurat lebih lanjut, silakan hubungi Call Center BASARNAS di nomor 115 (Bebas Pulsa 24 Jam) atau kunjungi website resmi BASARNAS di https://basarnas.go.id."
-3. FORMAT MARKDOWN & TANPA EMOJI (DILARANG KERAS):
+3. FORMAT MARKDOWN & TANPA EMOJI ATAU IKON DEKORATIF (DILARANG KERAS):
    - Gunakan satu tanda bintang (*teks tebal*) untuk penebalan teks (JANGAN gunakan dua bintang **teks**).
    - JANGAN menggunakan emoji atau ikon dekoratif apapun.
-4. KETERANGAN SUMBER & KONTAK RESMI DI AKHIR JAWABAN:
+4. KETERANGAN SUMBER & KONTAK RESMI DI AKHIR JAWABAN (LEBIH BANYAK SUMBER LEBIH BAGUS):
    - Cantumkan:
      *Referensi Dokumen & Sumber Resmi:*
      • [Nama Dokumen / Regulasi / SOP yang relevan]

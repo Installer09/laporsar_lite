@@ -20,7 +20,9 @@ import {
   Trash2,
   Filter,
   FileText,
-  MapPin
+  MapPin,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardMap from '@/components/DashboardMap';
@@ -51,6 +53,22 @@ export default function AdminDashboardPage() {
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [showEditAdminPassword, setShowEditAdminPassword] = useState(false);
+  
+  const getPasswordStrength = (pwd: string) => {
+    let score = 0;
+    if (!pwd) return { score: 0, label: '', color: '' };
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[a-z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+    if (score <= 2) return { score, label: 'Lemah', color: 'bg-red-500 text-red-700' };
+    if (score <= 4) return { score, label: 'Sedang', color: 'bg-amber-500 text-amber-700' };
+    return { score, label: 'Kuat (Standar Resmi)', color: 'bg-emerald-500 text-emerald-700' };
+  };
   
   const [isRegistering, setIsRegistering] = useState(false);
   const [formError, setFormError] = useState('');
@@ -220,9 +238,31 @@ export default function AdminDashboardPage() {
     }
 
     if (!adminName.trim() || !adminEmail.trim() || !adminPassword.trim()) {
-      setFormError('Nama, Email/Username, dan Password Administrator wajib diisi.');
+      setFormError('Nama, Email/Username, dan Kata Sandi Administrator wajib diisi.');
       setIsRegistering(false);
       return;
+    }
+
+    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+    if (!emailRegex.test(adminEmail.trim())) {
+      setFormError('Format email administrator tidak valid (contoh: admin@sar.go.id).');
+      setIsRegistering(false);
+      return;
+    }
+
+    if (adminPassword.length < 8 || !/[A-Z]/.test(adminPassword) || !/[a-z]/.test(adminPassword) || !/[0-9]/.test(adminPassword) || !/[^A-Za-z0-9]/.test(adminPassword)) {
+      setFormError('Kata sandi administrator harus minimal 8 karakter dan mengandung kombinasi huruf besar, huruf kecil, angka, serta simbol.');
+      setIsRegistering(false);
+      return;
+    }
+
+    if (adminPhone.trim()) {
+      const phoneRegex = /^(\+62|62|0)8[1-9][0-9]{7,11}$/;
+      if (!phoneRegex.test(adminPhone.trim())) {
+        setFormError('Nomor telepon harus format nomor seluler Indonesia yang valid (contoh: 08123456789 atau +628123456789).');
+        setIsRegistering(false);
+        return;
+      }
     }
 
     try {
@@ -306,6 +346,32 @@ export default function AdminDashboardPage() {
     setEditError('');
     setEditSuccess('');
     setIsSavingEdit(true);
+
+    if (editAdminEmail.trim()) {
+      const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+      if (!emailRegex.test(editAdminEmail.trim())) {
+        setEditError('Format email administrator tidak valid (contoh: admin@sar.go.id).');
+        setIsSavingEdit(false);
+        return;
+      }
+    }
+
+    if (editAdminPassword) {
+      if (editAdminPassword.length < 8 || !/[A-Z]/.test(editAdminPassword) || !/[a-z]/.test(editAdminPassword) || !/[0-9]/.test(editAdminPassword) || !/[^A-Za-z0-9]/.test(editAdminPassword)) {
+        setEditError('Kata sandi baru harus minimal 8 karakter dan mengandung kombinasi huruf besar, huruf kecil, angka, serta simbol.');
+        setIsSavingEdit(false);
+        return;
+      }
+    }
+
+    if (editAdminPhone.trim()) {
+      const phoneRegex = /^(\+62|62|0)8[1-9][0-9]{7,11}$/;
+      if (!phoneRegex.test(editAdminPhone.trim())) {
+        setEditError('Nomor telepon harus format nomor seluler Indonesia yang valid (contoh: 08123456789 atau +628123456789).');
+        setIsSavingEdit(false);
+        return;
+      }
+    }
 
     try {
       const updated = await updateTenant(editingTenant.id, {
@@ -661,14 +727,50 @@ export default function AdminDashboardPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Kata Sandi (Password)</label>
-                          <input
-                            type="password"
-                            required={isFormOpen}
-                            placeholder="Min. 6 karakter"
-                            value={adminPassword}
-                            onChange={(e) => setAdminPassword(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 rounded-xl px-4 py-3 text-sm focus:outline-none transition-all font-semibold text-slate-800 focus:bg-white"
-                          />
+                          <div className="relative">
+                            <input
+                              type={showAdminPassword ? "text" : "password"}
+                              required={isFormOpen}
+                              placeholder="Min. 8 karakter (Huruf besar, angka, simbol)"
+                              value={adminPassword}
+                              onChange={(e) => setAdminPassword(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none transition-all font-semibold text-slate-800 focus:bg-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowAdminPassword(!showAdminPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+                              title={showAdminPassword ? "Sembunyikan password" : "Lihat password"}
+                            >
+                              {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                          {adminPassword && (
+                            <div className="mt-1">
+                              <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 mb-1">
+                                <span>Kekuatan Kata Sandi</span>
+                                <span className={getPasswordStrength(adminPassword).label === 'Kuat (Standar Resmi)' ? 'text-emerald-600 font-bold' : 'text-amber-600'}>
+                                  {getPasswordStrength(adminPassword).label}
+                                </span>
+                              </div>
+                              <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden flex gap-1">
+                                {[1, 2, 3, 4, 5].map((level) => (
+                                  <div
+                                    key={level}
+                                    className={`h-full flex-1 transition-all rounded-full ${
+                                      level <= getPasswordStrength(adminPassword).score
+                                        ? getPasswordStrength(adminPassword).score <= 2
+                                          ? 'bg-red-500'
+                                          : getPasswordStrength(adminPassword).score <= 4
+                                          ? 'bg-amber-500'
+                                          : 'bg-emerald-500'
+                                        : 'bg-transparent'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Nomor Telepon</label>
@@ -841,13 +943,49 @@ export default function AdminDashboardPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Kata Sandi Baru (Opsional)</label>
-                          <input
-                            type="password"
-                            placeholder="Kosongkan jika tidak diubah"
-                            value={editAdminPassword}
-                            onChange={(e) => setEditAdminPassword(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm focus:outline-none transition-all font-semibold text-slate-800 focus:bg-white"
-                          />
+                          <div className="relative">
+                            <input
+                              type={showEditAdminPassword ? "text" : "password"}
+                              placeholder="Kosongkan jika tidak diubah (Min. 8 karakter)"
+                              value={editAdminPassword}
+                              onChange={(e) => setEditAdminPassword(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500/50 rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none transition-all font-semibold text-slate-800 focus:bg-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowEditAdminPassword(!showEditAdminPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+                              title={showEditAdminPassword ? "Sembunyikan password" : "Lihat password"}
+                            >
+                              {showEditAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                          {editAdminPassword && (
+                            <div className="mt-1">
+                              <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 mb-1">
+                                <span>Kekuatan Kata Sandi</span>
+                                <span className={getPasswordStrength(editAdminPassword).label === 'Kuat (Standar Resmi)' ? 'text-emerald-600 font-bold' : 'text-amber-600'}>
+                                  {getPasswordStrength(editAdminPassword).label}
+                                </span>
+                              </div>
+                              <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden flex gap-1">
+                                {[1, 2, 3, 4, 5].map((level) => (
+                                  <div
+                                    key={level}
+                                    className={`h-full flex-1 transition-all rounded-full ${
+                                      level <= getPasswordStrength(editAdminPassword).score
+                                        ? getPasswordStrength(editAdminPassword).score <= 2
+                                          ? 'bg-red-500'
+                                          : getPasswordStrength(editAdminPassword).score <= 4
+                                          ? 'bg-amber-500'
+                                          : 'bg-emerald-500'
+                                        : 'bg-transparent'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Nomor Telepon</label>
@@ -1066,24 +1204,26 @@ export default function AdminDashboardPage() {
                                   <div className="flex items-center justify-between">
                                     <span className="text-slate-500">Database:</span>
                                     {diagnosticResults[tenant.id].db_status === 'success' ? (
-                                      <span className="text-green-600 font-mono font-bold">
-                                        ✓ {diagnosticResults[tenant.id].db_latency_ms?.toFixed(1)}ms
+                                      <span className="text-emerald-600 font-mono font-bold flex items-center gap-1">
+                                        <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                                        {diagnosticResults[tenant.id].db_latency_ms?.toFixed(1)}ms
                                       </span>
                                     ) : (
-                                      <span className="text-red-500 font-bold" title={diagnosticResults[tenant.id].db_error || 'Error'}>
-                                        ✗ Gagal
+                                      <span className="text-rose-500 font-bold flex items-center gap-1" title={diagnosticResults[tenant.id].db_error || 'Error'}>
+                                        <XCircle className="w-3 h-3 text-rose-500 shrink-0" /> Gagal
                                       </span>
                                     )}
                                   </div>
                                   <div className="flex items-center justify-between">
                                     <span className="text-slate-500">S3 Storage:</span>
                                     {diagnosticResults[tenant.id].s3_status === 'success' ? (
-                                      <span className="text-green-600 font-mono font-bold">
-                                        ✓ {diagnosticResults[tenant.id].s3_latency_ms?.toFixed(1)}ms
+                                      <span className="text-emerald-600 font-mono font-bold flex items-center gap-1">
+                                        <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                                        {diagnosticResults[tenant.id].s3_latency_ms?.toFixed(1)}ms
                                       </span>
                                     ) : (
-                                      <span className="text-red-500 font-bold" title={diagnosticResults[tenant.id].s3_error || 'Error'}>
-                                        ✗ Gagal
+                                      <span className="text-rose-500 font-bold flex items-center gap-1" title={diagnosticResults[tenant.id].s3_error || 'Error'}>
+                                        <XCircle className="w-3 h-3 text-rose-500 shrink-0" /> Gagal
                                       </span>
                                     )}
                                   </div>

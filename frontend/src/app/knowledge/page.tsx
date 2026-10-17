@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   getKnowledgeBase, 
@@ -30,7 +30,7 @@ import {
   AlertTriangle,
   Sparkles,
   Cpu,
-  Layers
+  ArrowRight
 } from 'lucide-react';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -161,6 +161,50 @@ export default function KnowledgePage() {
     queryKey: ['knowledge'],
     queryFn: getKnowledgeBase,
   });
+
+  // Uji Coba Istilah Lokal & Ekstraksi Kalimat Darurat
+  const [isSandboxOpen, setIsSandboxOpen] = useState(false);
+  const [testSentence, setTestSentence] = useState('Ada pompong nelayan patah kemudi di laut Natuna membawa 3 orang');
+
+  const sandboxAnalysis = useMemo(() => {
+    if (!testSentence.trim() || !words.length) {
+      return { matches: [], totalMatched: 0 };
+    }
+
+    const textLower = testSentence.toLowerCase();
+    const matchedTerms: any[] = [];
+
+    // Sort words by word length descending so longer phrases match first
+    const sortedWords = [...words].sort((a: any, b: any) => (b.word?.length || 0) - (a.word?.length || 0));
+
+    sortedWords.forEach((item: any) => {
+      if (!item.word || item.word.trim().length < 2) return;
+      const term = item.word.toLowerCase();
+      try {
+        const regex = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        if (regex.test(textLower)) {
+          // Avoid duplicate entries
+          if (!matchedTerms.some((m) => m.word.toLowerCase() === term)) {
+            matchedTerms.push({
+              word: item.word,
+              canonical_name: item.canonical_name || item.synonym_target || item.word,
+              category: item.category,
+              ner_type: item.ner_type,
+              is_typo_or_slang: item.is_typo_or_slang,
+              definition: item.definition
+            });
+          }
+        }
+      } catch (e) {
+        // Safe regex fallback
+      }
+    });
+
+    return {
+      matches: matchedTerms,
+      totalMatched: matchedTerms.length
+    };
+  }, [testSentence, words]);
 
   const handleVectorizeAll = async (force: boolean = false) => {
     try {
@@ -336,6 +380,18 @@ export default function KnowledgePage() {
             <Upload className="w-3.5 h-3.5" />
             Impor Kolektif
           </button>
+          <button
+            onClick={() => setIsSandboxOpen(!isSandboxOpen)}
+            className={`px-3.5 py-2.5 font-semibold text-xs rounded-xl border transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer ${
+              isSandboxOpen 
+                ? 'bg-amber-100 text-amber-900 border-amber-300' 
+                : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'
+            }`}
+            title="Buka pengujian ekstraksi istilah lokal dan normalisasi kosakata"
+          >
+            <Cpu className={`w-3.5 h-3.5 ${isSandboxOpen ? 'text-amber-700' : 'text-slate-600'}`} />
+            <span>{isSandboxOpen ? 'Tutup Uji Coba' : 'Uji Coba Istilah'}</span>
+          </button>
           <button 
             onClick={handleOpenCreate}
             className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
@@ -344,6 +400,108 @@ export default function KnowledgePage() {
           </button>
         </div>
       </div>
+
+      {/* UJI COBA PENCOCOKAN ISTILAH & NORMALISASI KOSAKATA */}
+      {isSandboxOpen && (
+        <div className="bg-slate-900 text-slate-100 rounded-3xl p-6 shadow-lg border border-slate-800 space-y-5 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
+                <Cpu className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-white flex items-center gap-2">
+                  Uji Coba Pencocokan Istilah & Normalisasi Kosakata
+                  <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
+                    Deteksi Real-Time
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Uji coba kalimat darurat untuk melihat bagaimana kamus istilah lokal Anda dinormalisasi dan dikenali oleh sistem.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsSandboxOpen(false)}
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Input Kalimat Pengujian */}
+            <div className="lg:col-span-7 space-y-3">
+              <label className="block text-xs font-bold text-slate-300">
+                Ketik Kalimat Laporan Masuk untuk Diuji:
+              </label>
+              <textarea
+                rows={3}
+                value={testSentence}
+                onChange={(e) => setTestSentence(e.target.value)}
+                placeholder="Contoh: Ada pompong nelayan patah kemudi di perairan Natuna membawa 3 orang..."
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-slate-100 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 outline-none resize-none leading-relaxed font-sans"
+              />
+
+              {/* Contoh Kalimat Uji (Presets) */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-bold text-slate-400">Contoh Laporan:</span>
+                {[
+                  { label: 'Laka Laut Pompong', text: 'Ada pompong nelayan patah kemudi di laut Natuna membawa 3 orang' },
+                  { label: 'Kapal Tenggelam', text: 'Jongkong tenggelam dihantam ombak di selat sunda, 1 orang hilang' },
+                  { label: 'Kapal Kandas', text: 'Kapal lct kandas di karang dekat pulau subi' }
+                ].map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setTestSentence(preset.text)}
+                    className="text-[10px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700/80 transition-all cursor-pointer font-medium"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Hasil Analisa & Ekstraksi */}
+            <div className="lg:col-span-5 bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  Hasil Pengenalan Istilah
+                </span>
+                <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  {sandboxAnalysis.totalMatched} Terdeteksi
+                </span>
+              </div>
+
+              {sandboxAnalysis.matches.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {sandboxAnalysis.matches.map((m: any, idx: number) => (
+                    <div key={idx} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-bold text-amber-300 font-mono">{m.word}</span>
+                        {m.canonical_name && m.canonical_name !== m.word && (
+                          <span className="text-slate-400 text-[11px] ml-1.5">
+                            → <strong className="text-emerald-400">{m.canonical_name}</strong>
+                          </span>
+                        )}
+                        <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">{m.definition || 'Kosakata Kamus SAR'}</p>
+                      </div>
+                      <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 bg-slate-800 text-slate-300 rounded-md border border-slate-700 font-semibold shrink-0">
+                        {m.category || 'ISTILAH'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-xs text-slate-500">
+                  Belum ada kata dalam kalimat yang cocok dengan kamus aktif. Coba tambahkan kosakata baru atau gunakan preset di samping.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* FILTER & SEARCH PANEL */}
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
@@ -463,7 +621,8 @@ export default function KnowledgePage() {
                           )}
                           {item.synonym_target && (
                             <span className="text-[11px] text-slate-800 font-bold mt-0.5 flex items-center gap-1">
-                              ➔ {item.synonym_target}
+                              <ArrowRight className="w-3 h-3 text-slate-400 inline shrink-0" />
+                              <span>{item.synonym_target}</span>
                               {item.similarity_score !== null && item.similarity_score !== undefined && (
                                 <span className="text-[9px] text-gray-400 font-normal">
                                   ({Math.round(item.similarity_score * 100)}% match)

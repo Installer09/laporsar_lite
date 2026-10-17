@@ -753,6 +753,8 @@ async def create_user(
         name=user.name, 
         email=user.email, 
         phone=user.phone,
+        nip=user.nip,
+        jabatan=user.jabatan,
         role=user.role, 
         hashed_password=hashed_pwd,
         is_active=True,
@@ -842,6 +844,8 @@ async def update_user(
     if user_update.name is not None: db_user.name = user_update.name
     if user_update.email is not None: db_user.email = user_update.email
     if user_update.phone is not None: db_user.phone = user_update.phone
+    if user_update.nip is not None: db_user.nip = user_update.nip
+    if user_update.jabatan is not None: db_user.jabatan = user_update.jabatan
     if user_update.role is not None: 
         if user_update.role == "Super Admin" and tenant.slug != "pusat":
             raise HTTPException(

@@ -131,7 +131,7 @@ async def process_whatsapp_background(tenant_slug: str, db_url: str, s3_bucket: 
                                                     except Exception:
                                                         pass
                                                         
-                                                    bucket_name = s3_bucket or settings.MINIO_BUCKET_ATTACHMENTS
+                                                    bucket_name = s3_bucket or getattr(settings, "MINIO_BUCKET_ATTACHMENTS", None)
                                                     file_key = await storage_service.upload_file(
                                                         file_data=file_bytes,
                                                         original_filename=original_filename,

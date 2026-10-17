@@ -130,7 +130,7 @@ async def provision_tenant_db(
                 );
             """))
             await conn.execute(text("DELETE FROM alembic_version;"))
-            await conn.execute(text("INSERT INTO alembic_version (version_num) VALUES ('c7b8e1a2f3d4');"))
+            await conn.execute(text("INSERT INTO alembic_version (version_num) VALUES ('d8e9f0a1b2c3');"))
         except Exception as e:
             logger.warning(f"Alembic stamp note for {tenant.slug}: {e}")
 

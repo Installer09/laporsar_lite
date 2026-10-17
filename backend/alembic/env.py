@@ -34,7 +34,7 @@ from app.models.attachment_model import Attachment
 from app.models.settings_models import SystemSetting, Location, Classification, User, FormatVariable, AlutPalsarTemplate, WidgetIntegrationRequest
 from app.models.knowledge_models import DictionaryWord, SOPDocument
 from app.models.vector_memory import VectorMemory
-from app.models.master_models import Tenant
+from app.models.master_models import Tenant, UserTenantMapping, GlobalReport
 
 target_metadata = Base.metadata
 

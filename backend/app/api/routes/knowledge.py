@@ -163,7 +163,7 @@ async def get_dictionary(
     return sorted_list[skip:skip+limit]
 
 
-@router.get("/dictionary/export")
+@router.get("/dictionary/export", dependencies=[Depends(verify_operator_or_admin)])
 async def export_dictionary(
     db: AsyncSession = Depends(get_db)
 ):
@@ -243,7 +243,7 @@ async def export_dictionary(
     )
 
 
-@router.post("/dictionary/import")
+@router.post("/dictionary/import", dependencies=[Depends(verify_operator_or_admin)])
 async def import_dictionary(
     file: UploadFile = File(...),
     is_global: bool = Query(False, description="True untuk menyimpan di kamus dasar nasional (Pusat)"),
@@ -871,8 +871,8 @@ async def bulk_action_dictionary(
         raise HTTPException(status_code=500, detail="Database transaction failed")
 
 
-@router.get("/dictionary/export", dependencies=[Depends(verify_operator_or_admin)])
-async def export_dictionary(db: AsyncSession = Depends(get_db)):
+@router.get("/dictionary/glossary", dependencies=[Depends(verify_operator_or_admin)])
+async def get_dictionary_glossary(db: AsyncSession = Depends(get_db)):
     """Export all APPROVED dictionary words as a JSON glossary."""
     result = await db.execute(
         select(DictionaryWord)
@@ -906,11 +906,16 @@ async def seed_sar_glossary(db: AsyncSession = Depends(get_db)):
 async def refresh_kb_cache(db: AsyncSession = Depends(get_db)):
     """Force refresh the in-memory KB cache."""
     try:
-        from app.services.kb_cache import kb_cache
-        await kb_cache.force_refresh(db)
+        from app.services.rule_extractor import RuleExtractor
+        from app.services.autocorrect_service import AutoCorrectService
         RuleExtractor._cache_loaded = False
+        AutoCorrectService._cache_loaded = False
+        await RuleExtractor.load_dictionary_from_db(db)
+        await RuleExtractor.load_classifications_from_db(db)
+        await AutoCorrectService.load_synonyms_from_db(db)
         return {"status": "success", "message": "KB cache berhasil di-refresh"}
     except Exception as e:
+        logger.error(f"Failed to refresh KB cache: {e}")
         raise HTTPException(status_code=500, detail=f"Gagal refresh cache: {e}")
 
 

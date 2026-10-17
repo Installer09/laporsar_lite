@@ -66,9 +66,11 @@ export function useDashboardData() {
         queryClient.invalidateQueries({ queryKey: ['contacts'] });
         queryClient.invalidateQueries({ queryKey: ['stats'] });
       } else if (msgType === 'chat_message') {
+        queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
         queryClient.invalidateQueries({ queryKey: ['chat_sessions'] });
         const payload = lastMessage.payload || lastMessage;
         if (payload && (payload as any).session_id) {
+          queryClient.invalidateQueries({ queryKey: ['chatSession', (payload as any).session_id] });
           queryClient.invalidateQueries({ queryKey: ['chat_session', (payload as any).session_id] });
         }
       }

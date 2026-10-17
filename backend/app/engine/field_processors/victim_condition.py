@@ -49,9 +49,9 @@ class VictimConditionFieldProcessor(BaseFieldProcessor):
 
         # Hindari false positive 'mati' pada 'mati mesin' / 'pompong mati' / 'kapal mati'
         val_str_no_engine = re.sub(r'\b(?:mati\s+mesin|mesin\s+mati|pompong(?:nya)?\s+mati|kapal(?:nya)?\s+mati|perahu(?:nya)?\s+mati)\b', 'mogok', val_str)
-        has_s = any(s in val_str_no_engine for s in s_syns) or re.search(r'\b[s]\b', val_str_no_engine)
-        has_md = any(m in val_str_no_engine for m in md_syns) or re.search(r'\b[m][d]\b', val_str_no_engine)
-        has_dp = any(d in val_str_no_engine for d in dp_syns) or re.search(r'\b[d][p]\b', val_str_no_engine) or "mogok" in val_str_no_engine
+        has_s = any(s in val_str_no_engine for s in s_syns) or bool(re.search(r'\b(selamat|slmt|hidup|sehat|aman)\b', val_str_no_engine))
+        has_md = any(m in val_str_no_engine for m in md_syns) or bool(re.search(r'\b(md|meninggal|tewas|mati)\b', val_str_no_engine))
+        has_dp = any(d in val_str_no_engine for d in dp_syns) or bool(re.search(r'\b(dp|hilang|tenggelam|hanyut)\b', val_str_no_engine)) or "mogok" in val_str_no_engine
         
         if re.search(r'-\s*\d+', answer_clean):
             reply = (

@@ -248,7 +248,7 @@ export default function HelpCenter() {
         {/* 5. Detailed Widget Integration Steps */}
         <section className="bg-slate-900 text-slate-100 p-6 sm:p-8 rounded-2xl shadow-xl space-y-6 text-left relative overflow-hidden">
           <div className="space-y-2 relative z-10">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-1000/10 border border-slate-900/20 text-[10px] font-bold text-slate-500">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/20 border border-slate-900/20 text-[10px] font-bold text-slate-500">
               <Code className="w-3.5 h-3.5" /> Panduan Developer & Webmaster
             </div>
             <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
@@ -261,7 +261,7 @@ export default function HelpCenter() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 pt-2 font-medium">
             <div className="space-y-2 bg-white/5 border border-white/10 p-4 rounded-xl">
-              <div className="w-6 h-6 rounded-full bg-slate-1000 text-white flex items-center justify-center text-xs font-bold font-sans">
+              <div className="w-6 h-6 rounded-full bg-slate-950 text-white flex items-center justify-center text-xs font-bold font-sans">
                 1
               </div>
               <h4 className="text-xs font-extrabold text-white">Daftarkan Akun</h4>
@@ -271,7 +271,7 @@ export default function HelpCenter() {
             </div>
             
             <div className="space-y-2 bg-white/5 border border-white/10 p-4 rounded-xl">
-              <div className="w-6 h-6 rounded-full bg-slate-1000 text-white flex items-center justify-center text-xs font-bold font-sans">
+              <div className="w-6 h-6 rounded-full bg-slate-950 text-white flex items-center justify-center text-xs font-bold font-sans">
                 2
               </div>
               <h4 className="text-xs font-extrabold text-white">Salin Kode Iframe</h4>
@@ -281,7 +281,7 @@ export default function HelpCenter() {
             </div>
 
             <div className="space-y-2 bg-white/5 border border-white/10 p-4 rounded-xl">
-              <div className="w-6 h-6 rounded-full bg-slate-1000 text-white flex items-center justify-center text-xs font-bold font-sans">
+              <div className="w-6 h-6 rounded-full bg-slate-950 text-white flex items-center justify-center text-xs font-bold font-sans">
                 3
               </div>
               <h4 className="text-xs font-extrabold text-white">Tempel di Website</h4>
@@ -298,7 +298,7 @@ export default function HelpCenter() {
             </div>
             <button 
               onClick={copyWidgetCode}
-              className="px-3 py-1.5 bg-slate-1000 hover:bg-slate-800 hover:scale-[1.02] text-white font-bold text-[10px] rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 self-end sm:self-center font-sans"
+              className="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 hover:scale-[1.02] text-white font-bold text-[10px] rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 self-end sm:self-center font-sans"
             >
               {copied ? (
                 <>

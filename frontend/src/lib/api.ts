@@ -342,11 +342,6 @@ export const getChatSession = async (sessionId: number) => {
   return data;
 };
 
-export const getWebChatSession = async (userId: string) => {
-  const { data } = await api.get(`/chat/sessions/web/${userId}`);
-  return data;
-};
-
 export const sendOperatorMessage = async (sessionId: number, message: string) => {
   const { data } = await api.post(`/chat/sessions/${sessionId}/message`, { message });
   return data;
@@ -359,22 +354,6 @@ export const toggleAutopilot = async (sessionId: number, autopilot: boolean) => 
 
 export const deleteChatSession = async (sessionId: number) => {
   const { data } = await api.delete(`/chat/sessions/${sessionId}`);
-  return data;
-};
-
-
-export const sendWebUserMessage = async (
-  userId: string,
-  message: string,
-  contactName?: string,
-  contactPhone?: string
-) => {
-  const { data } = await api.post('/chat/sessions/web/message', {
-    user_id: userId,
-    message,
-    contact_name: contactName,
-    contact_phone: contactPhone,
-  });
   return data;
 };
 
@@ -611,10 +590,6 @@ export const registerUser = async (userData: any, tenantSlug: string) => {
   return data;
 };
 
-export const getMe = async () => {
-  const { data } = await api.get('/auth/me');
-  return data;
-};
 
 // --- Storage Management APIs ---
 export const getStorageStats = async () => {

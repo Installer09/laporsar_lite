@@ -276,7 +276,7 @@ export default function NationalDashboardPage() {
               <span className="text-gray-600">Laporan Aktif</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-1000 block animate-pulse" />
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-900 block animate-pulse" />
               <span className="text-gray-600">Pending Validasi</span>
             </div>
           </div>

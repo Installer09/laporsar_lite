@@ -170,6 +170,7 @@ class GroupListenerService:
             return active_reports[0]
 
         # If multiple active reports, match based on specific location or vessel name
+        text_lower = text.lower()
         best_rep = None
         highest_score = 0
         for rep in active_reports:

@@ -8,15 +8,20 @@ import time
 import sys
 import subprocess
 import logging
-from pydantic import BaseModel, Field
+import re
+import secrets
+from pydantic import BaseModel, Field, field_validator
 
 from app.db.session import get_master_db, get_tenant_sessionmaker
 from app.models.master_models import Tenant, UserTenantMapping
 from app.core.security import verify_jwt, verify_super_admin
+from app.schemas.settings_schemas import EMAIL_REGEX, PHONE_REGEX, validate_strong_password
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(redirect_slashes=False)
+
+SLUG_REGEX = re.compile(r"^[a-z0-9-]+$")
 
 class TenantCreate(BaseModel):
     name: str = Field(..., description="Nama Instansi, e.g. Kantor SAR Jakarta")
@@ -24,9 +29,75 @@ class TenantCreate(BaseModel):
     db_url: str = Field(..., description="Database connection URL, e.g. postgresql://postgres:postgres@db:5432/laporsar_jakarta")
     s3_bucket: str = Field(..., description="S3 Bucket name, e.g. laporsar-jakarta")
     admin_name: str = Field(..., description="Nama administrator instansi")
-    admin_email: str = Field(..., description="Email/Username administrator")
+    admin_email: str = Field(..., description="Email administrator")
     admin_password: str = Field(..., description="Password administrator")
     admin_phone: Optional[str] = Field(None, description="Nomor telepon administrator")
+
+    @field_validator("slug")
+    @classmethod
+    def validate_slug(cls, v):
+        clean_slug = v.strip().lower()
+        if not SLUG_REGEX.match(clean_slug):
+            raise ValueError("Slug instansi hanya boleh berisi huruf kecil, angka, dan tanda hubung (-)")
+        return clean_slug
+
+    @field_validator("admin_email")
+    @classmethod
+    def validate_admin_email(cls, v):
+        if not v or not EMAIL_REGEX.match(v.strip()):
+            raise ValueError("Format email administrator tidak valid (contoh: admin@sar.go.id)")
+        return v.strip().lower()
+
+    @field_validator("admin_phone")
+    @classmethod
+    def validate_admin_phone(cls, v):
+        if v is not None and v.strip():
+            clean_phone = re.sub(r"[\s\-]", "", v.strip())
+            if not PHONE_REGEX.match(clean_phone):
+                raise ValueError("Nomor telepon tidak valid. Gunakan format nomor seluler Indonesia (contoh: 08123456789 atau +628123456789)")
+            return clean_phone
+        return None
+
+    @field_validator("admin_password")
+    @classmethod
+    def validate_admin_password(cls, v):
+        return validate_strong_password(v)
+
+class TenantUpdate(BaseModel):
+    name: Optional[str] = None
+    db_url: Optional[str] = None
+    s3_bucket: Optional[str] = None
+    is_active: Optional[bool] = None
+    admin_name: Optional[str] = None
+    admin_email: Optional[str] = None
+    admin_password: Optional[str] = None
+    admin_phone: Optional[str] = None
+
+    @field_validator("admin_email")
+    @classmethod
+    def validate_admin_email(cls, v):
+        if v is not None and v.strip():
+            if not EMAIL_REGEX.match(v.strip()):
+                raise ValueError("Format email administrator tidak valid (contoh: admin@sar.go.id)")
+            return v.strip().lower()
+        return None
+
+    @field_validator("admin_phone")
+    @classmethod
+    def validate_admin_phone(cls, v):
+        if v is not None and v.strip():
+            clean_phone = re.sub(r"[\s\-]", "", v.strip())
+            if not PHONE_REGEX.match(clean_phone):
+                raise ValueError("Nomor telepon tidak valid. Gunakan format nomor seluler Indonesia (contoh: 08123456789 atau +628123456789)")
+            return clean_phone
+        return None
+
+    @field_validator("admin_password")
+    @classmethod
+    def validate_admin_password(cls, v):
+        if v is not None and v.strip():
+            return validate_strong_password(v)
+        return None
 
 class TenantResponse(BaseModel):
     id: int
@@ -167,16 +238,17 @@ async def list_tenants(db_master: AsyncSession = Depends(get_master_db)):
     return res.scalars().all()
 
 @router.put("/tenants/{tenant_id}", response_model=TenantResponse, dependencies=[Depends(verify_super_admin)])
-async def update_tenant(tenant_id: int, payload: dict, db_master: AsyncSession = Depends(get_master_db)):
+async def update_tenant(tenant_id: int, payload: TenantUpdate, db_master: AsyncSession = Depends(get_master_db)):
     res = await db_master.execute(select(Tenant).where(Tenant.id == tenant_id))
     tenant = res.scalar_one_or_none()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant tidak ditemukan")
     
+    payload_data = payload.model_dump(exclude_unset=True)
     old_admin_email = tenant.admin_email
 
-    if "admin_email" in payload and payload["admin_email"]:
-        new_email_clean = payload["admin_email"].lower().strip()
+    if "admin_email" in payload_data and payload_data["admin_email"]:
+        new_email_clean = payload_data["admin_email"].lower().strip()
         if new_email_clean != old_admin_email:
             res_map = await db_master.execute(
                 select(UserTenantMapping).where(UserTenantMapping.email == new_email_clean)
@@ -201,7 +273,8 @@ async def update_tenant(tenant_id: int, payload: dict, db_master: AsyncSession =
         from app.models.settings_models import User
         from app.core.security import get_password_hash
 
-        tenant_sessionmaker = get_tenant_sessionmaker(tenant.db_url if "db_url" not in payload else payload["db_url"])
+        target_db_url = payload_data["db_url"] if "db_url" in payload_data and payload_data["db_url"] else tenant.db_url
+        tenant_sessionmaker = get_tenant_sessionmaker(target_db_url)
         async with tenant_sessionmaker() as tenant_db:
             local_user = None
             if old_admin_email:
@@ -213,20 +286,21 @@ async def update_tenant(tenant_id: int, payload: dict, db_master: AsyncSession =
                 local_user = res_user.scalar_one_or_none()
 
             if local_user:
-                if "admin_name" in payload:
-                    local_user.name = payload["admin_name"].strip()
-                if "admin_email" in payload:
-                    local_user.email = payload["admin_email"].lower().strip()
-                if "admin_phone" in payload:
-                    local_user.phone = payload["admin_phone"].strip() if payload["admin_phone"] else None
-                if "admin_password" in payload and payload["admin_password"]:
-                    local_user.hashed_password = get_password_hash(payload["admin_password"])
+                if "admin_name" in payload_data and payload_data["admin_name"]:
+                    local_user.name = payload_data["admin_name"].strip()
+                if "admin_email" in payload_data and payload_data["admin_email"]:
+                    local_user.email = payload_data["admin_email"].lower().strip()
+                if "admin_phone" in payload_data:
+                    local_user.phone = payload_data["admin_phone"].strip() if payload_data["admin_phone"] else None
+                if "admin_password" in payload_data and payload_data["admin_password"]:
+                    local_user.hashed_password = get_password_hash(payload_data["admin_password"])
                 tenant_db.add(local_user)
             else:
-                admin_name_val = payload.get("admin_name", tenant.name + " Admin").strip()
-                admin_email_val = payload.get("admin_email", tenant.admin_email or "").lower().strip()
-                admin_phone_val = payload.get("admin_phone", tenant.admin_phone or "").strip() if payload.get("admin_phone") else None
-                password_val = payload.get("admin_password", "admin123")
+                admin_name_val = (payload_data.get("admin_name") or (tenant.name + " Admin")).strip()
+                admin_email_val = (payload_data.get("admin_email") or tenant.admin_email or "").lower().strip()
+                admin_phone_val = payload_data.get("admin_phone").strip() if payload_data.get("admin_phone") else None
+                # Generate a secure one-time password if not provided rather than hardcoded "admin123"
+                password_val = payload_data.get("admin_password") or (secrets.token_urlsafe(12) + "@A1!")
 
                 hashed_pwd = get_password_hash(password_val)
                 new_user = User(
@@ -243,20 +317,20 @@ async def update_tenant(tenant_id: int, payload: dict, db_master: AsyncSession =
     except Exception as e:
         logger.error(f"Failed to synchronize tenant admin user profile in regional DB: {e}")
 
-    if "name" in payload:
-        tenant.name = payload["name"]
-    if "db_url" in payload:
-        tenant.db_url = payload["db_url"]
-    if "s3_bucket" in payload:
-        tenant.s3_bucket = payload["s3_bucket"]
-    if "is_active" in payload:
-        tenant.is_active = bool(payload["is_active"])
-    if "admin_name" in payload:
-        tenant.admin_name = payload["admin_name"].strip()
-    if "admin_email" in payload:
-        tenant.admin_email = payload["admin_email"].lower().strip()
-    if "admin_phone" in payload:
-        tenant.admin_phone = payload["admin_phone"].strip() if payload["admin_phone"] else None
+    if "name" in payload_data and payload_data["name"]:
+        tenant.name = payload_data["name"]
+    if "db_url" in payload_data and payload_data["db_url"]:
+        tenant.db_url = payload_data["db_url"]
+    if "s3_bucket" in payload_data and payload_data["s3_bucket"]:
+        tenant.s3_bucket = payload_data["s3_bucket"]
+    if "is_active" in payload_data and payload_data["is_active"] is not None:
+        tenant.is_active = bool(payload_data["is_active"])
+    if "admin_name" in payload_data and payload_data["admin_name"]:
+        tenant.admin_name = payload_data["admin_name"].strip()
+    if "admin_email" in payload_data and payload_data["admin_email"]:
+        tenant.admin_email = payload_data["admin_email"].lower().strip()
+    if "admin_phone" in payload_data:
+        tenant.admin_phone = payload_data["admin_phone"].strip() if payload_data["admin_phone"] else None
 
     try:
         await db_master.commit()

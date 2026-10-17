@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity, AlertTriangle, FileText, FileX, Navigation, MapPin, Loader2, Building, ChevronRight, ArrowRight, ShieldAlert, Globe, User, MessageSquare, LogIn, UserPlus, X, Phone } from 'lucide-react';
+import { Activity, AlertTriangle, FileText, FileX, MapPin, Loader2, Building, ArrowRight, ShieldAlert, Globe, MessageSquare, LogIn, UserPlus, X, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
@@ -25,14 +25,6 @@ const NationalDashboardPage = dynamic(() => import('./national-dashboard/page'),
   ),
 });
 
-// --- Helper Cookie Reader ---
-const getCookie = (name: string) => {
-  if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-};
 
 
 // --- Portal Landing Page (Root Domain) ---
@@ -69,7 +61,7 @@ function SaasPortalLandingPage() {
         lat: parseFloat(t.lat),
         lng: parseFloat(t.lng),
         address: t.address,
-        icon: t.logo_path || '🏢'
+        icon: t.logo_path || '/logo.png'
       }));
   }, [filteredTenants]);
 
@@ -506,6 +498,32 @@ function CommandCenterDashboard() {
         </h1>
         <p className="text-gray-500 mt-1">Ringkasan aktivitas command center hari ini.</p>
       </div>
+
+      {/* Emergency Alert Bar (Triggered when pending reports exist) */}
+      {Number(statsData?.pending_validation ?? 0) > 0 && (
+        <div className="p-4 bg-gradient-to-r from-rose-500 via-rose-600 to-red-600 rounded-2xl text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-pulse border border-rose-400">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm tracking-wide">
+                PERINGATAN OPERASI: {statsData?.pending_validation} Laporan Baru Menunggu Validasi!
+              </h4>
+              <p className="text-xs text-rose-100 mt-0.5">
+                Segera lakukan verifikasi lokasi koordinat dan status korban untuk memulai respons pencarian dan pertolongan.
+              </p>
+            </div>
+          </div>
+          <a
+            href="/reports"
+            className="px-4 py-2 bg-white text-rose-600 hover:bg-rose-50 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+          >
+            <span>Buka Laporan Masuk</span>
+            <ArrowRight className="w-4 h-4" />
+          </a>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {isErrorStats ? (

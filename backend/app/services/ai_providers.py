@@ -85,7 +85,7 @@ async def _ollama_llm_generate(
         payload["format"] = "json"
 
     async with httpx.AsyncClient(timeout=timeout) as client:
-        response = await client.post(f"{base_url}/api/generate", json=payload)
+        response = await client.post(f"{final_base_url.rstrip('/')}/api/generate", json=payload)
         response.raise_for_status()
         res_data = response.json()
         final_text = res_data.get("response", "").strip()
@@ -106,6 +106,7 @@ async def _openai_compatible_llm_generate(
     timeout: float = 120.0,
 ) -> str:
     """Generate text via OpenAI-compatible /v1/chat/completions (OpenAI, Groq)."""
+    final_base_url = _resolve_internal_url((base_url or "https://api.openai.com").rstrip('/'))
     messages = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
@@ -126,7 +127,7 @@ async def _openai_compatible_llm_generate(
 
     async with httpx.AsyncClient(timeout=timeout) as client:
         response = await client.post(
-            f"{base_url}/v1/chat/completions",
+            f"{final_base_url}/v1/chat/completions",
             json=payload,
             headers=headers,
         )
@@ -385,7 +386,7 @@ async def _ollama_transcribe(file_path: str, model: str, base_url: str = None) -
 
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
-                f"{base_url}/api/generate",
+                f"{final_base_url.rstrip('/')}/api/generate",
                 json={
                     "model": model,
                     "prompt": "Transcribe the following audio to Indonesian text.",
@@ -405,7 +406,7 @@ async def _ollama_transcribe(file_path: str, model: str, base_url: str = None) -
         async with httpx.AsyncClient(timeout=60.0) as client:
             with open(file_path, "rb") as f:
                 response = await client.post(
-                    f"{base_url}/v1/audio/transcriptions",
+                    f"{final_base_url.rstrip('/')}/v1/audio/transcriptions",
                     files={"file": (os.path.basename(file_path), f, "audio/ogg")},
                     data={"model": model, "language": "id"},
                 )
@@ -423,11 +424,12 @@ async def _openai_compatible_transcribe(
     file_path: str, model: str, api_key: str, base_url: str
 ) -> str:
     """Transcribe audio via OpenAI-compatible /v1/audio/transcriptions (OpenAI, Groq)."""
+    final_base_url = _resolve_internal_url((base_url or "https://api.openai.com").rstrip('/'))
     headers = {"Authorization": f"Bearer {api_key}"}
     async with httpx.AsyncClient(timeout=60.0) as client:
         with open(file_path, "rb") as f:
             response = await client.post(
-                f"{base_url}/v1/audio/transcriptions",
+                f"{final_base_url}/v1/audio/transcriptions",
                 files={"file": (os.path.basename(file_path), f, "audio/ogg")},
                 data={"model": model, "language": "id"},
                 headers=headers,
@@ -504,7 +506,7 @@ async def _local_whisper_transcribe(file_path: str, model: str, base_url: str = 
     async with httpx.AsyncClient(timeout=90.0) as client:
         with open(file_path, "rb") as f:
             response = await client.post(
-                f"{base_url.rstrip('/')}/v1/audio/transcriptions",
+                f"{final_base_url.rstrip('/')}/v1/audio/transcriptions",
                 files={"file": (os.path.basename(file_path), f, "audio/ogg")},
                 data=payload_data,
                 headers=headers,

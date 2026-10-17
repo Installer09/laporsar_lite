@@ -48,10 +48,10 @@ class VictimFieldProcessor(BaseFieldProcessor):
             has_number = True
         else:
             from app.services.rule_extractor import RuleExtractor
-            num_words = ["satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "seorang", "seorang diri", "abk", "nelayan", "penumpang", "kru", "awak", "korban", "kakak", "adik", "ayah", "ibu", "suami", "istri", "anak", "teman", "rekan"]
+            num_words = ["satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "seorang", "seorang diri", "sendiri", "sendirian"]
             if RuleExtractor._dictionary_cache:
                 db_num_words = []
-                for cat in ["QUANTIFIER", "VICTIM_ROLE"]:
+                for cat in ["QUANTIFIER"]:
                     for item in RuleExtractor._dictionary_cache.get(cat, []):
                         db_num_words.append(item["word"].lower())
                 if db_num_words:
@@ -92,12 +92,12 @@ class VictimFieldProcessor(BaseFieldProcessor):
         if digit_m:
             extracted_data["korban"] = f"{digit_m.group(1)} orang"
         else:
-            extracted_data["korban"] = "1 orang" if any(w in val_str for w in ["satu", "kakak", "adik", "ayah", "ibu", "suami", "istri", "anak"]) else answer_clean
+            extracted_data["korban"] = "1 orang" if any(w in val_str for w in ["satu", "seorang", "sendiri", "sendirian"]) else answer_clean
         return True, extracted_data
 
     def get_question(self, session: ChatSession, extracted_data: dict) -> tuple[str, list]:
         q_text = (
-            "*Berapa perkiraan jumlah korban dalam kejadian ini?*\n"
+            "*Berapa perkiraan jumlah total korban dalam kejadian ini?*\n"
             "Ketik jumlah orangnya secara langsung (contoh: _1_ atau _3 orang_)."
         )
         return q_text, ["Belum Tahu"]

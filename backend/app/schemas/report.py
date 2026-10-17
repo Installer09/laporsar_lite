@@ -196,7 +196,3 @@ class ReportUpdate(BaseModel):
 class BroadcastPayload(BaseModel):
     text: str = Field(..., min_length=1)
 
-class ChatMessagePayload(BaseModel):
-    user_id: str = Field(..., min_length=1, max_length=50)
-    message: str = Field(..., min_length=1, max_length=2000)
-    channel: Optional[str] = Field("web", max_length=20)

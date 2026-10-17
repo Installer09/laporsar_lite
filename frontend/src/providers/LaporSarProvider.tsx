@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 interface LaporSarContextType {
   selectedGlobalReport: any;
@@ -9,9 +9,6 @@ interface LaporSarContextType {
   setIsGlobalReportDetailOpen: (open: boolean) => void;
   clickedReportIds: string[];
   markReportAsRead: (reportId: string) => void;
-  // Backward compatibility fields
-  isLaporSarOpen?: boolean;
-  setIsLaporSarOpen?: (open: boolean) => void;
 }
 
 const LaporSarContext = createContext<LaporSarContextType | undefined>(undefined);
@@ -60,8 +57,6 @@ export function LaporSarProvider({ children }: { children: React.ReactNode }) {
       setIsGlobalReportDetailOpen,
       clickedReportIds,
       markReportAsRead,
-      isLaporSarOpen: false,
-      setIsLaporSarOpen: () => {},
     }}>
       {children}
     </LaporSarContext.Provider>

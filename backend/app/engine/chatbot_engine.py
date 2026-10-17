@@ -7,11 +7,7 @@ from sqlalchemy.future import select
 
 from app.models.chat_session import ChatSession
 from app.engine.action_handler import ActionHandler
-from app.engine.validator_router import ValidatorRouter
-from app.engine.state_manager import StateManager
 from app.services.incident_data_service import extract_incident_data
-from app.services.message_formatter import message_formatter
-from app.services.reply_dispatcher import reply_dispatcher
 from app.core.websocket import manager
 
 logger = logging.getLogger(__name__)
@@ -20,55 +16,11 @@ logger = logging.getLogger(__name__)
 # Constants
 # =====================================================================
 
-REQUIRED_FIELDS = ["waktu", "lokasi_teks", "korban"]
-
 # Core question sequence
 CORE_QUESTION_ORDER = ["waktu", "lokasi_teks", "korban"]
 
-# Human-friendly questions in Indonesian (BASARNAS format)
+# Human-friendly questions in Indonesian (BASARNAS format) used by DefaultFieldProcessor & VehicleFieldProcessor
 FIELD_QUESTIONS = {
-    "waktu": {
-        "text": (
-            "*Kapan kejadiannya berlangsung?*\n"
-            "Sebutkan perkiraan waktu kejadian (contoh: _baru saja_, _2 jam lalu_, _tadi pagi jam 8_, atau _kemarin sore_)."
-        ),
-        "buttons": ["Belum Tahu"]
-    },
-    "lokasi_teks": {
-        "text": (
-            "*Di mana lokasi kejadiannya?*\n"
-            "Sebutkan nama perairan, pulau, pantai, desa, atau patokan terdekat."
-        ),
-        "buttons": ["Belum Tahu"]
-    },
-    "koordinat": {
-        "text": (
-            "*Apakah Anda mengetahui titik koordinat lokasi kejadian?*\n"
-            "Kirimkan titik GPS / tautan Google Maps jika ada, atau pilih *Belum Tahu* jika hanya mengetahui nama tempatnya."
-        ),
-        "buttons": [{"text": "Bagikan Lokasi Kejadian", "request_location": True}, "Belum Tahu"]
-    },
-    "korban": {
-        "text": (
-            "*Berapa perkiraan jumlah korban dalam kejadian ini?*\n"
-            "Ketik jumlah orangnya secara langsung (contoh: _1_ atau _3 orang_)."
-        ),
-        "buttons": ["Belum Tahu"]
-    },
-    "korban_kondisi": {
-        "text": (
-            "*Bagaimana kondisi korban saat ini?*\n"
-            "Sebutkan apakah korban masih dalam pencarian (hilang), butuh evakuasi, selamat, atau meninggal dunia (contoh: _masih dalam pencarian_ atau _2 selamat, 1 hilang_)."
-        ),
-        "buttons": ["Belum Tahu"]
-    },
-    "data_korban": {
-        "text": (
-            "*Siapa nama atau ciri-ciri korban?*\n"
-            "Sebutkan nama, jenis kelamin, umur, atau ciri korban jika diketahui (contoh: _Budi, Laki-laki, 40 thn_)."
-        ),
-        "buttons": ["Belum Tahu"]
-    },
     "data_kapal": {
         "text": (
             "*Apa jenis atau nama kapal/perahu yang digunakan?*\n"
@@ -123,15 +75,6 @@ FIELD_QUESTIONS = {
         ),
         "buttons": ["Keluarga Korban", "Saksi Mata", "Korban"]
     },
-    "reporter_location": {
-        "text": (
-            "*Verifikasi Posisi Pelapor*\n"
-            "Apakah Anda saat ini berada langsung di lokasi kejadian?\n"
-            "• Jika *Ya*, ketuk *Bagikan Lokasi Saya*.\n"
-            "• Jika *Tidak* (melapor dari rumah/darat), pilih *Saya Tidak di Lokasi*."
-        ),
-        "buttons": [{"text": "Bagikan Lokasi Saya", "request_location": True}, "Saya Tidak di Lokasi"]
-    }
 }
 
 FIELD_STATE_MAP = {

@@ -1,56 +1,160 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getWsUrl } from '@/lib/api';
 
-type SocketMessage = {
-  type: string;
-  payload: any;
+export type SocketMessage = {
+  type?: string;
+  event?: string;
+  payload?: any;
+  [key: string]: any;
 };
 
-export function useSocket() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [lastMessage, setLastMessage] = useState<SocketMessage | null>(null);
-  const [reconnectCount, setReconnectCount] = useState(0);
-  const socketRef = useRef<WebSocket | null>(null);
+type MessageListener = (msg: SocketMessage) => void;
+type StatusListener = (connected: boolean) => void;
 
-  useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const wsUrl = getWsUrl(token);
-    console.log(`Connecting to WebSocket: ${wsUrl.split('?')[0]}`);
-    const socket = new WebSocket(wsUrl);
+class SocketManager {
+  private static instance: SocketManager;
+  private socket: WebSocket | null = null;
+  private messageListeners: Set<MessageListener> = new Set();
+  private statusListeners: Set<StatusListener> = new Set();
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private isConnected = false;
+  private lastMessage: SocketMessage | null = null;
+  private subscriberCount = 0;
+  private isExplicitlyClosed = false;
 
-    socket.onopen = () => {
-      console.log('WebSocket connected successfully');
-      setIsConnected(true);
-    };
+  public static getInstance(): SocketManager {
+    if (!SocketManager.instance) {
+      SocketManager.instance = new SocketManager();
+    }
+    return SocketManager.instance;
+  }
 
-    socket.onmessage = (event) => {
-      try {
-        const message: SocketMessage = JSON.parse(event.data);
-        setLastMessage(message);
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    };
+  public getConnected(): boolean {
+    return this.isConnected;
+  }
 
-    socket.onclose = () => {
-      console.log('WebSocket disconnected');
-      setIsConnected(false);
-      // Attempt to reconnect after 3 seconds
-      setTimeout(() => {
-        setReconnectCount((prev) => prev + 1);
-      }, 3000);
-    };
+  public getLastMessage(): SocketMessage | null {
+    return this.lastMessage;
+  }
 
-    socketRef.current = socket;
+  public subscribe(onMessage: MessageListener, onStatus: StatusListener): () => void {
+    this.subscriberCount++;
+    this.messageListeners.add(onMessage);
+    this.statusListeners.add(onStatus);
+
+    // Provide initial state
+    onStatus(this.isConnected);
+    if (this.lastMessage) {
+      onMessage(this.lastMessage);
+    }
+
+    if (!this.socket || this.socket.readyState === WebSocket.CLOSED) {
+      this.connect();
+    }
 
     return () => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.close();
+      this.messageListeners.delete(onMessage);
+      this.statusListeners.delete(onStatus);
+      this.subscriberCount = Math.max(0, this.subscriberCount - 1);
+
+      if (this.subscriberCount === 0) {
+        // Disconnect after idle grace period to save resources
+        if (this.reconnectTimer) {
+          clearTimeout(this.reconnectTimer);
+          this.reconnectTimer = null;
+        }
       }
     };
-  }, [reconnectCount]);
+  }
+
+  private connect() {
+    if (typeof window === 'undefined') return;
+    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    this.isExplicitlyClosed = false;
+    const token = localStorage.getItem('token');
+    const wsUrl = getWsUrl(token);
+
+    try {
+      const socket = new WebSocket(wsUrl);
+
+      socket.onopen = () => {
+        this.isConnected = true;
+        this.statusListeners.forEach((fn) => fn(true));
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const parsed: SocketMessage = JSON.parse(event.data);
+          this.lastMessage = parsed;
+          this.messageListeners.forEach((fn) => fn(parsed));
+        } catch {
+          // Non-JSON or raw ping/pong message
+        }
+      };
+
+      socket.onclose = () => {
+        this.isConnected = false;
+        this.statusListeners.forEach((fn) => fn(false));
+        this.socket = null;
+
+        // Only schedule reconnect if there are active subscribers and wasn't explicitly closed
+        if (this.subscriberCount > 0 && !this.isExplicitlyClosed) {
+          this.reconnectTimer = setTimeout(() => {
+            this.connect();
+          }, 3000);
+        }
+      };
+
+      socket.onerror = () => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.close();
+        }
+      };
+
+      this.socket = socket;
+    } catch {
+      this.isConnected = false;
+      this.statusListeners.forEach((fn) => fn(false));
+    }
+  }
+
+  public disconnect() {
+    this.isExplicitlyClosed = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
+    }
+  }
+}
+
+export function useSocket() {
+  const manager = SocketManager.getInstance();
+  const [isConnected, setIsConnected] = useState<boolean>(manager.getConnected());
+  const [lastMessage, setLastMessage] = useState<SocketMessage | null>(manager.getLastMessage());
+
+  useEffect(() => {
+    const unsubscribe = manager.subscribe(
+      (msg) => setLastMessage(msg),
+      (status) => setIsConnected(status)
+    );
+    return () => {
+      unsubscribe();
+    };
+  }, [manager]);
 
   return { isConnected, lastMessage };
 }

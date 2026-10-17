@@ -17,12 +17,24 @@ class VehicleFieldProcessor(BaseFieldProcessor):
     ) -> tuple[bool, dict | str]:
         answer_clean = message.strip()
         
+        lower_ans = answer_clean.lower()
+        negative_names = [
+            "tidak ada nama", "tidak ada namanya", "tanpa nama", "belum ada nama",
+            "tidak tahu namanya", "gak tau namanya", "nggak tahu namanya"
+        ]
+        is_negative = any(neg in lower_ans for neg in negative_names)
+
         if self.field_name == "data_kapal":
             from app.services.rule_extractor import RuleExtractor
             kapal = RuleExtractor.extract_data_kapal(answer_clean)
-            extracted_data["data_kapal"] = kapal if kapal else answer_clean
+            if kapal and not is_negative:
+                extracted_data["data_kapal"] = kapal
+            elif is_negative:
+                extracted_data["data_kapal"] = kapal if (kapal and "tanpa nama" in kapal.lower()) else "Kapal Tanpa Nama"
+            else:
+                extracted_data["data_kapal"] = answer_clean
         else:
-            extracted_data[self.field_name] = answer_clean
+            extracted_data[self.field_name] = "Tanpa Keterangan" if is_negative else answer_clean
             
         extracted_data[f"_explicit_{self.field_name}"] = True
         return True, extracted_data

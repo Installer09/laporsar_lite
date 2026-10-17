@@ -211,9 +211,9 @@ async def _python_spatial_clustering_fallback(
     """
     Fallback Haversine spatial clustering algorithm for environments without PostGIS active.
     """
-    stmt = select(Report).where(Report.koordinat_lat.isnot(None), Report.koordinat_lng.isnot(None))
+    stmt = select(Report).where(Report.latitude.isnot(None), Report.longitude.isnot(None))
     if jenis_kejadian:
-        stmt = stmt.where(Report.jenis_kejadian == jenis_kejadian)
+        stmt = stmt.where(Report.incident_type == jenis_kejadian)
         
     res = await db.execute(stmt)
     reports = res.scalars().all()
@@ -365,7 +365,7 @@ async def search_hybrid_vector_spatial(
     except Exception as e:
         logger.warning(f"PostGIS spatial query fallback ({e})")
         # Python fallback
-        stmt = select(Report).where(Report.koordinat_lat.isnot(None), Report.koordinat_lng.isnot(None))
+        stmt = select(Report).where(Report.latitude.isnot(None), Report.longitude.isnot(None))
         res = await db.execute(stmt)
         reports = res.scalars().all()
 

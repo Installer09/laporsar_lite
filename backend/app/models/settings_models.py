@@ -62,6 +62,8 @@ class User(Base):
     name = Column(String)
     email = Column(String, unique=True, index=True)
     phone = Column(String, nullable=True)
+    nip = Column(String(50), nullable=True)
+    jabatan = Column(String(100), nullable=True)
     role = Column(String) # Super Admin, Operator, User
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)

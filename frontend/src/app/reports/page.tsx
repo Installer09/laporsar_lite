@@ -9,15 +9,14 @@ import {
   updateReport, 
   deleteReport,
   generateInfoAwal,
-  sendBroadcast,
-  getWsUrl
+  sendBroadcast
 } from '@/lib/api';
+import { useSocket } from '@/hooks/useSocket';
 import { 
   Search, 
   AlertTriangle, 
   Eye, 
   Clock, 
-  Pencil, 
   Trash2, 
   Loader2, 
   X, 
@@ -31,7 +30,11 @@ import {
   Users2,
   Info,
   Send,
-  ShieldAlert
+  ShieldAlert,
+  CheckCircle2,
+  Radio,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -88,39 +91,29 @@ function ReportsPageContent() {
 
   // Broadcast Modal & States
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
-  const [bcTab, setBcTab] = useState<'dasar' | 'korban' | 'spesifik' | 'operasional'>('dasar');
+  const [bcWizardStep, setBcWizardStep] = useState<1 | 2 | 3>(1);
   const [previewText, setPreviewText] = useState('');
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
-  // WebSocket real-time sirens and updates
+  // WebSocket real-time sirens and updates via singleton client
+  const { lastMessage } = useSocket();
+
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const wsUrl = getWsUrl(token);
-    const ws = new WebSocket(wsUrl);
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        const msgType = data.type || data.event;
-        
-        if (msgType === 'new_report') {
-          playSirenSound();
-          setNewReportAlert({
-            id: Date.now(),
-            message: 'Laporan Darurat Baru Masuk. Silakan periksa daftar laporan.'
-          });
-          queryClient.invalidateQueries({ queryKey: ['reports'] });
-        } else if (msgType === 'report_updated' || msgType === 'report_deleted') {
-          queryClient.invalidateQueries({ queryKey: ['reports'] });
-        }
-      } catch (err) {
-        console.error('Error parsing WS message in ReportsPageContent:', err);
-      }
-    };
-
-    return () => ws.close();
-  }, [queryClient]);
+    if (!lastMessage) return;
+    const msgType = lastMessage.type || (lastMessage as any).event;
+    
+    if (msgType === 'new_report') {
+      playSirenSound();
+      setNewReportAlert({
+        id: Date.now(),
+        message: 'Laporan Darurat Baru Masuk. Silakan periksa daftar laporan.'
+      });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+    } else if (msgType === 'report_updated' || msgType === 'report_deleted') {
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+    }
+  }, [lastMessage, queryClient]);
   
   const [bcVictims, setBcVictims] = useState<any[]>([]);
   const [bcForm, setBcForm] = useState({
@@ -270,6 +263,7 @@ function ReportsPageContent() {
   // Open Broadcast Panel (Pendalaman Info Awal)
   const handleOpenBroadcast = async (report: any) => {
     setSelectedReport(report);
+    setBcWizardStep(1);
     
     // Parse Unsur & Alut
     let unsurStr = '';
@@ -318,7 +312,8 @@ function ReportsPageContent() {
 
     if (report.metadata_kejadian) {
       try {
-        const md = typeof report.metadata_kejadian === 'string' ? JSON.parse(report.metadata_kejadian) : report.metadata_kejadian;
+        const rawMd = typeof report.metadata_kejadian === 'string' ? JSON.parse(report.metadata_kejadian) : report.metadata_kejadian;
+        const md = rawMd && typeof rawMd === 'object' && !Array.isArray(rawMd) ? rawMd : {};
         
         if (md.data_kapal) {
           if (typeof md.data_kapal === 'string') {
@@ -942,23 +937,33 @@ function ReportsPageContent() {
                     </td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {report.status === 'PENDING' && (
+                          <button
+                            onClick={() => handleStatusChange(report.id, 'AKTIF', report.no_laporan)}
+                            className="px-2.5 py-1.5 text-[11px] font-extrabold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all flex items-center gap-1 shadow-2xs cursor-pointer mr-1"
+                            title="Validasi Cepat: Ubah status menjadi AKTIF / VALID"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Validasi</span>
+                          </button>
+                        )}
                         <button 
                           onClick={() => handleOpenBroadcast(report)}
-                          className="p-2 text-gray-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200"
-                          title="Pendalaman & Kirim Grup (Info Awal)"
+                          className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all border border-slate-200/60 hover:border-slate-300 shadow-2xs cursor-pointer"
+                          title="Pendalaman & Diseminasi Info Awal"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Radio className="w-4 h-4 text-slate-700" />
                         </button>
                         <button 
                           onClick={() => handleOpenDetail(report)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100 cursor-pointer"
                           title="Lihat Detail"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button 
                           onClick={() => handleDelete(report.id, report.no_laporan)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100 cursor-pointer"
                           title="Hapus Laporan"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -991,7 +996,7 @@ function ReportsPageContent() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 m-auto w-[600px] h-fit max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-gray-100 z-50 overflow-hidden flex flex-col"
+              className="fixed inset-0 m-auto w-[95vw] max-w-[600px] h-fit max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-gray-100 z-50 overflow-hidden flex flex-col"
             >
               {/* Modal Header */}
               <div className="p-5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
@@ -1253,7 +1258,7 @@ function ReportsPageContent() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 m-auto w-[1100px] h-[90vh] bg-white rounded-3xl shadow-2xl border border-gray-150 z-50 overflow-hidden flex flex-col"
+              className="fixed inset-0 m-auto w-[95vw] max-w-[1100px] h-[90vh] bg-white rounded-3xl shadow-2xl border border-gray-150 z-50 overflow-hidden flex flex-col"
             >
               {/* Modal Header */}
               <div className="p-5 border-b border-gray-100 bg-[#111827] text-white flex items-center justify-between">
@@ -1287,17 +1292,66 @@ function ReportsPageContent() {
                 {/* Left Column: Scrollable Consolidated Form Inputs (60%) */}
                 <div className="w-7/12 h-full flex flex-col bg-gray-50/50">
                   
-                  {/* Title Bar */}
-                  <div className="px-6 py-4 border-b border-gray-150 bg-white flex items-center justify-between shrink-0 shadow-sm">
-                    <span className="text-xs font-black uppercase tracking-wider text-gray-700">Form Pendalaman Data Operasional</span>
-                    <span className="text-[9px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-full border border-slate-200">Lengkapi Seksi 1-4</span>
+                  {/* Wizard Step Tabs */}
+                  <div className="px-6 py-3 border-b border-gray-150 bg-white flex items-center justify-between shrink-0 shadow-xs">
+                    <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setBcWizardStep(1)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                          bcWizardStep === 1
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
+                          bcWizardStep === 1 ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'
+                        }`}>1</span>
+                        <span>Insiden & Korban</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setBcWizardStep(2)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                          bcWizardStep === 2
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
+                          bcWizardStep === 2 ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'
+                        }`}>2</span>
+                        <span>Sarana & Cuaca</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setBcWizardStep(3)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                          bcWizardStep === 3
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
+                          bcWizardStep === 3 ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'
+                        }`}>3</span>
+                        <span>Alut & Unsur SAR</span>
+                      </button>
+                    </div>
+
+                    <span className="text-[11px] font-semibold text-slate-400 font-mono hidden sm:inline">
+                      Tahap {bcWizardStep}/3
+                    </span>
                   </div>
 
                   {/* Single Consolidated Scroll Container */}
                   <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    
-                    {/* SECTION 1: DASAR & LOKASI */}
-                    <div className="space-y-4">
+                    {/* WIZARD STEP 1: DASAR & LOKASI & KORBAN */}
+                    {bcWizardStep === 1 && (
+                      <div className="space-y-6">
+                        <div className="space-y-4">
                       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
                         <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">1. Waktu & Lokasi Kejadian</h4>
                         
@@ -1485,8 +1539,25 @@ function ReportsPageContent() {
                       </div>
                     </div>
 
-                    {/* SECTION 3: DATA KHUSUS SPESIFIK */}
-                    <div className="space-y-4">
+                    {/* Step 1 Navigation Button */}
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setBcWizardStep(2)}
+                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Lanjut ke Sarana & Cuaca</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                    {/* WIZARD STEP 2: SARANA & KONDISI LAPANGAN */}
+                    {bcWizardStep === 2 && (
+                      <div className="space-y-6">
+                        {/* SECTION 3: DATA KHUSUS SPESIFIK */}
+                        <div className="space-y-4">
                       {(selectedReport.jenis_kejadian.toUpperCase().includes("KAPAL") || selectedReport.jenis_kejadian.toUpperCase().includes("LAUT")) && (
                         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
                           <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">3. Rincian Data Kapal (LAKA KAPAL)</h4>
@@ -1690,79 +1761,132 @@ function ReportsPageContent() {
                       )}
                     </div>
 
-                    {/* SECTION 4: OPERASIONAL & CUACA */}
-                    <div className="space-y-4">
-                      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">4. Unsur SAR & Alut Palsar Terlibat</h4>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-gray-700 flex items-center justify-between">
-                              <span>Unsur SAR Terlibat</span>
-                              <span className="text-[10px] text-gray-400 font-normal">Satu unsur per baris</span>
-                            </label>
-                            <textarea
-                              rows={4}
-                              value={bcForm.unsur_sar_str}
-                              onChange={(e) => setBcForm({ ...bcForm, unsur_sar_str: e.target.value })}
-                              placeholder="Contoh:&#10;Kantor SAR Natuna&#10;BPBD Natuna&#10;Masyarakat"
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none font-medium leading-normal"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-gray-700 flex items-center justify-between">
-                              <span>Alut & Palsar Digunakan</span>
-                              <span className="text-[10px] text-gray-400 font-normal">Satu alut per baris</span>
-                            </label>
-                            <textarea
-                              rows={4}
-                              value={bcForm.alut_palsar_str}
-                              onChange={(e) => setBcForm({ ...bcForm, alut_palsar_str: e.target.value })}
-                              placeholder="Contoh:&#10;LCR&#10;RIB Anambas&#10;Peralatan Selam"
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none font-medium leading-normal"
-                            />
-                          </div>
-                        </div>
+                    {/* SECTION 2B: CUACA, AKSI & HASIL (STEP 2) */}
+                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                      <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">Kondisi Cuaca, Aksi & Hasil</h4>
+                      
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-700">Kondisi Cuaca Lapangan</label>
+                        <input
+                          type="text"
+                          value={bcForm.cuaca}
+                          onChange={(e) => setBcForm({ ...bcForm, cuaca: e.target.value })}
+                          placeholder="Contoh: Cuaca Berawan Tebal, Suhu 26°C, Gelombang 0.5-1.25 M"
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
+                        />
                       </div>
 
-                      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-                        <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">Cuaca, Aksi, & Hasil</h4>
-                        
+                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="block text-xs font-bold text-gray-700">Kondisi Cuaca</label>
-                          <input
-                            type="text"
-                            value={bcForm.cuaca}
-                            onChange={(e) => setBcForm({ ...bcForm, cuaca: e.target.value })}
-                            placeholder="Contoh: Cuaca Berawan Tebal, Suhu 26°C, Gelombang 0.5-1.25 M"
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none"
+                          <label className="block text-xs font-bold text-gray-700">Aksi yang Telah Dilakukan</label>
+                          <textarea
+                            rows={3}
+                            value={bcForm.aksi}
+                            onChange={(e) => setBcForm({ ...bcForm, aksi: e.target.value })}
+                            placeholder="Contoh: Kantor SAR berkoordinasi dengan potensi SAR terdekat"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none"
                           />
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-gray-700">Aksi yang Telah Dilakukan</label>
-                            <textarea
-                              rows={3}
-                              value={bcForm.aksi}
-                              onChange={(e) => setBcForm({ ...bcForm, aksi: e.target.value })}
-                              placeholder="Contoh: Kantor SAR berkoordinasi dengan potensi SAR terdekat"
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-gray-700">Hasil Pemantauan Awal</label>
-                            <textarea
-                              rows={3}
-                              value={bcForm.hasil}
-                              onChange={(e) => setBcForm({ ...bcForm, hasil: e.target.value })}
-                              placeholder="Contoh: Masih dalam pencarian / Pemantauan..."
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none"
-                            />
-                          </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-gray-700">Hasil Pemantauan Awal</label>
+                          <textarea
+                            rows={3}
+                            value={bcForm.hasil}
+                            onChange={(e) => setBcForm({ ...bcForm, hasil: e.target.value })}
+                            placeholder="Contoh: Masih dalam pencarian / Pemantauan..."
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none"
+                          />
                         </div>
                       </div>
                     </div>
+
+                    {/* Step 2 Navigation Buttons */}
+                    <div className="pt-2 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setBcWizardStep(1)}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        <span>Kembali ke Insiden & Korban</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBcWizardStep(3)}
+                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Lanjut ke Alut & Unsur SAR</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* WIZARD STEP 3: ALUT & UNSUR SAR */}
+                {bcWizardStep === 3 && (
+                  <div className="space-y-6">
+                    {/* SECTION 4: UNSUR SAR & ALUT PALSAR TERLIBAT */}
+                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                      <h4 className="font-extrabold text-gray-800 text-xs uppercase tracking-wider border-b border-gray-50 pb-2">3. Unsur SAR & Alut Palsar Terlibat</h4>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-gray-700 flex items-center justify-between">
+                            <span>Unsur SAR Terlibat</span>
+                            <span className="text-[10px] text-gray-400 font-normal">Satu unsur per baris</span>
+                          </label>
+                          <textarea
+                            rows={4}
+                            value={bcForm.unsur_sar_str}
+                            onChange={(e) => setBcForm({ ...bcForm, unsur_sar_str: e.target.value })}
+                            placeholder="Contoh:&#10;Kantor SAR Natuna&#10;BPBD Natuna&#10;Masyarakat"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none font-medium leading-normal"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-gray-700 flex items-center justify-between">
+                            <span>Alut & Palsar Digunakan</span>
+                            <span className="text-[10px] text-gray-400 font-normal">Satu alut per baris</span>
+                          </label>
+                          <textarea
+                            rows={4}
+                            value={bcForm.alut_palsar_str}
+                            onChange={(e) => setBcForm({ ...bcForm, alut_palsar_str: e.target.value })}
+                            placeholder="Contoh:&#10;LCR&#10;RIB Anambas&#10;Peralatan Selam"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white outline-none resize-none font-medium leading-normal"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Operational Readiness Banner */}
+                    <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-emerald-950">Data Laporan Siap Disiarkan</p>
+                        <p className="text-[11px] text-emerald-700 leading-relaxed">
+                          Silakan tinjau teks pada panel <strong>Pratinjau Info Awal</strong> di sebelah kanan. Anda dapat melakukan penyesuaian teks manual langsung pada editor preview sebelum menekan tombol Kirim Siaran Broadcast.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 3 Navigation Buttons */}
+                    <div className="pt-2 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setBcWizardStep(2)}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        <span>Kembali ke Sarana & Cuaca</span>
+                      </button>
+                      <span className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200/60">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Siap Disiarkan (Lihat Panel Kanan)
+                      </span>
+                    </div>
+                  </div>
+                )}
                   </div>
                 </div>
 

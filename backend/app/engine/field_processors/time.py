@@ -249,7 +249,7 @@ class TimeFieldProcessor(BaseFieldProcessor):
         if re.search(r"\b\d{1,2}[.:]\d{2}\b", text):
             return True
 
-        if "lalu" in text or "menit" in text or "sejak" in text or "dari" in text:
+        if "lalu" in text or "menit" in text or "sejak" in text or "tadi" in text:
             return True
 
         return False

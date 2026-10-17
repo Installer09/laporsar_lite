@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Search, Loader2, AlertTriangle, User, Menu, LogOut } from 'lucide-react';
+import { Bell, Search, Loader2, AlertTriangle, User, Menu, LogOut, HelpCircle, Settings } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { globalSearch, getReports } from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
@@ -26,8 +26,24 @@ export function Header() {
   const [tenantSlug, setTenantSlug] = useState<string | null>(null);
   const [showProfileDrop, setShowProfileDrop] = useState(false);
   
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
   
   const searchRef = useRef<HTMLDivElement>(null);
@@ -134,9 +150,10 @@ export function Header() {
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="relative flex-1">
+        <div className="relative flex-1 flex items-center">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input 
+            ref={searchInputRef}
             type="text" 
             value={searchQuery}
             onChange={(e) => {
@@ -144,12 +161,18 @@ export function Header() {
               setShowSearchDrop(true);
             }}
             onFocus={() => setShowSearchDrop(true)}
-            placeholder="Cari Laporan atau Kontak..." 
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200/60 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white transition-all outline-none text-slate-800"
+            placeholder="Cari Laporan atau Kontak... (Tekan /)" 
+            className="w-full pl-10 pr-12 py-2.5 bg-slate-50 border border-slate-200/60 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:bg-white transition-all outline-none text-slate-800"
           />
-          {isSearching && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
-          )}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
+            {isSearching ? (
+              <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+            ) : (
+              <kbd className="hidden sm:inline-block text-[10px] font-mono font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-2xs">
+                /
+              </kbd>
+            )}
+          </div>
         </div>
 
         {/* Search Dropdown */}
@@ -196,7 +219,15 @@ export function Header() {
       
       <div className="flex items-center gap-4">
         {/* Connection Status indicator */}
-        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} title={isConnected ? 'WebSocket Terhubung' : 'WebSocket Terputus'} />
+        <div 
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/60 text-[11px] font-semibold text-slate-600 shadow-2xs" 
+          title={isConnected ? 'WebSocket Terhubung Real-Time' : 'WebSocket Terputus (Mode Polling Cadangan)'}
+        >
+          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
+          <span className="hidden sm:inline text-[10px] uppercase tracking-wider font-bold text-slate-500">
+            {isConnected ? 'Live' : 'Offline'}
+          </span>
+        </div>
 
         <div className="relative" ref={notifRef}>
           <button 
@@ -293,6 +324,24 @@ export function Header() {
                     Online
                   </span>
                 </div>
+              </div>
+              <div className="py-1 border-b border-gray-100">
+                <Link
+                  href="/help-center"
+                  onClick={() => setShowProfileDrop(false)}
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+                >
+                  <HelpCircle className="w-4 h-4 text-slate-400" />
+                  <span>Pusat Bantuan & SOP</span>
+                </Link>
+                <Link
+                  href="/settings"
+                  onClick={() => setShowProfileDrop(false)}
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+                >
+                  <Settings className="w-4 h-4 text-slate-400" />
+                  <span>Pengaturan Sistem</span>
+                </Link>
               </div>
               <button
                 onClick={() => {

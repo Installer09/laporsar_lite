@@ -827,11 +827,16 @@ class MessageFormatterService:
 
         w_clean = str(waktu_str).strip()
         
-        # If already formatted as PDTW (MMDD HHMM <TZ>)
+        # If already formatted as PDTW (MMDD HHMM <TZ> or MMDDHHMM <TZ>)
         if re.match(r'^\d{4}\s+\d{4}\s+[G-J]$', w_clean, re.IGNORECASE):
             return w_clean.upper()
+        if re.match(r'^\d{8}\s+[G-J]$', w_clean, re.IGNORECASE):
+            return f"{w_clean[:4]} {w_clean[4:8]} {w_clean[8:].strip().upper()}"
         if re.match(r'^PDTW\s+\d{4}\s+\d{4}\s+[G-J]$', w_clean, re.IGNORECASE):
             return re.sub(r'^PDTW\s+', '', w_clean, flags=re.IGNORECASE).upper()
+        if re.match(r'^PDTW\s+\d{8}\s+[G-J]$', w_clean, re.IGNORECASE):
+            core = re.sub(r'^PDTW\s+', '', w_clean, flags=re.IGNORECASE).strip()
+            return f"{core[:4]} {core[4:8]} {core[8:].strip().upper()}"
             
         # Check if waktu_str is a datetime object or can be parsed as an ISO datetime
         dt_parsed = None

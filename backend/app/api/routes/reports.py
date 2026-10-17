@@ -225,7 +225,7 @@ async def generate_info_awal(
     
     # ── Fetch Identity Settings from DB dynamically ──────────────────
     from app.models.settings_models import SystemSetting
-    from app.api.routes.identitas import DEFAULT_IDENTITAS
+    from app.api.routes.identity import DEFAULT_IDENTITAS
     
     try:
         result_identity = await db.execute(

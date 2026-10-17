@@ -16,93 +16,7 @@ interface DashboardMapInnerProps {
   isPublic?: boolean;
 }
 
-// Custom Pulse Marker Icon (Red/Amber based on status)
-const createIncidentMarker = (jenisKejadian: string, status: string, zoom: number) => {
-  if (typeof window === 'undefined') return null;
-  
-  // Determine size based on zoom
-  let size = 32;
-  let containerClass = "w-8 h-8";
-  let pingClass = "h-8 w-8";
-  let textClass = "text-[12px]";
-  let borderClass = "border-2";
-  
-  if (zoom <= 4) {
-    size = 8;
-    containerClass = "w-2 h-2";
-    pingClass = "h-2 w-2";
-    textClass = "text-[0px]"; // Hide emoji
-    borderClass = "border-[0.5px]";
-  } else if (zoom <= 5) {
-    size = 10;
-    containerClass = "w-2.5 h-2.5";
-    pingClass = "h-2.5 w-2.5";
-    textClass = "text-[0px]"; // Hide emoji
-    borderClass = "border";
-  } else if (zoom <= 7) {
-    size = 16;
-    containerClass = "w-4 h-4";
-    pingClass = "h-4 w-4";
-    textClass = "text-[0px]"; // Hide emoji
-    borderClass = "border";
-  } else if (zoom <= 9) {
-    size = 22;
-    containerClass = "w-5.5 h-5.5";
-    pingClass = "h-5.5 w-5.5";
-    textClass = "text-[9px]";
-    borderClass = "border-2";
-  } else if (zoom <= 11) {
-    size = 28;
-    containerClass = "w-7 h-7";
-    pingClass = "h-7 w-7";
-    textClass = "text-[11px]";
-    borderClass = "border-2";
-  }
-  
-  const getCategorySvg = (jenis: string) => {
-    const lower = (jenis || '').toLowerCase();
-    if (lower.includes("kapal") || lower.includes("laut") || lower.includes("tenggelam")) {
-      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>`;
-    }
-    if (lower.includes("manusia") || lower.includes("hilang") || lower.includes("kmm")) {
-      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-    }
-    if (lower.includes("pesawat") || lower.includes("udara")) {
-      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m2 12 5-3 3 3 8-8 4 4-8 8 3 3-3 5-4-8-5-1Z"/></svg>`;
-    }
-    if (lower.includes("bencana") || lower.includes("alam") || lower.includes("banjir")) {
-      return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
-    }
-    return `<svg class="w-full h-full text-white p-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
-  };
-
-  const iconSvg = getCategorySvg(jenisKejadian);
-
-  // Determine colors based on status: PENDING is amber, AKTIF is pulsing red
-  let pulseColor = "bg-red-400";
-  let gradientColors = "from-red-600 to-rose-700";
-  
-  if (status === 'PENDING') {
-    pulseColor = "bg-amber-400";
-    gradientColors = "from-amber-600 to-amber-700";
-  }
-
-  return L.divIcon({
-    className: 'incident-marker-icon',
-    html: `
-      <div class="relative flex items-center justify-center">
-        <span class="animate-ping absolute inline-flex rounded-full ${pulseColor} opacity-75 ${pingClass}"></span>
-        <div class="relative ${containerClass} bg-gradient-to-br ${gradientColors} ${borderClass} border-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 p-0.5">
-          ${iconSvg}
-        </div>
-      </div>
-    `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-  });
-};
-
-// Custom Premium Pulse Marker Icon for SAR Posts (Blue)
+// Custom Pulse Marker Icon (Red/Amber based on status)// Custom Premium Pulse Marker Icon for SAR Posts (Blue)
 const createPosMarker = (type: string, customIcon: string | undefined, zoom: number) => {
   if (typeof window === 'undefined') return null;
   
@@ -203,7 +117,6 @@ function MapController({ onMapReady }: { onMapReady: (map: L.Map) => void }) {
 export default function DashboardMapInner({ reports = [], locations = [], kmlPath, isPublic = false }: DashboardMapInnerProps) {
   const [map, setMap] = useState<L.Map | null>(null);
   const [kmlPolygons, setKmlPolygons] = useState<[number, number][][]>([]);
-  const [kmlLoading, setKmlLoading] = useState(false);
   const [zoom, setZoom] = useState(3.5);
   const hasInitializedPublicViewRef = useRef(false);
 

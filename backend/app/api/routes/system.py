@@ -85,10 +85,10 @@ async def global_search(q: str = "", db: AsyncSession = Depends(get_db)):
     # Search reports
     report_query = select(Report).where(
         or_(
-            Report.no_laporan.ilike(f"%{q}%"),
-            Report.pelapor_nama.ilike(f"%{q}%"),
-            Report.jenis_kejadian.ilike(f"%{q}%"),
-            Report.lokasi_teks.ilike(f"%{q}%")
+            Report.report_number.ilike(f"%{q}%"),
+            Report.reporter_name.ilike(f"%{q}%"),
+            Report.incident_type.ilike(f"%{q}%"),
+            Report.location_text.ilike(f"%{q}%")
         )
     ).limit(5)
     report_res = await db.execute(report_query)

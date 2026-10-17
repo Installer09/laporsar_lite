@@ -26,12 +26,6 @@ IP_LIMITS = defaultdict(list)
 RATE_LIMIT_WINDOW = 60  # seconds
 RATE_LIMIT_MAX_REQUESTS = 10  # requests per window
 
-# --- Pydantic Schemas ---
-
-class MessageHistoryItem(BaseModel):
-    role: str
-    content: str
-    timestamp: Optional[str] = None
 
 class ChatSessionResponse(BaseModel):
     id: int

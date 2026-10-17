@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateContact, deleteContact, exportContacts, importContacts } from '@/lib/api';
-import { Search, User, Filter, Phone, Pencil, Trash2, X, Loader2, Download, Upload, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Search, User, Filter, Phone, Pencil, Trash2, X, Loader2, Download, Upload, CheckCircle2, AlertTriangle, MessageCircle, PhoneCall } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -279,6 +279,26 @@ export default function ContactsPage() {
                     </td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {contact.phone_number && (
+                          <>
+                            <a
+                              href={`https://wa.me/${contact.phone_number.replace(/\D/g, '').replace(/^0/, '62')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all border border-emerald-100 bg-emerald-50/50"
+                              title={`Hubungi ${contact.name || contact.phone_number} via WhatsApp`}
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                            </a>
+                            <a
+                              href={`tel:${contact.phone_number}`}
+                              className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all border border-blue-100 bg-blue-50/50"
+                              title={`Panggil Telepon ${contact.name || contact.phone_number}`}
+                            >
+                              <PhoneCall className="w-4 h-4" />
+                            </a>
+                          </>
+                        )}
                         <button 
                           onClick={() => handleOpenEdit(contact)}
                           className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all border border-transparent hover:border-amber-100"
